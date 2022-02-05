@@ -45,7 +45,7 @@ for(i in 2:nrow(dfPorkWide))
 # in the original dataset
 nSim <- 40  
 
-peaks = c(232,330,38S2)
+peaks = c(232,330,382)
 ws = c(50,50,50)
 shape = c(4,4,4)
 c = c(0.002,0.01,0.005)
@@ -86,12 +86,12 @@ legend("topleft", title = "Classes",legend = c("A","B"),
 n <- nrow(samples4.2)
 p <- ncol(samples4.2)
 
-ind.train <- sample(1:n,round(n/3))
-test.data <- samples4.2[ind.train,-2]
-test.label <- samples4.2[ind.train,]$Class
+ind.test <- sample(1:n,round(n/3))
+test.data <- samples4.2[ind.test,-2]
+test.label <- samples4.2[ind.test,]$Class
 
-train.data <- samples4.2[-ind.train,-2]
-train.label <- samples4.2[-ind.train,]$Class
+train.data <- samples4.2[-ind.test,-2]
+train.label <- samples4.2[-ind.test,]$Class
 
 corr.class.rate <- matrix(0,nrow = 1, ncol = 2)
 error.rate <- matrix(0, nrow = 1, ncol = 2)
@@ -152,7 +152,8 @@ head(temp)
 class(temp)
 
 # Rank wavelengths by their weights in the 1st discriminant function
-Wavelengths.rank <-  temp[order(-temp$LD1),]
+Wavelengths.rank <-  temp[order(-temp$
+                                  LD1),]
 
 head(Wavelengths.rank,50)
 
@@ -162,16 +163,63 @@ head(Wavelengths.rank,50)
 
 # This declares function  called "plotRestWavelengths" 
 # It takes three arguments, 
-#  X:        a matrix or dataframe which contains the entire range of wavelengths
-#  Wavelengths: character vector with the name wavelengths ordered by their importance
-#               on the 1st discrimimant analysis function
-#  new:         Number of wavelengths to take in account from the vector wavelengths
-plotRestWavelengths <- function(X,Wavelengths,nw = 50)
-{
+#  X:                : a matrix or dataframe which contains the entire 
+#                      range of wavelengths
+#  Wavelengths.walk  : character vector with the name wavelengths ordered 
+#                      by their importance on the 1st discriminant analysis function
+#  nw:               : Number of wavelengths to take in account from the vector wavelengths
+#  fieldClass        : Name of the class that contains class information for each
+#                      observation        
 
+plotRestWavelengths <- function(X,Wavelengths.rank,nw = 50,fieldClass)
+{
+  # no numeric variables
+  varsChar <- X %>% select_if(negate(is.numeric)) %>% colnames
+  # Numeric variables
+  if(is.vector(Wavelengths.rank)) stop("Wavelengths has to be a matrix or dataframe containing two column Wavelengt and LD1-weight")
+  varsNum <- Wavelengths.rank[1:nw,1]
+  varsNum <- sort(varsNum) # order numeric variables in order to plot charts
+  nclasses <- table(X[fieldClass])
+  nameClasses <- names(nclasses)
   
-    
+  
+  if(length(nameClasses)!=2) stop("The function is design for only 2 classes")
+  
+  
+  vars <- c(varsChar,varsNum)
+  vars 
+  
+  Xsub <- X %>% select(all_of(vars))
+  indNum <- sapply(varsNum, match, table = colnames(Xsub))
+  
+  
+  ymin <- min(Xsub[,indNum])
+  ymax <- max(Xsub[,indNum])
+  
+  indclass1 <- Xsub[fieldClass]== nameClasses[1]
+  SubClass1 <- Xsub[indclass1,]
+  
+  indclass2 <- Xsub[fieldClass] == nameClasses[2]
+  SubClass2 <- Xsub[indclass2,]
+  
+  x = str_extract(varsNum,"\\d+")
+  
+  plot(x, y = SubClass1[1,indNum], ylim = c(ymin,ymax), type = "l", col = "orange",
+       main = "Class A and Class B for restricted number of wavelengths", ylab = "Itensity")
+  for (i in 2:nrow(SubClass1))
+    lines(x, y = SubClass1[i,indNum], ylim = c(ymin,ymax), type = "l", col = "orange")
+  for (i in 1:nrow(SubClass2))
+    lines(x, y = SubClass2[i,indNum], ylim = c(ymin,ymax), type = "l", col = "green")
+  legend("topright", title = "Classes",legend = c("A","B"), 
+         col = c("orange","green"), lty = c(1,1), cex = 0.7 )
+
 }
+
+
+dataset <- data.frame(Type=train.data$Class, lda=pred.train$x )
+ggplot(dataset, aes(x=LD1)) + 
+  geom_density(aes(group=Type, colour=Type, fill=Type), alpha=0.3)
+
 
 # CMN ---------------------------------------------------------------------
 
