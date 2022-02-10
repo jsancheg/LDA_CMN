@@ -215,13 +215,67 @@ plotRestWavelengths <- function(X,Wavelengths.rank,nw = 50,fieldClass)
 
 }
 
+plotRestWavelengths(samples4.2,Wavelengths.rank,nw = 50, fieldClass = "Class")
+
+
+
+
+# 7) LDA selected number of wavelengths -----------------------------------
+
+LDA_1DF<- function(train.data, train.label,test.data,test.label)
+{
+  output <- list()
+  
+  corr.class.rate <- matrix(0,nrow = 1, ncol = 2)
+  error.rate <- matrix(0, nrow = 1, ncol = 2)
+
+  colnames(corr.class.rate) <- c("train", "test")
+  colnames(error.rate) <- c("train", "test")
+  
+  
+  lda.fit <- lda(Class ~., data = train.data)
+  pred.train <- predict(lda.fit,train.data)
+  pred.class <- predict(lda.fit,test.data)
+  corr.class.rate[1,1] <- sum(diag(table(train.label, levels(train.label)[max.col(pred.train$posterior)])))/ (length(train.label))
+  corr.class.rate[1,2] <- sum(diag(table(test.label, levels(test.label)[max.col(pred.class$posterior)])))/ (length(test.label))
+  error.rate[1,1] <- 1 - corr.class.rate[1,1]
+  error.rate[1,2] <- 1- corr.class.rate[1,2]
+  
+  # Correct classification rate
+  corr.class.rate
+  error.rate
+  
+  ldahist(data = pred.class$x[,1], g=train.data$Class)
+
+  # Project the train data onto the first discriminant analysist
+  projectLD1 <- as.matrix(train.data[,-1]) %*% lda.fit$scaling
+  
+  
+  dataset <- data.frame(Type=train.data$Class, lda=pred.train$x )
+  g1 <- ggplot(dataset, aes(x=LD1)) + 
+    geom_density(aes(group=Type, colour=Type, fill=Type), alpha=0.3)
+  
+  g2 <- plot(x = Wavelength, y = lda.fit$scaling, type = "l")
+  
+  temp <- data.frame(Wavelengths = rownames(lda.fit$scaling), 
+                     Weights = abs(lda.fit$scaling) ) 
+  
+  output <- list(g1 = g1,g2 = g2, Rank.Wavelengths = temp, 
+                 corr.class.rate = corr.class.rate, 
+                 error.rate = error.rate)
+  return(output)
+}
+
+lda.mod<- LDA_1DF(train.data,train.label,test.data,test.label)
+variables<- lda.mod$Rank.Wavelengths
+variables
+
+# CMN ---------------------------------------------------------------------
 
 dataset <- data.frame(Type=train.data$Class, lda=pred.train$x )
 ggplot(dataset, aes(x=LD1)) + 
   geom_density(aes(group=Type, colour=Type, fill=Type), alpha=0.3)
 
-
-# CMN ---------------------------------------------------------------------
 
 lim <- 10
 selected <- Wavelengths.rank$Wavelengths[1:lim]
