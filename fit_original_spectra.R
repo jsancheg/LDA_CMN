@@ -67,7 +67,7 @@ plot(x = Wavelength, y = LDA_original_spectra$scaling[,1], type = "l",
 lines(x = Wavelength, y = LDA_original_spectra$scaling[,2], col = "blue")
 
 temp.Wavelength <- data.frame(Wavelengths = rownames(LDA_original_spectra$scaling),
-                  Weights = apply(abs(LDA_original_spectra$scaling),1,sum))
+                              Weights = apply(abs(LDA_original_spectra$scaling),1,sum))
 
 plot(x = Wavelength , y = temp.Wavelength$Weights, type = "l",
      col = "black", ylab = "Sum of abs. loadings")

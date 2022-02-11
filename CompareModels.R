@@ -214,7 +214,7 @@ plotRestWavelengths <- function(X,Wavelengths.rank,nw = 50,fieldClass)
     lines(x, y = SubClass2[i,indNum], ylim = c(ymin,ymax), type = "l", col = "green")
   legend("topright", title = "Classes",legend = c("A","B"), 
          col = c("orange","green"), lty = c(1,1), cex = 0.7 )
-
+  
 }
 
 
@@ -235,7 +235,7 @@ plotRestWavelengths <- function(X,Wavelengths.rank,nw = 50,fieldClass)
 fit_LDA <- function(train.data, fielClass, 
                     test.data = NULL, test.label = NULL)
 {
-
+  
   corr.class.rate <- matrix(0, nrow = 1, ncol = 2)
   error.rate <- matrix(0, nrow = 1, ncol = 2)
   tLDA.Test <- NULL
@@ -365,7 +365,7 @@ for (m in 1:n.models)
                         prior= mod$models[[1]]$prior,
                         mu = mod$models[[1]]$mu,
                         invSigma = mod$models[[1]]$invSigma)
-
+  
   tabTrain <- table(predTrain,as.numeric(Strain.label))
   tabTrain
   
