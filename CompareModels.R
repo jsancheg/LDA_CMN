@@ -43,7 +43,7 @@ for(i in 2:nrow(dfPorkWide))
 
 # Use size of class A as 40 is the sample size of each class 
 # in the original dataset
-nSim <- 40  
+nSim <- 45  
 
 peaks = c(232,330,382)
 ws = c(50,50,50)
@@ -73,9 +73,9 @@ ymax <- max(sample4.1,sample4.2)
 plot(x, y = sample4.1df[1,-c(1:2)], ylim = c(ymin,ymax), type = "l", col = "orange",
      main = "Class A and Class B", ylab = "Itensity")
 for (i in 2:40)
-  lines(x, y = sample4.1df[i,-c(1:2)], ylim = c(ymin,ymax), type = "l", col = "orange")
+  lines(x, y = sample4.1df[i,-c(1:2)],  type = "l", col = "orange")
 for (i in 1:40)
-  lines(x, y = sample4.2df[i,-c(1:2)], ylim = c(ymin,ymax), type = "l", col = "green")
+  lines(x, y = sample4.2df[i,-c(1:2)],  type = "l", col = "green")
 legend("topleft", title = "Classes",legend = c("A","B"), 
        col = c("orange","green"), lty = c(1,1), cex = 1 )
 
@@ -129,13 +129,13 @@ dim(lda.fit$scaling)
 projectLD1 <- as.matrix(train.data[,-1]) %*% lda.fit$scaling
 
 
-dataset <- data.frame(Type=train.data$Class, lda=pred.train$x )
+dataset <- data.frame(Class=train.data$Class, lda=pred.train$x )
 ggplot(dataset, aes(x=LD1)) + 
-  geom_density(aes(group=Type, colour=Type, fill=Type), alpha=0.3)
+  geom_density(aes(group=Class, colour=Class, fill=Class), alpha=0.3)
 
 #visualise how LD1 and LD2 together separate the three classes
 plot(aux,pred.train$x, col=train.data$Class,
-     pch=as.numeric(train.data$Species), xlab="aux", ylab="LD1")
+     pch=as.numeric(train.data$Class), xlab="aux", ylab="LD1")
 legend("topleft", title = "class", legend = c("A","B"), 
        col = c("black","red"), lty = c(1,1),cex = 1.2)
 
@@ -170,6 +170,8 @@ head(Wavelengths.rank,50)
 #  nw:               : Number of wavelengths to take in account from the vector wavelengths
 #  fieldClass        : Name of the class that contains class information for each
 #                      observation        
+#  Output            : Plot the spectra of observations restricted a group of
+#                      wavelengths
 
 plotRestWavelengths <- function(X,Wavelengths.rank,nw = 50,fieldClass)
 {
@@ -215,112 +217,309 @@ plotRestWavelengths <- function(X,Wavelengths.rank,nw = 50,fieldClass)
 
 }
 
-plotRestWavelengths(samples4.2,Wavelengths.rank,nw = 50, fieldClass = "Class")
 
+# 7) LDA function returning wavelengths with high absolute weights --------
+#
+# This function is called "fit_LDA"
+# It takes 6 parameters
+# train.data:   data to train the model
+# train.label:   Contains the name of the column that contains the train.label
+# test.data:    data to test the model if it is pass as argument,
+#               but its default value is NULL
+# Outouts
 
-
-
-# 7) LDA selected number of wavelengths -----------------------------------
-
-LDA_1DF<- function(train.data, train.label,test.data,test.label)
+# Correct classification error: Table containing the correct clasification error
+# Error classification rate:    Table containing the error classification error    
+# Wavelengths:  Contains the wavelengths ordered by their absolute weights in the 1st
+#             linear discriminant function.
+fit_LDA <- function(train.data, fielClass, 
+                    test.data = NULL, test.label = NULL)
 {
-  output <- list()
-  
-  corr.class.rate <- matrix(0,nrow = 1, ncol = 2)
+
+  corr.class.rate <- matrix(0, nrow = 1, ncol = 2)
   error.rate <- matrix(0, nrow = 1, ncol = 2)
-
-  colnames(corr.class.rate) <- c("train", "test")
-  colnames(error.rate) <- c("train", "test")
+  tLDA.Test <- NULL
+  tLDA.train <- NULL
+  namecolumns <- c("train", "error")
+  colnames(corr.class.rate) <- namecolumns
+  colnames(error.rate) <- namecolumns
   
+  #
+  x = "."
+  y = fieldClass
+  form = as.formula(paste(y, "~", x))
+  mod <- lda(form, data = train.data)
+  pred.train <- predict(mod, train.data)
+  labeled <- train.data[[y]]
+  tLDA.Train <- table(labeled, levels(labeled)[max.col(pred.train$posterior)])
+  corr.class.rate[1,1] <- sum(diag(tLDA.Train))/sum(tLDA.Train)  
+  corr.class.rate[1,2] <- NA
+  error.rate [1,1] <- 1 - sum(diag(tLDA.Train))/sum(tLDA.Train)
+  error.rate[1,2] <- NA
+  if(!( all( is.null(test.data),is.null(test.label) )) )
+  {
+    pred.test <- predict(mod, test.data)
+    tLDA.Test <- table(test.label,levels(test.label)[max.col(pred.test$posterior)])
+    corr.class.rate[1,2] <- sum(diag(tLDA.Test) )/sum(tLDA.Test)
+    error.rate[1,2] <- 1 - sum(diag(tLDA.Test) )/sum(tLDA.Test)
+  }
+  temp <- data.frame(Wavelengths = row.names(mod$scaling),
+                     Weights = apply(abs(mod$scaling),1,sum) )
+  Wavelengths<- temp[order(-temp$Weights),]
   
-  lda.fit <- lda(Class ~., data = train.data)
-  pred.train <- predict(lda.fit,train.data)
-  pred.class <- predict(lda.fit,test.data)
-  corr.class.rate[1,1] <- sum(diag(table(train.label, levels(train.label)[max.col(pred.train$posterior)])))/ (length(train.label))
-  corr.class.rate[1,2] <- sum(diag(table(test.label, levels(test.label)[max.col(pred.class$posterior)])))/ (length(test.label))
-  error.rate[1,1] <- 1 - corr.class.rate[1,1]
-  error.rate[1,2] <- 1- corr.class.rate[1,2]
-  
-  # Correct classification rate
-  corr.class.rate
-  error.rate
-  
-  ldahist(data = pred.class$x[,1], g=train.data$Class)
-
-  # Project the train data onto the first discriminant analysist
-  projectLD1 <- as.matrix(train.data[,-1]) %*% lda.fit$scaling
-  
-  
-  dataset <- data.frame(Type=train.data$Class, lda=pred.train$x )
-  g1 <- ggplot(dataset, aes(x=LD1)) + 
-    geom_density(aes(group=Type, colour=Type, fill=Type), alpha=0.3)
-  
-  g2 <- plot(x = Wavelength, y = lda.fit$scaling, type = "l")
-  
-  temp <- data.frame(Wavelengths = rownames(lda.fit$scaling), 
-                     Weights = abs(lda.fit$scaling) ) 
-  
-  output <- list(g1 = g1,g2 = g2, Rank.Wavelengths = temp, 
-                 corr.class.rate = corr.class.rate, 
-                 error.rate = error.rate)
+  output <- list(corr.class.rate = corr.class.rate,
+                 error.rate = error.rate,
+                 Wavelengths.ranked = Wavelengths,
+                 Cm_train = tLDA.Train, Cm_test = tLDA.Test)
   return(output)
 }
 
-lda.mod<- LDA_1DF(train.data,train.label,test.data,test.label)
-variables<- lda.mod$Rank.Wavelengths
-variables
+# 8) defining the number of variables for LDA and CMN and plot them -------
 
-# CMN ---------------------------------------------------------------------
+lim <- 100
+lda.mod1 <- fit_LDA(train.data,"Class")
+lda.mod1$Wavelengths.ranked[1:lim,]
+vars <- lda.mod1$Wavelengths.ranked
+vars.top<-lda.mod1$Wavelengths.ranked[1:lim,]$Wavelengths
+plotRestWavelengths(train.data, vars, lim , "Class")
 
-dataset <- data.frame(Type=train.data$Class, lda=pred.train$x )
-ggplot(dataset, aes(x=LD1)) + 
-  geom_density(aes(group=Type, colour=Type, fill=Type), alpha=0.3)
-
-
-lim <- 10
-selected <- Wavelengths.rank$Wavelengths[1:lim]
-selected
-
-vars <- c(1,sapply(selected,match, table = colnames(train.data) ) )
-
-train.data <- samples4.2[-ind.train,vars]
-test.data <- samples4.2[ind.train,vars]
-
-trainl<- samples4.2[-ind.train,]$Class
-testl<- samples4.2[ind.train,]$Class
+vars.top
+vars.mod <- c(sapply(c("Class",vars.top),match, table = colnames(train.data) ) )
+vars.mod
+Strain.data <- train.data[,vars.mod] #add vars
+Strain.label <- Strain.data$Class
+Stest.data <- test.data[,vars.mod]
+Stest.label <- Stest.data$Class
 
 
-test.data
-class(train.data)
-class(trainl)
-head(train.data)
+# 9) LDA with subset of variables -----------------------------------------
+
+lda.mod1 <- fit_LDA(Strain.data, "Class", Stest.data,Stest.label)
+lda.mod1$Wavelengths.ranked
+lda.mod1$error.rate
+
+lda.mod1$Cm_train
+lda.mod1$Cm_test
+
+sum(diag(lda.mod1$Cm_train))/sum(lda.mod1$Cm_train)
+1- sum(diag(lda.mod1$Cm_train))/sum(lda.mod1$Cm_train)
+
+sum(diag(lda.mod1$Cm_test))/sum(lda.mod1$Cm_test)
+1- sum(diag(lda.mod1$Cm_test))/sum(lda.mod1$Cm_test)
+
+# 10) MClust EII and VII------------------------------------------------------
+# Mclust
+tabMClust <- matrix(NA, nrow = length(models), ncol = 2)
+rownames(tabMClust) <- models
+colnames(tabMClust) <- c("Train error","Test error")
+ccmatrix <- list()
+
+for (j in 1:n.models )
+{
+  Mtrain <- mstep(Strain.data[,-1],modelName =  models[j],
+                  z= unmap(Strain.label))
+  Etrain <- estep(Mtrain$modelName,
+                  data = Strain.data[,-1], parameters = Mtrain$parameters)
+  
+  tabTrain <- table(max.col(Etrain$z,"first"),Strain.label)
+  
+  Etest <- estep(Mtrain$modelName,
+                 data = Stest.data[,-1], parameters = Mtrain$parameters)
+  
+  tabTest <- table(max.col(Etest$z, "first"), Stest.label)
+  
+  
+  tabMClust[j,1] <- sum( max.col(Etrain$z) != as.numeric(Strain.label) ) / length(Strain.label)
+  tabMClust[j,2] <- sum( max.col(Etest$z) != as.numeric(Stest.label)   ) / length(Stest.label)
+  
+  ccmatrix[[j]] <- list(tabTrain,tabTest)
+  
+}
+
+tabMClust
+
+
+# 10) CMN ---------------------------------------------------------------------
+
 component <- 2
-models 
+models <- c("EII","VII")
+n.models <- length(models)
+# error rate table 
+tabCMN <- matrix(NA, nrow = n.models , ncol = 2)
+bad.points <- list()
+estimates <- list()
+rownames(tabCMN) <- models
+colnames(tabCMN) <- c("Train","Test")
+for (m in 1:n.models)
+{
+  mod <- CNmixt(X = as.matrix(Strain.data[,-1]), G = component,
+                contamination = T,
+                model = models[m],
+                label = as.numeric(Strain.label),
+                initialization = "random.post",
+                seed = 12, parallel = F  )      
+  
+  bad.points[[m]] <- list(model = models[m], badPoins = mod$models[[1]]$detection)
+  estimates [[m]]<- list(model = models[m], alpha = mod$models[[1]]$alpha,eta = mod$models[[1]]$eta)
+  predTrain<- CNpredict(as.matrix(Strain.data[,-1]), 
+                        prior= mod$models[[1]]$prior,
+                        mu = mod$models[[1]]$mu,
+                        invSigma = mod$models[[1]]$invSigma)
 
-tab <- matrix(NA, nrow = length(models), ncol = 2)
+  tabTrain <- table(predTrain,as.numeric(Strain.label))
+  tabTrain
+  
+  tabCMN[m,1] <- sum(predTrain != as.numeric(Strain.label))/length(predTrain)
+  
+  predtest <- CNpredict(as.matrix(Stest.data[,-1]), 
+                        prior = mod$models[[1]]$prior, 
+                        mu = mod$models[[1]]$mu, 
+                        invSigma = mod$models[[1]]$invSigma)
+  
+  tabTest<- table(predtest, as.numeric(Stest.label))
+  tabCMN [m,2] <- sum(predtest != as.numeric(Stest.label))/length(predtest)
+  
+  
+}
 
-mod <- CNmixt(X = as.matrix(train.data[,-1]), G = component,
-              contamination = T,
-              model = "EII",
-              label = as.numeric(trainl),
-              initialization = "random.post",
-              seed = 12, parallel = F  )      
+tabCMN
+bad.points
+estimates
 
-predTrain<- CNpredict(as.matrix(train.data[,-1]), prior= mod$models[[1]]$prior,
-                      mu = mod$models[[1]]$mu,
-                      invSigma = mod$models[[1]]$invSigma)
 
-tabTrain <- table(predTrain,as.numeric(trainl))
-tabTrain
+# 11) Simulating bigger samples -----------------------------------------------
+nSim <- 1000
+set.seed(123)
+# Simulating Class A 
+sample4.3 <- gen(nSim, XbarPork, s1 )
+sample4.3df <- SampleToDf(sample4.3,"A")
 
-tab[1,1] <- sum(predTrain != as.numeric(trainl))/length(predTrain)
+# Simulate class B by modifying mean of class A using
+#  window size (ws) = 30, c = 0.009, shape = 4
 
-predtest <- CNpredict(as.matrix(test.data[,-1]), prior = mod$models[[1]]$prior, 
-                      mu = mod$models[[1]]$mu, 
-                      invSigma = mod$models[[1]]$invSigma)
+mu4.3 <- modMean(XbarPork,330,ws = 30,c = 0.009,shape = 4)
+sample4.4 <- gen(nSim, mu4.3[[1]], s1)
+sample4.4df <- SampleToDf(sample4.4,"B")
+samples4.3 <- rbind(sample4.3df,sample4.4df)
 
-tabTest<- table(predtest, as.numeric(testl))
-tab [1,2] <- sum(predtest != as.numeric(testl))/length(predtest)
+# Plot data
 
-tab
+ymin <- min(sample4.3,sample4.4)
+ymax <- max(sample4.3,sample4.4)
+
+plot(Wavelength, y = sample4.3df[1,-c(1:2)], ylim = c(ymin,ymax), type = "l", col = "orange",
+     main = "Class A and Class B", ylab = "Itensity")
+for (i in 2:nSim)
+  lines(Wavelength, y = sample4.3df[i,-c(1:2)],  type = "l", col = "orange")
+for (i in 1:nSim)
+  lines(Wavelength, y = sample4.4df[i,-c(1:2)],  type = "l", col = "green")
+legend("topleft", title = "Classes",legend = c("A","B"), 
+       col = c("orange","green"), lty = c(1,1), cex = 1 )
+
+
+
+# 11) QDA function -----------------------------------------------------------
+
+
+# This function is called "fit_QDA"
+# It takes 6 parameters
+# train.data:   data to train the model
+# train.label:   Contains the name of the column that contains the train.label
+# test.data:    data to test the model if it is pass as argument,
+#               but its default value is NULL
+# Outouts
+
+# Correct classification error: Table containing the correct clasification error
+# Error classification rate:    Table containing the error classification error    
+# Wavelengths:  Contains the wavelengths ordered by their absolute weights in the 1st
+#             linear discriminant function.
+fit_QDA <- function(train.data, fielClass, 
+                    test.data = NULL, test.label = NULL)
+{
+  
+  corr.class.rate <- matrix(0, nrow = 1, ncol = 2)
+  error.rate <- matrix(0, nrow = 1, ncol = 2)
+  tLDA.Test <- NULL
+  tLDA.train <- NULL
+  namecolumns <- c("train", "error")
+  colnames(corr.class.rate) <- namecolumns
+  colnames(error.rate) <- namecolumns
+  
+  #
+  x = "."
+  y = fieldClass
+  form = as.formula(paste(y, "~", x))
+  mod <- qda(form, data = train.data)
+  pred.train <- predict(mod, train.data)
+  labeled <- train.data[[y]]
+  tLDA.Train <- table(labeled, levels(labeled)[max.col(pred.train$posterior)])
+  corr.class.rate[1,1] <- sum(diag(tLDA.Train))/sum(tLDA.Train)  
+  corr.class.rate[1,2] <- NA
+  error.rate [1,1] <- 1 - sum(diag(tLDA.Train))/sum(tLDA.Train)
+  error.rate[1,2] <- NA
+  if(!( all( is.null(test.data),is.null(test.label) )) )
+  {
+    pred.test <- predict(mod, test.data)
+    tLDA.Test <- table(test.label,levels(test.label)[max.col(pred.test$posterior)])
+    corr.class.rate[1,2] <- sum(diag(tLDA.Test) )/sum(tLDA.Test)
+    error.rate[1,2] <- 1 - sum(diag(tLDA.Test) )/sum(tLDA.Test)
+  }
+  temp <- data.frame(Wavelengths = row.names(mod$scaling),
+                     Weights = apply(abs(mod$scaling),1,sum) )
+  Wavelengths<- temp[order(-temp$Weights),]
+  
+  output <- list(corr.class.rate = corr.class.rate,
+                 error.rate = error.rate,
+                 Wavelengths.ranked = Wavelengths,
+                 Cm_train = tLDA.Train, Cm_test = tLDA.Test)
+  return(output)
+}
+
+
+# 14) Split dataset in training and test ----------------------------------
+
+n <- nrow(samples4.3)
+p <- ncol(samples4.3)
+set.seed(123)
+ind.test1 <- sample(1:n,round(n/3))
+test.data1 <- samples4.3[ind.test1,-2]
+test.label1 <- samples4.3[ind.test1,]$Class
+
+train.data1 <- samples4.3[-ind.test1,-2]
+train.label1 <- samples4.3[-ind.test1,]$Class
+
+corr.class.rate1 <- matrix(0,nrow = 1, ncol = 2)
+error.rate1 <- matrix(0, nrow = 1, ncol = 2)
+colnames(corr.class.rate1) <- c("train", "test")
+colnames(error.rate1) <- c("train", "test")
+
+
+# 15) Defining number of wavelengths --------------------------------------
+
+lim <- 100
+lda.mod1 <- fit_LDA(train.data,"Class")
+lda.mod1$Wavelengths.ranked[1:lim,]
+vars <- lda.mod1$Wavelengths.ranked
+vars.top<-lda.mod1$Wavelengths.ranked[1:lim,]$Wavelengths
+plotRestWavelengths(train.data, vars, lim , "Class")
+
+vars.top
+vars.mod <- c(sapply(c("Class",vars.top),match, table = colnames(train.data) ) )
+vars.mod
+Strain.data <- train.data[,vars.mod] #add vars
+Strain.label <- Strain.data$Class
+Stest.data <- test.data[,vars.mod]
+Stest.label <- Stest.data$Class
+
+
+
+
+# 16) QDA for simulated data ----------------------------------------------
+
+qda.mod1 <- fit_LDA(Strain.data, "Class", Stest.data,Stest.label)
+lda.mod1$Wavelengths.ranked
+lda.mod1$error.rate
+
+lda.mod1$Cm_train
+lda.mod1$Cm_test
 
