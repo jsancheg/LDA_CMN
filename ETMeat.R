@@ -40,4 +40,4 @@ xbar <- apply(dfMeatWide[,-c(1:2)],2,mean)
 n <- nrow(dfMeatWide)
 p <- ncol(dfMeatWide) - 2
 
-Wavelength <- dfMeatWide %>% select_if(is.numeric) %>% colnames() %>% str_extract("\\d+")
+Wavelength <- as.numeric(dfMeatWide %>% select_if(is.numeric) %>% colnames() %>% str_extract("\\d+"))

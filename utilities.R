@@ -56,6 +56,6 @@ library(mclust)
 rm(list = ls())
 
 WorkPath <- getwd()
-source("functions.r")
+source("functions.R")
 source("load_datasets.r")
 

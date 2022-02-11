@@ -4,7 +4,7 @@
 # df_train: contanins the complete datasets including the response and explanatory variables
 # L: contains the name of the variable which contains the label information
 
-source("E:/University of Glasgow/Literature review/R Code/Food Analysis/F-test.R")
+#source("E:/University of Glasgow/Literature review/R Code/Food Analysis/F-test.R")
 
 gen <- function(nsamples,mu, sigma)
 {
