@@ -1,10 +1,188 @@
 
+
+
 # F-test 
 # ftest function(df_train, Class)
 # df_train: contanins the complete datasets including the response and explanatory variables
 # L: contains the name of the variable which contains the label information
 
 #source("E:/University of Glasgow/Literature review/R Code/Food Analysis/F-test.R")
+
+# QDA function -----------------------------------------------------------
+
+
+# This function is called "fit_QDA"
+# It takes 6 parameters
+# train.data:   data to train the model
+# train.label:   Contains the name of the column that contains the train.label
+# test.data:    data to test the model if it is pass as argument,
+#               but its default value is NULL
+# Outouts
+
+# Correct classification error: Table containing the correct classification error
+# Error classification rate:    Table containing the error classification error    
+# Wavelengths:  Contains the wavelengths ordered by their absolute weights in the 1st
+#             linear discriminant function.
+fit_QDA <- function(train.data, fieldClass, 
+                    test.data = NULL, test.label = NULL)
+{
+  
+  corr.class.rate <- matrix(0, nrow = 1, ncol = 2)
+  error.rate <- matrix(0, nrow = 1, ncol = 2)
+  tLDA.Test <- NULL
+  tLDA.train <- NULL
+  namecolumns <- c("train", "error")
+  colnames(corr.class.rate) <- namecolumns
+  colnames(error.rate) <- namecolumns
+  
+  #
+  x = "."
+  y = fieldClass
+  form = as.formula(paste(y, "~", x))
+  mod <- qda(form, data = train.data)
+  pred.train <- predict(mod, train.data)
+  labeled <- train.data[[y]]
+  tLDA.Train <- table(labeled, levels(labeled)[max.col(pred.train$posterior)])
+  corr.class.rate[1,1] <- sum(diag(tLDA.Train))/sum(tLDA.Train)  
+  corr.class.rate[1,2] <- NA
+  error.rate [1,1] <- 1 - sum(diag(tLDA.Train))/sum(tLDA.Train)
+  error.rate[1,2] <- NA
+  if(!( all( is.null(test.data),is.null(test.label) )) )
+  {
+    pred.test <- predict(mod, test.data)
+    tLDA.Test <- table(test.label,levels(test.label)[max.col(pred.test$posterior)])
+    corr.class.rate[1,2] <- sum(diag(tLDA.Test) )/sum(tLDA.Test)
+    error.rate[1,2] <- 1 - sum(diag(tLDA.Test) )/sum(tLDA.Test)
+  }
+  temp <- data.frame(Wavelengths = row.names(mod$scaling),
+                     Weights = apply(abs(mod$scaling),1,sum) )
+  Wavelengths<- temp[order(-temp$Weights),]
+  
+  output <- list(corr.class.rate = corr.class.rate,
+                 error.rate = error.rate,
+                 Wavelengths.ranked = Wavelengths,
+                 Cm_train = tLDA.Train, Cm_test = tLDA.Test)
+  return(output)
+}
+
+# 6) Plot the spectra of samples using a certain number of wavelengths --------
+
+# This declares function  called "plotRestWavelengths" 
+# It takes three arguments, 
+#  X:                : a matrix or dataframe which contains the entire 
+#                      range of wavelengths
+#  Wavelengths.walk  : character vector with the name wavelengths ordered 
+#                      by their importance on the 1st discriminant analysis function
+#  nw:               : Number of wavelengths to take in account from the vector wavelengths
+#  fieldClass        : Name of the class that contains class information for each
+#                      observation        
+#  Output            : Plot the spectra of observations restricted a group of
+#                      wavelengths
+
+plotRestWavelengths <- function(X,Wavelengths.rank,nw = 50,fieldClass)
+{
+  # no numeric variables
+  varsChar <- X %>% select_if(negate(is.numeric)) %>% colnames
+  # Numeric variables
+  if(is.vector(Wavelengths.rank)) stop("Wavelengths has to be a matrix or dataframe containing two column Wavelengt and LD1-weight")
+  varsNum <- Wavelengths.rank[1:nw,1]
+  varsNum <- sort(varsNum) # order numeric variables in order to plot charts
+  nclasses <- table(X[fieldClass])
+  nameClasses <- names(nclasses)
+  
+  
+  if(length(nameClasses)!=2) stop("The function is design for only 2 classes")
+  
+  
+  vars <- c(varsChar,varsNum)
+  vars 
+  
+  Xsub <- X %>% select(all_of(vars))
+  indNum <- sapply(varsNum, match, table = colnames(Xsub))
+  
+  
+  ymin <- min(Xsub[,indNum])
+  ymax <- max(Xsub[,indNum])
+  
+  indclass1 <- Xsub[fieldClass]== nameClasses[1]
+  SubClass1 <- Xsub[indclass1,]
+  
+  indclass2 <- Xsub[fieldClass] == nameClasses[2]
+  SubClass2 <- Xsub[indclass2,]
+  
+  x = str_extract(varsNum,"\\d+")
+  
+  plot(x, y = SubClass1[1,indNum], ylim = c(ymin,ymax), type = "l", col = "orange",
+       main = "Class A and Class B for restricted number of wavelengths", ylab = "Itensity")
+  for (i in 2:nrow(SubClass1))
+    lines(x, y = SubClass1[i,indNum], ylim = c(ymin,ymax), type = "l", col = "orange")
+  for (i in 1:nrow(SubClass2))
+    lines(x, y = SubClass2[i,indNum], ylim = c(ymin,ymax), type = "l", col = "green")
+  legend("topright", title = "Classes",legend = c("A","B"), 
+         col = c("orange","green"), lty = c(1,1), cex = 0.7 )
+  
+}
+
+
+
+
+
+#  LDA function returning wavelengths with high absolute weights --------
+#
+# This function is called "fit_LDA"
+# It takes 6 parameters
+# train.data:   data to train the model
+# train.label:   Contains the name of the column that contains the train.label
+# test.data:    data to test the model if it is pass as argument,
+#               but its default value is NULL
+# Outouts
+
+# Correct classification error: Table containing the correct clasification error
+# Error classification rate:    Table containing the error classification error    
+# Wavelengths:  Contains the wavelengths ordered by their absolute weights in the 1st
+#             linear discriminant function.
+fit_LDA <- function(train.data, fieldClass, 
+                    test.data = NULL, test.label = NULL)
+{
+  
+  corr.class.rate <- matrix(0, nrow = 1, ncol = 2)
+  error.rate <- matrix(0, nrow = 1, ncol = 2)
+  tLDA.Test <- NULL
+  tLDA.train <- NULL
+  namecolumns <- c("train", "error")
+  colnames(corr.class.rate) <- namecolumns
+  colnames(error.rate) <- namecolumns
+  
+  #
+  x = "."
+  y = fieldClass
+  form = as.formula(paste(y, "~", x))
+  mod <- lda(form, data = train.data)
+  pred.train <- predict(mod, train.data)
+  labeled <- train.data[[y]]
+  tLDA.Train <- table(labeled, levels(labeled)[max.col(pred.train$posterior)])
+  corr.class.rate[1,1] <- sum(diag(tLDA.Train))/sum(tLDA.Train)  
+  corr.class.rate[1,2] <- NA
+  error.rate [1,1] <- 1 - sum(diag(tLDA.Train))/sum(tLDA.Train)
+  error.rate[1,2] <- NA
+  if(!( all( is.null(test.data),is.null(test.label) )) )
+  {
+    pred.test <- predict(mod, test.data)
+    tLDA.Test <- table(test.label,levels(test.label)[max.col(pred.test$posterior)])
+    corr.class.rate[1,2] <- sum(diag(tLDA.Test) )/sum(tLDA.Test)
+    error.rate[1,2] <- 1 - sum(diag(tLDA.Test) )/sum(tLDA.Test)
+  }
+  temp <- data.frame(Wavelengths = row.names(mod$scaling),
+                     Weights = apply(abs(mod$scaling),1,sum) )
+  Wavelengths<- temp[order(-temp$Weights),]
+  
+  output <- list(corr.class.rate = corr.class.rate,
+                 error.rate = error.rate,
+                 Wavelengths.ranked = Wavelengths,
+                 Cm_train = tLDA.Train, Cm_test = tLDA.Test)
+  return(output)
+}
+
 
 gen <- function(nsamples,mu, sigma)
 {
