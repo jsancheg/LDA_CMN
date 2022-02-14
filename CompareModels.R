@@ -144,7 +144,8 @@ pred.LD1 <-rep("B",nrow(train.data))
 pred.LD1[pred.train$x < -5] <- "A"
 sum(pred.LD1!=train.data$Class)
 
-plot(x = Wavelength, y = lda.fit$scaling, type = "l")
+plot(x = Wavelength, y = lda.fit$scaling, type = "l", 
+     ylab = "Loadings")
 
 temp <- data.frame(Wavelengths = rownames(lda.fit$scaling), 
                    Weights = abs(lda.fit$scaling) ) 
@@ -325,31 +326,40 @@ colnames(error.rate1) <- c("train", "test")
 
 
 # 15) Defining number of wavelengths --------------------------------------
-
-lim1 <- c(seq(25,155,10),156)
 qda.mod1 <- fit_QDA(train.data1, "Class")
-qda.mod1$Wavelengths.ranked[1:lim1,]
 vars1 <- qda.mod1$Wavelengths.ranked
-vars.top<-lda.mod1$Wavelengths.ranked[1:lim,]$Wavelengths
-plotRestWavelengths(train.data, vars, lim , "Class")
-
-vars.top
-vars.mod <- c(sapply(c("Class",vars.top),match, table = colnames(train.data) ) )
-vars.mod
-Strain.data <- train.data[,vars.mod] #add vars
-Strain.label <- Strain.data$Class
-Stest.data <- test.data[,vars.mod]
-Stest.label <- Stest.data$Class
+lim1 <- c(seq(25,155,10),156,seq(160,440,10))
+resQDA <- array(NA,dim =c(length(lim1),2,2))
 
 
+dimnames(resQDA) <- list(lim1,c("train","error"),
+                         c("error rate","Correct classification rate"))
+
+for (l in 1:length(lim1))
+{
+  qda.mod1$Wavelengths.ranked[1:lim1[l],]
+  vars.top<-qda.mod1$Wavelengths.ranked[1:lim1[l],]$Wavelengths
+  plotRestWavelengths(train.data1, vars1, lim1[l] , "Class")
+  
+  vars.top
+  vars.mod <- c(sapply(c("Class",vars.top),match, table = colnames(train.data) ) )
+  vars.mod
+  Strain.data <- train.data[,vars.mod] #add vars
+  Strain.label <- Strain.data$Class
+  Stest.data <- test.data[,vars.mod]
+  Stest.label <- Stest.data$Class
+  qda.mod2 <- fit_LDA(Strain.data, "Class", Stest.data,Stest.label)
+  qda.mod2$Wavelengths.ranked
+  qda.mod2$error.rate
+  qda.mod2$Cm_train
+  qda.mod2$Cm_test
+  resQDA[l,,1] <- qda.mod2$error.rate
+  resQDA[l,,2] <- qda.mod2$corr.class.rate
+}
+
+resQDA
 
 
 # 16) QDA for simulated data ----------------------------------------------
 
-qda.mod2 <- fit_LDA(Strain.data, "Class", Stest.data,Stest.label)
-qda.mod2$Wavelengths.ranked
-qda.mod2$error.rate
-
-qda.mod2$Cm_train
-qda.mod2$Cm_test
 
