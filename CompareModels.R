@@ -197,6 +197,60 @@ sum(diag(lda.mod$Cm_test))/sum(lda.mod$Cm_test)
 
 # 10) MClust EII and VII------------------------------------------------------
 # Mclust
+
+fit_EDDA <- function(train,trainl,test, testl, models, components)
+{
+  if(!is.matrix(train)) train <- as.matrix(train)
+  if(!is.matrix(test)) test <- as.matrix(test)
+  if(!is.numeric(trainl)) trainl <- as.numeric(trainl)
+  if(!is.numeric(testl)) testl <- as.numeric(testl)
+  
+  n.models <- length(models)
+  corr.class.rate <- matrix(0, nrow = n.models, ncol = 2)
+  error.rate <- matrix(0, nrow = n.models, ncol = 2)
+  
+  rownames(corr.class.rate) <- models
+  rownames(error.rate) <- models
+  
+  colnames(corr.class.rate) <- c("train", "test")
+  colnames(error.rate) <- c("train","test")
+  
+  ccmatrix <- list()
+  
+  for (m in 1:n.models)
+  {
+    Mtrain <- mstep(train,modelName =  models[m],
+                    z= unmap(trainl))
+    
+    Etrain <- estep(Mtrain$modelName,
+                    data = train, parameters = Mtrain$parameters)
+    
+    tabTrain <- table(trainl,max.col(Etrain$z,"first"))
+    
+    
+    Etest <- estep(Mtrain$modelName,
+                   data = test, parameters = Mtrain$parameters)
+    
+    tabTest <- table(testl,max.col(Etest$z, "first"))
+    
+    error.rate[m,1] <- sum( max.col(Etrain$z) != as.numeric(Strain.label) ) / length(Strain.label)
+    error.rate[m,2] <- sum( max.col(Etest$z) != as.numeric(Stest.label)   ) / length(Stest.label)
+    corr.class.rate[m,1] <- 1 - corr.class.rate[m,1]
+    corr.class.rate[m,2] <- 1 - corr.class.rate[m,2]
+    
+    ccmatrix[[m]] <- list(tabTrain = tabTrain, tabTest = tabTest,parameters = Etest$parameters)
+
+  }
+    output <- list(corr.class.rate = corr.class.rate,
+                   error.rate = error.rate,
+                   par = ccmatrix)  
+    return(output)
+}
+
+component <- 2
+models <- c("EII","VII")
+n.models <- length(models)
+
 tabMClust <- matrix(NA, nrow = length(models), ncol = 2)
 rownames(tabMClust) <- models
 colnames(tabMClust) <- c("Train error","Test error")
@@ -229,9 +283,6 @@ tabMClust
 
 # 10) CMN ---------------------------------------------------------------------
 
-component <- 2
-models <- c("EII","VII")
-n.models <- length(models)
 # error rate table 
 tabCMN <- matrix(NA, nrow = n.models , ncol = 2)
 bad.points <- list()
@@ -273,6 +324,84 @@ for (m in 1:n.models)
 tabCMN
 bad.points
 estimates
+
+
+fit_CMN <- function(train,trainl,test,testl,component,models,
+                    contamination = T, initialization = "random.post",
+                    parallel = F)
+{
+  if(!is.matrix(train)) train <- as.matrix(train)
+  if(!is.matrix(test)) test <- as.matrix(test)
+  if(!is.numeric(trainl)) trainl <- as.numeric(trainl)
+  if(!is.numeric(testl)) testl <- as.numeric(testl)
+  output <- list()
+  
+  
+  n.models <- length(models)
+  corr.class.rate <- matrix(0, nrow = n.models, ncol = 2)
+  error.rate <- matrix(0, nrow = n.models, ncol = 2)
+  
+  rownames(corr.class.rate) <- models
+  rownames(error.rate) <- models
+  
+  colnames(corr.class.rate) <- c("train", "test")
+  colnames(error.rate) <- c("train","test")
+  
+  ccmatrix <- list()
+
+  tabCMN <- matrix(NA, nrow = n.models , ncol = 2)
+  bad.points <- list()
+  estimates <- list()
+  rownames(tabCMN) <- models
+  colnames(tabCMN) <- c("Train","Test")
+  
+  for (m in 1:n.models)
+  {
+    mod <- CNmixt(X = train, G = component,
+                  contamination = contamination,
+                  model = models[m],
+                  label = trainl,
+                  initialization = initialization,
+                  seed = 12, parallel = parallel  )      
+    
+    bad.points[[m]] <- list(model = models[m], 
+                            badPoins = mod$models[[1]]$detection)
+    
+    estimates[[m]]<- list(model = models[m], 
+                          alpha = mod$models[[1]]$alpha,
+                          eta = mod$models[[1]]$eta)
+
+    predTrain<- CNpredict(train, 
+                          prior= mod$models[[1]]$prior,
+                          mu = mod$models[[1]]$mu,
+                          invSigma = mod$models[[1]]$invSigma)
+    
+    tabTrain <- table(trainl,predTrain)
+    tabTrain
+    
+    error.rate[m,1] <- sum(predTrain != trainl)/length(predTrain)
+    corr.class.rate[m,1] <- 1- error.rate[m,1]
+    predtest <- CNpredict(test, 
+                          prior = mod$models[[1]]$prior, 
+                          mu = mod$models[[1]]$mu, 
+                          invSigma = mod$models[[1]]$invSigma)
+    
+    tabTest<- table(testl,predtest)
+    error.rate [m,2] <- sum(predtest != as.numeric(testl))/length(predtest)
+    corr.class.rate[m,2] <- 1- error.rate[m,2]
+    
+    output[[m]] <- list(error.rate = error.rate,  
+                        corr.class.rate = corr.class.rate,
+                        Cm.train = tabTrain,
+                        Cm.test = tabTest,
+                        par = estimates[[m]],
+                        bad.points = bad.points [[m]]) 
+    
+    
+  }
+    return(output)
+}
+
 
 
 # 11) Simulating bigger samples -----------------------------------------------
@@ -326,40 +455,107 @@ colnames(error.rate1) <- c("train", "test")
 
 
 # 15) Defining number of wavelengths --------------------------------------
+contamination = T
+initialization = "random.post"
+parallel = F
+
 qda.mod1 <- fit_QDA(train.data1, "Class")
+cbind(qda.mod1$Wavelengths.ranked$Wavelengths,lda.mod1$Wavelengths.ranked$Wavelengths)
+vars.lda <- lda.mod1$Wavelengths.ranked
 vars1 <- qda.mod1$Wavelengths.ranked
 lim1 <- c(seq(25,155,10),156,seq(160,440,10))
+lim1 <- seq(25,425,25)
+lim1 <- seq(115,120,1)
 resQDA <- array(NA,dim =c(length(lim1),2,2))
+resLDA <- array(NA, dim = c(length(lim1),2,2))
+resMClust <- array(NA, dim = c(length(lim1),2,2,n.models))
+resCMN <- array(NA, dim = c(length(lim1),2,2,n.models))
 
 
-dimnames(resQDA) <- list(lim1,c("train","error"),
+dimnames(resQDA) <- list(lim1,c("train","test"),
                          c("error rate","Correct classification rate"))
+dimnames(resLDA) <- list(lim1,c("train","test"),
+                         c("error rate","Correct classification rate"))
+if(length(models)>1)
+{
+  dimnames(resMClust) <- list(lim1,c("train","test"),
+                              c("error rate","Correct classification rate"),
+                              models)
+  
+}else 
+{
+  dimnames(resMClust) <- list(lim1,c("train","test"),
+                              c("error rate","Correct classification rate"))
+}
+  
+  
+dimnames(resCMN) <- list(lim1,c("train","test"),
+                            c("error rate","Correct classification rate"),
+                            models)
+
 
 for (l in 1:length(lim1))
 {
-  qda.mod1$Wavelengths.ranked[1:lim1[l],]
-  vars.top<-qda.mod1$Wavelengths.ranked[1:lim1[l],]$Wavelengths
-  plotRestWavelengths(train.data1, vars1, lim1[l] , "Class")
+  vars.top.qda <-qda.mod1$Wavelengths.ranked[1:lim1[l],]$Wavelengths
+  vars.top<-lda.mod1$Wavelengths.ranked[1:lim1[l],]$Wavelengths
+  #plotRestWavelengths(train.data1, vars1, lim1[l] , "Class")
   
   vars.top
-  vars.mod <- c(sapply(c("Class",vars.top),match, table = colnames(train.data) ) )
-  vars.mod
-  Strain.data <- train.data[,vars.mod] #add vars
+  vars.top.qda
+  vars.mod <- c(sapply(c("Class",vars.top),match, table = colnames(train.data1) ) )
+  vars.mod.qda <- c(sapply(c("Class",vars.top.qda),match, table = colnames(train.data1) ) )
+  Strain.data <- train.data1[,vars.mod] #add vars
   Strain.label <- Strain.data$Class
-  Stest.data <- test.data[,vars.mod]
+  Stest.data <- test.data1[,vars.mod]
   Stest.label <- Stest.data$Class
-  qda.mod2 <- fit_LDA(Strain.data, "Class", Stest.data,Stest.label)
-  qda.mod2$Wavelengths.ranked
-  qda.mod2$error.rate
+  
+  Strain.data.qda <- train.data1[,vars.mod.qda] #add vars
+  Strain.label.qda <- Strain.data$Class
+  Stest.data.qda <- test.data1[,vars.mod.qda]
+  Stest.label.qda <- Stest.data$Class
+  
+  qda.mod2 <- fit_QDA(Strain.data.qda, "Class", Stest.data.qda,Stest.label.qda)
+  lda.mod2 <- fit_LDA(Strain.data, "Class", Stest.data,Stest.label)
+  EDDA.mod2 <- fit_EDDA(Strain.data[,-1],Strain.data$Class,
+                        Stest.data[,-1],Stest.data$Class,
+                        models,components = 2)
+  cat("\n", "variables = ",lim1[l])
+  v1 <- tryCatch({
+    CMN.mod2 <- fit_CMN(Strain.data[,-1],Strain.data$Class,
+                      Stest.data[,-1],Stest.data$Class,
+                      component = 2, models = models,
+                      contamination = contamination, 
+                      initialization = initialization,
+                      parallel = parallel)
+  }, error = function(err)
+  {
+    print(paste("Error: ", err))
+  })
+  
   qda.mod2$Cm_train
   qda.mod2$Cm_test
+  
   resQDA[l,,1] <- qda.mod2$error.rate
   resQDA[l,,2] <- qda.mod2$corr.class.rate
+  resLDA[l,,1] <- lda.mod2$error.rate
+  resLDA[l,,2] <- lda.mod2$corr.class.rate
+
+  for(m in 1:n.models)
+  {
+    # error rate
+    resMClust[l,,1,m] <- EDDA.mod2$error.rate[m,]
+    # correct classification rate
+    resMClust[l,,2,m] <- EDDA.mod2$corr.class.rate[m,]
+    resCMN[l,,1,] <- t(CMN.mod2[[m]]$error.rate)
+    resCMN[l,,2,] <- t(CMN.mod2[[m]]$corr.class.rate)
+    
+  }
 }
 
-resQDA
-
-
+round(resLDA,2)
+round(resQDA,2)
+round(resMClust,2)
+round(resCMN,2)
 # 16) QDA for simulated data ----------------------------------------------
 
 
