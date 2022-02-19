@@ -8,6 +8,76 @@
 
 #source("E:/University of Glasgow/Literature review/R Code/Food Analysis/F-test.R")
 
+# This function is called "fit_EDDA"
+# It takes 6 parameters
+# train:   data to train the model
+# trainl:  Contains the column containing the label of the observations 
+#           in the train set
+# test:    data to test the model 
+# testl:   Contains the column containing the label of the observation
+#          in the test set
+# models:  a vector contining the models to be fitted
+# components: a variable containing the number of components to be used
+# Output:
+# Correct classification error: Table containing the correct classification error
+# Error classification rate:    Table containing the error classification error    
+# par:  A list that contains: 
+#       Cm_train:   Confusion matrix of train set
+#       Cm_test:    Confusion matrix of test set
+#       Parameters: parameters of the model
+
+
+fit_EDDA <- function(train,trainl,test, testl, models, components)
+{
+  if(!is.matrix(train)) train <- as.matrix(train)
+  if(!is.matrix(test)) test <- as.matrix(test)
+  if(!is.numeric(trainl)) trainl <- as.numeric(trainl)
+  if(!is.numeric(testl)) testl <- as.numeric(testl)
+  
+  n.models <- length(models)
+  corr.class.rate <- matrix(0, nrow = n.models, ncol = 2)
+  error.rate <- matrix(0, nrow = n.models, ncol = 2)
+  
+  rownames(corr.class.rate) <- models
+  rownames(error.rate) <- models
+  
+  colnames(corr.class.rate) <- c("train", "test")
+  colnames(error.rate) <- c("train","test")
+  
+  ccmatrix <- list()
+  
+  for (m in 1:n.models)
+  {
+    Mtrain <- mstep(train,modelName =  models[m],
+                    z= unmap(trainl))
+    
+    Etrain <- estep(Mtrain$modelName,
+                    data = train, parameters = Mtrain$parameters)
+    
+    tabTrain <- table(trainl,max.col(Etrain$z,"first"))
+    
+    
+    Etest <- estep(Mtrain$modelName,
+                   data = test, parameters = Mtrain$parameters)
+    
+    tabTest <- table(testl,max.col(Etest$z, "first"))
+    
+    error.rate[m,1] <- sum( max.col(Etrain$z) != as.numeric(Strain.label) ) / length(Strain.label)
+    error.rate[m,2] <- sum( max.col(Etest$z) != as.numeric(Stest.label)   ) / length(Stest.label)
+    corr.class.rate[m,1] <- 1 - corr.class.rate[m,1]
+    corr.class.rate[m,2] <- 1 - corr.class.rate[m,2]
+    
+    ccmatrix[[m]] <- list(Cm.train = tabTrain, Cm.test = tabTest,parameters = Etest$parameters)
+    
+  }
+  output <- list(corr.class.rate = corr.class.rate,
+                 error.rate = error.rate,
+                 par = ccmatrix)  
+  return(output)
+}
+
+
+
 # QDA function -----------------------------------------------------------
 
 
@@ -23,14 +93,16 @@
 # Error classification rate:    Table containing the error classification error    
 # Wavelengths:  Contains the wavelengths ordered by their absolute weights in the 1st
 #             linear discriminant function.
+# Cm_train:   Confusion matrix of train set
+# Cm_test:    Confusion matrix of test set
 fit_QDA <- function(train.data, fieldClass, 
                     test.data = NULL, test.label = NULL)
 {
   
   corr.class.rate <- matrix(0, nrow = 1, ncol = 2)
   error.rate <- matrix(0, nrow = 1, ncol = 2)
-  tLDA.Test <- NULL
-  tLDA.train <- NULL
+  tQDA.test <- NULL
+  tQDA.train <- NULL
   namecolumns <- c("train", "error")
   colnames(corr.class.rate) <- namecolumns
   colnames(error.rate) <- namecolumns
@@ -42,17 +114,17 @@ fit_QDA <- function(train.data, fieldClass,
   mod <- qda(form, data = train.data)
   pred.train <- predict(mod, train.data)
   labeled <- train.data[[y]]
-  tLDA.Train <- table(labeled, levels(labeled)[max.col(pred.train$posterior)])
-  corr.class.rate[1,1] <- sum(diag(tLDA.Train))/sum(tLDA.Train)  
+  tQDA.train <- table(labeled, levels(labeled)[max.col(pred.train$posterior)])
+  corr.class.rate[1,1] <- sum(diag(tQDA.train))/sum(tQDA.train)  
   corr.class.rate[1,2] <- NA
-  error.rate [1,1] <- 1 - sum(diag(tLDA.Train))/sum(tLDA.Train)
+  error.rate [1,1] <- 1 - sum(diag(tQDA.train))/sum(tQDA.train)
   error.rate[1,2] <- NA
   if(!( all( is.null(test.data),is.null(test.label) )) )
   {
     pred.test <- predict(mod, test.data)
-    tLDA.Test <- table(test.label,levels(test.label)[max.col(pred.test$posterior)])
-    corr.class.rate[1,2] <- sum(diag(tLDA.Test) )/sum(tLDA.Test)
-    error.rate[1,2] <- 1 - sum(diag(tLDA.Test) )/sum(tLDA.Test)
+    tQDA.test <- table(test.label,levels(test.label)[max.col(pred.test$posterior)])
+    corr.class.rate[1,2] <- sum(diag(tQDA.test) )/sum(tQDA.test)
+    error.rate[1,2] <- 1 - sum(diag(tQDA.test) )/sum(tQDA.test)
   }
   temp <- data.frame(Wavelengths = row.names(mod$scaling),
                      Weights = apply(abs(mod$scaling),1,sum) )
@@ -61,7 +133,7 @@ fit_QDA <- function(train.data, fieldClass,
   output <- list(corr.class.rate = corr.class.rate,
                  error.rate = error.rate,
                  Wavelengths.ranked = Wavelengths,
-                 Cm_train = tLDA.Train, Cm_test = tLDA.Test)
+                 Cm.train = tQDA.train, Cm.test = tQDA.test)
   return(output)
 }
 
@@ -179,7 +251,7 @@ fit_LDA <- function(train.data, fieldClass,
   output <- list(corr.class.rate = corr.class.rate,
                  error.rate = error.rate,
                  Wavelengths.ranked = Wavelengths,
-                 Cm_train = tLDA.Train, Cm_test = tLDA.Test)
+                 Cm.train = tLDA.Train, Cm.test = tLDA.Test)
   return(output)
 }
 

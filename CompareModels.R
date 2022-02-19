@@ -198,55 +198,6 @@ sum(diag(lda.mod$Cm_test))/sum(lda.mod$Cm_test)
 # 10) MClust EII and VII------------------------------------------------------
 # Mclust
 
-fit_EDDA <- function(train,trainl,test, testl, models, components)
-{
-  if(!is.matrix(train)) train <- as.matrix(train)
-  if(!is.matrix(test)) test <- as.matrix(test)
-  if(!is.numeric(trainl)) trainl <- as.numeric(trainl)
-  if(!is.numeric(testl)) testl <- as.numeric(testl)
-  
-  n.models <- length(models)
-  corr.class.rate <- matrix(0, nrow = n.models, ncol = 2)
-  error.rate <- matrix(0, nrow = n.models, ncol = 2)
-  
-  rownames(corr.class.rate) <- models
-  rownames(error.rate) <- models
-  
-  colnames(corr.class.rate) <- c("train", "test")
-  colnames(error.rate) <- c("train","test")
-  
-  ccmatrix <- list()
-  
-  for (m in 1:n.models)
-  {
-    Mtrain <- mstep(train,modelName =  models[m],
-                    z= unmap(trainl))
-    
-    Etrain <- estep(Mtrain$modelName,
-                    data = train, parameters = Mtrain$parameters)
-    
-    tabTrain <- table(trainl,max.col(Etrain$z,"first"))
-    
-    
-    Etest <- estep(Mtrain$modelName,
-                   data = test, parameters = Mtrain$parameters)
-    
-    tabTest <- table(testl,max.col(Etest$z, "first"))
-    
-    error.rate[m,1] <- sum( max.col(Etrain$z) != as.numeric(Strain.label) ) / length(Strain.label)
-    error.rate[m,2] <- sum( max.col(Etest$z) != as.numeric(Stest.label)   ) / length(Stest.label)
-    corr.class.rate[m,1] <- 1 - corr.class.rate[m,1]
-    corr.class.rate[m,2] <- 1 - corr.class.rate[m,2]
-    
-    ccmatrix[[m]] <- list(tabTrain = tabTrain, tabTest = tabTest,parameters = Etest$parameters)
-
-  }
-    output <- list(corr.class.rate = corr.class.rate,
-                   error.rate = error.rate,
-                   par = ccmatrix)  
-    return(output)
-}
-
 component <- 2
 models <- c("EII","VII")
 n.models <- length(models)
@@ -324,6 +275,26 @@ for (m in 1:n.models)
 tabCMN
 bad.points
 estimates
+
+# CMN function -----------------------------------------------------------
+
+
+# This function is called "fit_CMN"
+# It takes 9 parameters
+# train:     data to train the model
+# trainl:    Contains the column that contains the train label
+# test:      data to test the model if it is pass as argument
+# testl:     Contains the column that contains the test label   
+# component: Number of components
+# models:    Models that are going to be considered
+# contamination: boolean variable that contains if there is contamination or not
+# initialization: methods of initialization of the first estimates
+# parallel:       boolean variable that indicate if parallel computation should be used
+# Output: 
+# Correct classification error: Table containing the correct classification error
+# Error classification rate:    Table containing the error classification error    
+# Wavelengths:  Contains the wavelengths ordered by their absolute weights in the 1st
+#             linear discriminant function.
 
 
 fit_CMN <- function(train,trainl,test,testl,component,models,
@@ -498,7 +469,7 @@ for (l in 1:length(lim1))
 {
   vars.top.qda <-qda.mod1$Wavelengths.ranked[1:lim1[l],]$Wavelengths
   vars.top<-lda.mod1$Wavelengths.ranked[1:lim1[l],]$Wavelengths
-  #plotRestWavelengths(train.data1, vars1, lim1[l] , "Class")
+  # plotRestWavelengths(train.data1, vars1, lim1[l] , "Class")
   
   vars.top
   vars.top.qda
