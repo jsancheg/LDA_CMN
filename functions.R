@@ -8,6 +8,103 @@
 
 #source("E:/University of Glasgow/Literature review/R Code/Food Analysis/F-test.R")
 
+
+
+# This function is called "fit_CMN"
+# It takes 9 parameters
+# train:     data to train the model
+# trainl:    Contains the column that contains the train label
+# test:      data to test the model if it is pass as argument
+# testl:     Contains the column that contains the test label   
+# component: Number of components
+# models:    Models that are going to be considered
+# contamination: boolean variable that contains if there is contamination or not
+# initialization: methods of initialization of the first estimates
+# parallel:       boolean variable that indicate if parallel computation should be used
+# Output: 
+# Correct classification error: Table containing the correct classification error
+# Error classification rate:    Table containing the error classification error    
+# Wavelengths:  Contains the wavelengths ordered by their absolute weights in the 1st
+#             linear discriminant function.
+
+
+fit_CMN <- function(train,trainl,test,testl,component,models,
+                    contamination = T, initialization = "random.post",
+                    parallel = F)
+{
+  if(!is.matrix(train)) train <- as.matrix(train)
+  if(!is.matrix(test)) test <- as.matrix(test)
+  if(!is.numeric(trainl)) trainl <- as.numeric(trainl)
+  if(!is.numeric(testl)) testl <- as.numeric(testl)
+  output <- list()
+  
+  
+  n.models <- length(models)
+  corr.class.rate <- matrix(0, nrow = n.models, ncol = 2)
+  error.rate <- matrix(0, nrow = n.models, ncol = 2)
+  
+  rownames(corr.class.rate) <- models
+  rownames(error.rate) <- models
+  
+  colnames(corr.class.rate) <- c("train", "test")
+  colnames(error.rate) <- c("train","test")
+  
+  ccmatrix <- list()
+  
+  tabCMN <- matrix(NA, nrow = n.models , ncol = 2)
+  bad.points <- list()
+  estimates <- list()
+  rownames(tabCMN) <- models
+  colnames(tabCMN) <- c("Train","Test")
+  
+  for (m in 1:n.models)
+  {
+    mod <- CNmixt(X = train, G = component,
+                  contamination = contamination,
+                  model = models[m],
+                  label = trainl,
+                  initialization = initialization,
+                  seed = 12, parallel = parallel  )      
+    
+    bad.points[[m]] <- list(model = models[m], 
+                            badPoins = mod$models[[1]]$detection)
+    
+    estimates[[m]]<- list(model = models[m], 
+                          alpha = mod$models[[1]]$alpha,
+                          eta = mod$models[[1]]$eta)
+    
+    predTrain<- CNpredict(train, 
+                          prior= mod$models[[1]]$prior,
+                          mu = mod$models[[1]]$mu,
+                          invSigma = mod$models[[1]]$invSigma)
+    
+    tabTrain <- table(trainl,predTrain)
+    tabTrain
+    
+    error.rate[m,1] <- sum(predTrain != trainl)/length(predTrain)
+    corr.class.rate[m,1] <- 1- error.rate[m,1]
+    predtest <- CNpredict(test, 
+                          prior = mod$models[[1]]$prior, 
+                          mu = mod$models[[1]]$mu, 
+                          invSigma = mod$models[[1]]$invSigma)
+    
+    tabTest<- table(testl,predtest)
+    error.rate [m,2] <- sum(predtest != as.numeric(testl))/length(predtest)
+    corr.class.rate[m,2] <- 1- error.rate[m,2]
+    
+    output[[m]] <- list(error.rate = error.rate,  
+                        corr.class.rate = corr.class.rate,
+                        Cm.train = tabTrain,
+                        Cm.test = tabTest,
+                        par = estimates[[m]],
+                        bad.points = bad.points [[m]]) 
+    
+    
+  }
+  return(output)
+}
+
+
 # This function is called "fit_EDDA"
 # It takes 6 parameters
 # train:   data to train the model

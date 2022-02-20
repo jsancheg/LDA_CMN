@@ -279,100 +279,6 @@ estimates
 # CMN function -----------------------------------------------------------
 
 
-# This function is called "fit_CMN"
-# It takes 9 parameters
-# train:     data to train the model
-# trainl:    Contains the column that contains the train label
-# test:      data to test the model if it is pass as argument
-# testl:     Contains the column that contains the test label   
-# component: Number of components
-# models:    Models that are going to be considered
-# contamination: boolean variable that contains if there is contamination or not
-# initialization: methods of initialization of the first estimates
-# parallel:       boolean variable that indicate if parallel computation should be used
-# Output: 
-# Correct classification error: Table containing the correct classification error
-# Error classification rate:    Table containing the error classification error    
-# Wavelengths:  Contains the wavelengths ordered by their absolute weights in the 1st
-#             linear discriminant function.
-
-
-fit_CMN <- function(train,trainl,test,testl,component,models,
-                    contamination = T, initialization = "random.post",
-                    parallel = F)
-{
-  if(!is.matrix(train)) train <- as.matrix(train)
-  if(!is.matrix(test)) test <- as.matrix(test)
-  if(!is.numeric(trainl)) trainl <- as.numeric(trainl)
-  if(!is.numeric(testl)) testl <- as.numeric(testl)
-  output <- list()
-  
-  
-  n.models <- length(models)
-  corr.class.rate <- matrix(0, nrow = n.models, ncol = 2)
-  error.rate <- matrix(0, nrow = n.models, ncol = 2)
-  
-  rownames(corr.class.rate) <- models
-  rownames(error.rate) <- models
-  
-  colnames(corr.class.rate) <- c("train", "test")
-  colnames(error.rate) <- c("train","test")
-  
-  ccmatrix <- list()
-
-  tabCMN <- matrix(NA, nrow = n.models , ncol = 2)
-  bad.points <- list()
-  estimates <- list()
-  rownames(tabCMN) <- models
-  colnames(tabCMN) <- c("Train","Test")
-  
-  for (m in 1:n.models)
-  {
-    mod <- CNmixt(X = train, G = component,
-                  contamination = contamination,
-                  model = models[m],
-                  label = trainl,
-                  initialization = initialization,
-                  seed = 12, parallel = parallel  )      
-    
-    bad.points[[m]] <- list(model = models[m], 
-                            badPoins = mod$models[[1]]$detection)
-    
-    estimates[[m]]<- list(model = models[m], 
-                          alpha = mod$models[[1]]$alpha,
-                          eta = mod$models[[1]]$eta)
-
-    predTrain<- CNpredict(train, 
-                          prior= mod$models[[1]]$prior,
-                          mu = mod$models[[1]]$mu,
-                          invSigma = mod$models[[1]]$invSigma)
-    
-    tabTrain <- table(trainl,predTrain)
-    tabTrain
-    
-    error.rate[m,1] <- sum(predTrain != trainl)/length(predTrain)
-    corr.class.rate[m,1] <- 1- error.rate[m,1]
-    predtest <- CNpredict(test, 
-                          prior = mod$models[[1]]$prior, 
-                          mu = mod$models[[1]]$mu, 
-                          invSigma = mod$models[[1]]$invSigma)
-    
-    tabTest<- table(testl,predtest)
-    error.rate [m,2] <- sum(predtest != as.numeric(testl))/length(predtest)
-    corr.class.rate[m,2] <- 1- error.rate[m,2]
-    
-    output[[m]] <- list(error.rate = error.rate,  
-                        corr.class.rate = corr.class.rate,
-                        Cm.train = tabTrain,
-                        Cm.test = tabTest,
-                        par = estimates[[m]],
-                        bad.points = bad.points [[m]]) 
-    
-    
-  }
-    return(output)
-}
-
 
 
 # 11) Simulating bigger samples -----------------------------------------------
@@ -428,7 +334,7 @@ colnames(error.rate1) <- c("train", "test")
 # 15) Defining number of wavelengths --------------------------------------
 contamination = T
 initialization = "random.post"
-parallel = F
+ parallel = F
 
 qda.mod1 <- fit_QDA(train.data1, "Class")
 cbind(qda.mod1$Wavelengths.ranked$Wavelengths,lda.mod1$Wavelengths.ranked$Wavelengths)
@@ -527,6 +433,74 @@ round(resLDA,2)
 round(resQDA,2)
 round(resMClust,2)
 round(resCMN,2)
-# 16) QDA for simulated data ----------------------------------------------
+
+# 60) Function that takes a set of variables and run all models ------------
+
+# This function is called "Models_Spectra"
+# It takes 9 parameters
+# X:         A fataframe or matrix that contains the response variable and covariates
+# ColClass:    A character variable that contains the name of the response variable
+# test:      A dataframe or matrix that contains the covariates
+# testl:     A vector that contains the test label   
+# component: Number of components
+# models:    Models that are going to be considered
+# contamination: boolean variable that contains if there is contamination or not
+# initialization: methods of initialization of the first estimates
+# parallel:       boolean variable that indicate if parallel computation should be used
+# Output: 
+# Correct classification error: Table containing the correct classification error
+# Error classification rate:    Table containing the error classification error    
+# Wavelengths:  Contains the wavelengths ordered by their absolute weights in the 1st
+#             linear discriminant function.
 
 
+Models_Spectra <- function(X, ColClass, test, testl, models, 
+                           components, contamination = T,
+                           initialization = "random.post",
+                           parallel = "F")
+{
+  # train include all the covariates
+  n.models <- length(models)
+  m <- n.models + 2
+  res <- array(NA,dim = c(m,2,2))
+  rowlegends <- c("LDA","QDA",
+                  paste("MCLUST-",models, colapse = NULL, sep = ""),
+                  paste("CMN-",models, colapse = NULL, sep = "")  )
+  
+  dimnames(res) <- list(rowlegends,c("train","test"),
+                           c("error rate","Correct classification rate"))
+  
+  
+
+
+  Xtrain <- X %>% select_if(is.numeric) 
+  index_class <-  match(ColClass,colnames(train))
+  trainl <- train[,index_class]  
+  qda.mod2 <- fit_QDA(Xtrain, ColClass, test,testl)
+  lda.mod2 <- fit_LDA(Xtrain, ColClass, test,testl)
+  res[1,,1] <- lda.mod2$error.rate
+  res[1,,2] <- lda.mod2$corr.class.rate
+  res[2,,1] <- qda.mod2$error.rate
+  res[2,,2] <- qda.mod2$corr.class.rate
+  
+  
+  EDDA.mod2 <- fit_EDDA(Xtrain,trainl,
+                        test,testl,
+                        models,components = 2)
+  cat("\n", "variables = ",lim1[l])
+  v1 <- tryCatch({
+    CMN.mod2 <- fit_CMN(Xtrain,trainl,
+                        test,testl,
+                        component = 2, models = models,
+                        contamination = contamination, 
+                        initialization = initialization,
+                        parallel = parallel)
+  }, error = function(err)
+  {
+    print(paste("Error: ", err))
+  })
+  
+  resLDA[l,,1] <- lda.mod2$error.rate
+  resLDA[l,,2] <- lda.mod2$corr.class.rate
+  
+}
