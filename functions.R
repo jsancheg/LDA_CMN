@@ -5,6 +5,41 @@
 # ftest function(df_train, Class)
 # df_train: contanins the complete datasets including the response and explanatory variables
 # L: contains the name of the variable which contains the label information
+# 
+ftest <- function(df_train, l)
+{
+  # Rank variables which give more separation of classes 
+  nvars.num <- df_train %>% select_if(is.numeric)%>%ncol
+  c <- ncol(df_train) - nvars.num
+  n.vars <- ncol(df_train)
+  i <- 2
+  ncol(df_train)
+  fvalue <- rep(0.0,nvars.num )
+  pvalue <- rep(0.0,nvars.num )
+  
+  labs <- colnames(df_train %>% dplyr::select(where(is.numeric)))
+  ini <-  c +1
+  
+  for(i in ini:n.vars)
+  {
+    df1 <- data.frame(df_train[,c(1,i)])
+    Class <- df1[l]
+    aov.r = lm(df1[,2] ~ Class, data = df1)
+    fvalue[i-1] <-summary(aov.r)$fstatistic[1]
+    q <- summary(aov.r)$fstatistic[1]
+    df1 <- summary(aov.r)$fstatistic[2]
+    df2 <- summary(aov.r)$fstatistic[3]
+    
+    pvalue[i-1] <- 1- pf(q,df1,df2)
+    
+  }
+  
+  output <- data.frame(Var = labs, Ftest = fvalue, Pvalue = pvalue)
+  output <- output[order(-output$Ftest),]
+  return(output)
+}
+
+
 
 #source("E:/University of Glasgow/Literature review/R Code/Food Analysis/F-test.R")
 
@@ -1697,32 +1732,6 @@ newClassSample <- function(mu, sigma, peaks, ws, c, nsamples, type){
 
 
 
-
-
-# 
-ftest <- function(df_train, l)
-{
- # Rank variables which give more separation of classes 
-  c <- ncol(df_train)
-  i <- 2
-  ncol(df_train)
-  fvalue <- rep(0.0,(c-2) )
-  
-  labs <- colnames(df_train %>% dplyr::select(where(is.numeric)))
-  ini <- c - length(labs) +1
-  
-  for(i in ini:c)
-  {
-    df1 <- data.frame(df_train[,c(1,i)])
-    Class <- df1[l]
-    aov.r = lm(df1[,2] ~ Class, data = df1)
-    fvalue[i-2] <-summary(aov.r)$fstatistic[1]
-  }
-  
-  output <- data.frame(Var = labs, Ftest = fvalue)
-  output <- output[order(-output$Ftest),]
-  return(output)
-}
 
 
 

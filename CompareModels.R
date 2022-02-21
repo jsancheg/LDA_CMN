@@ -437,13 +437,62 @@ round(resCMN,2)
 length(XbarPork)
 length(mu4.2$Mean2)
 
+# Wavelengths ranked by F-test
+
+number.vars <- seq(2,61,1)
+n.rows <- 2+2*n.models
+n.deep <- length(number.vars)
+resumen <- array(NA, dim = c(n.rows,2,2,n.deep))
+label1 <- c("LDA","QDA",
+            paste0("MCLUST-",models),
+            paste0("CMN-",models))
+label2 <- c("Train", "Test")
+label3 <- c("Error rate", "Classification correction rate")
+label4 <- as.character(number.vars)
+dimnames(resumen) <- list(label1, label2,
+                     label3,label4)
+
+
+for( tam in 1:n.deep)
+{
+
+  temp.vars <- ftest(train.data1, train.data1$Class)[1:number.vars[tam],1]
+  vars.sel <- match(c("Class",temp.vars), 
+                    colnames(samples4.2) )
+  vars.sel1 <- match(temp.vars, 
+                     colnames(samples4.2) )
+  
+  resumen [,,,tam]<- Models_Spectra(train.data1[,vars.sel],"Class",
+                            test.data1[,vars.sel1],
+                            test.data1$Class,
+                            models = c("EII","VII","EEI"),
+                            components = 2)
+  
+}
+t(resumen[1,,1,])
+t(resumen[1,,2,])
+
+resumen[2,,1,]
+
+
+
+
+resumen
+
+
+# Arcade mod
 XbarPork== mu4.2$Mean
-temp.vars <- names(mu4.2$Mean2[XbarPork!= mu4.2$Mean2])[1:22]
+temp.vars <- names(mu4.2$Mean2[XbarPork!= mu4.2$Mean2])[2]
 
 vars.sel <- match(c("Class",temp.vars), 
                   colnames(samples4.2) )
 vars.sel1 <- match(temp.vars, 
                   colnames(samples4.2) )
+
+temp_LDA <- fit_QDA(train.data1[,vars.sel], "Class", 
+                    test.data1[,vars.sel1],test.data1$Class)
+
+temp_LDA
 
 resumen <- Models_Spectra(train.data1[,vars.sel],"Class",
                           test.data1[,vars.sel1],
@@ -452,6 +501,7 @@ resumen <- Models_Spectra(train.data1[,vars.sel],"Class",
                           components = 2)
 
 resumen
+
 # 60) Function that takes a set of variables and run all models ------------
 
 # This function is called "Models_Spectra"
@@ -514,7 +564,7 @@ Models_Spectra <- function(X, ColClass, test, testl, models,
    for(model1 in 1:n.models) 
   {
     v1 <- tryCatch({
-      cat("\n", "model = ",models[model1], model+model1,res[model+model1,,])
+      cat("\n", "model = ",models[model1], model+model1,res[2+model+model1,,])
       
     CMN.mod2 <- fit_CMN(Xtrain,trainl,
                           test,testl,
@@ -527,7 +577,6 @@ Models_Spectra <- function(X, ColClass, test, testl, models,
     res[2+model + model1,,2] <- t(CMN.mod2[[1]]$corr.class.rate)
     }, error = function(err)
     {
-      cat("\n",model + model1)
       print(paste("Error: ", err))
     })
     
