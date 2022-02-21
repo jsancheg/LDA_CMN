@@ -30,7 +30,7 @@
 
 fit_CMN <- function(train,trainl,test,testl,component,models,
                     contamination = T, initialization = "random.post",
-                    parallel = F)
+                    parallel = F, levelgood = 0.5)
 {
   if(!is.matrix(train)) train <- as.matrix(train)
   if(!is.matrix(test)) test <- as.matrix(test)
@@ -64,7 +64,8 @@ fit_CMN <- function(train,trainl,test,testl,component,models,
                   model = models[m],
                   label = trainl,
                   initialization = initialization,
-                  seed = 12, parallel = parallel  )      
+                  seed = 12, parallel = parallel,
+                  alphamin = levelgood)      
     
     bad.points[[m]] <- list(model = models[m], 
                             badPoins = mod$models[[1]]$detection)

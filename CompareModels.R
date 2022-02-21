@@ -434,12 +434,30 @@ round(resQDA,2)
 round(resMClust,2)
 round(resCMN,2)
 
+length(XbarPork)
+length(mu4.2$Mean2)
+
+XbarPork== mu4.2$Mean
+temp.vars <- names(mu4.2$Mean2[XbarPork!= mu4.2$Mean2])[1:22]
+
+vars.sel <- match(c("Class",temp.vars), 
+                  colnames(samples4.2) )
+vars.sel1 <- match(temp.vars, 
+                  colnames(samples4.2) )
+
+resumen <- Models_Spectra(train.data1[,vars.sel],"Class",
+                          test.data1[,vars.sel1],
+                          test.data1$Class,
+                          models = c("EII","VII","EEI"),
+                          components = 2)
+
+resumen
 # 60) Function that takes a set of variables and run all models ------------
 
 # This function is called "Models_Spectra"
 # It takes 9 parameters
-# X:         A fataframe or matrix that contains the response variable and covariates
-# ColClass:    A character variable that contains the name of the response variable
+# X:         A dataframe or matrix that contains the response variable and covariates
+# ColClass:  A character variable that contains the name of the response variable
 # test:      A dataframe or matrix that contains the covariates
 # testl:     A vector that contains the test label   
 # component: Number of components
@@ -461,7 +479,7 @@ Models_Spectra <- function(X, ColClass, test, testl, models,
 {
   # train include all the covariates
   n.models <- length(models)
-  m <- n.models + 2
+  m <- 2*n.models + 2
   res <- array(NA,dim = c(m,2,2))
   rowlegends <- c("LDA","QDA",
                   paste("MCLUST-",models, colapse = NULL, sep = ""),
@@ -474,33 +492,46 @@ Models_Spectra <- function(X, ColClass, test, testl, models,
 
 
   Xtrain <- X %>% select_if(is.numeric) 
-  index_class <-  match(ColClass,colnames(train))
-  trainl <- train[,index_class]  
-  qda.mod2 <- fit_QDA(Xtrain, ColClass, test,testl)
-  lda.mod2 <- fit_LDA(Xtrain, ColClass, test,testl)
+  index_class <-  match(ColClass,colnames(X))
+  trainl <- X[,index_class]  
+  qda.mod2 <- fit_QDA(X, ColClass, test,testl)
+  lda.mod2 <- fit_LDA(X, ColClass, test,testl)
   res[1,,1] <- lda.mod2$error.rate
   res[1,,2] <- lda.mod2$corr.class.rate
   res[2,,1] <- qda.mod2$error.rate
   res[2,,2] <- qda.mod2$corr.class.rate
   
-  
-  EDDA.mod2 <- fit_EDDA(Xtrain,trainl,
-                        test,testl,
-                        models,components = 2)
-  cat("\n", "variables = ",lim1[l])
-  v1 <- tryCatch({
-    CMN.mod2 <- fit_CMN(Xtrain,trainl,
-                        test,testl,
-                        component = 2, models = models,
-                        contamination = contamination, 
-                        initialization = initialization,
-                        parallel = parallel)
-  }, error = function(err)
+  for(model in 1:n.models)
   {
-    print(paste("Error: ", err))
-  })
-  
-  resLDA[l,,1] <- lda.mod2$error.rate
-  resLDA[l,,2] <- lda.mod2$corr.class.rate
-  
+    
+    EDDA.mod2 <- fit_EDDA(Xtrain,trainl,
+                          test,testl,
+                          models[model],components = 2)
+    res[2+model,,1] <- lda.mod2$error.rate
+    res[2+model,,2] <- lda.mod2$corr.class.rate
+  }  
+  aux <- 1
+   for(model1 in 1:n.models) 
+  {
+    v1 <- tryCatch({
+      cat("\n", "model = ",models[model1], model+model1,res[model+model1,,])
+      
+    CMN.mod2 <- fit_CMN(Xtrain,trainl,
+                          test,testl,
+                          component = 2, models = models[model1],
+                          contamination = contamination, 
+                          initialization = initialization,
+                          parallel = parallel,
+                          levelgood = 0.9)
+    res[2+model + model1,,1] <- t(CMN.mod2[[1]]$error.rate)
+    res[2+model + model1,,2] <- t(CMN.mod2[[1]]$corr.class.rate)
+    }, error = function(err)
+    {
+      cat("\n",model + model1)
+      print(paste("Error: ", err))
+    })
+    
+  }
+  return(res)  
 }
+
