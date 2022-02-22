@@ -197,8 +197,8 @@ fit_EDDA <- function(train,trainl,test, testl, models, components)
     
     error.rate[m,1] <- sum( max.col(Etrain$z) != as.numeric(Strain.label) ) / length(Strain.label)
     error.rate[m,2] <- sum( max.col(Etest$z) != as.numeric(Stest.label)   ) / length(Stest.label)
-    corr.class.rate[m,1] <- 1 - corr.class.rate[m,1]
-    corr.class.rate[m,2] <- 1 - corr.class.rate[m,2]
+    corr.class.rate[m,1] <- 1 - error.rate[m,1]
+    corr.class.rate[m,2] <- 1 - error.rate[m,2]
     
     ccmatrix[[m]] <- list(Cm.train = tabTrain, Cm.test = tabTest,parameters = Etest$parameters)
     
@@ -472,8 +472,7 @@ modMean <- function(mu, peaks, ws, c, shape)
       else if(sh == 4)
         mean2[j ]<- mu[j ]+ exp(-coeficient* ((j-peak)^2) )
       else if(sh == 5)
-        mean2[j ]<- mu[j ]+ exp(- (((j-peak)/coeficient)^2)/2 )
-      
+        mean2[j ]<- mu[j ]+ (exp(-coeficient *(j-peak)^2 )/4 ) /4
     }
     
     return(mean2)
