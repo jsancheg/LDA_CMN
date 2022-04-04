@@ -164,16 +164,30 @@ head(Wavelengths.rank,50)
 
 # 8) defining the number of variables for LDA and CMN and plot them -------
 
-lim <- 15
+lim <- 5
+
 lda.mod1 <- fit_LDA(train.data,"Class")
 lda.mod1$Wavelengths.ranked[1:lim,]
 vars <- lda.mod1$Wavelengths.ranked
-vars.top<-lda.mod1$Wavelengths.ranked[1:lim,]$Wavelengths
+vars.top1<-lda.mod1$Wavelengths.ranked[1:lim,]$Wavelengths
 plotRestWavelengths(train.data, vars, lim , "Class")
 
-vars.top
-vars.mod <- c(sapply(c("Class",vars.top),match, table = colnames(train.data) ) )
+vars.top1
+vars.mod <- c(sapply(c("Class",vars.top1),match, table = colnames(train.data) ) )
 vars.mod
+
+temp1 <-ftest(train.data, train.data$Class)[1:lim,]
+vars.top <- ftest(train.data, train.data$Class)[1:lim,1]
+
+
+# plotRestWavelengths(train.data1, vars1, lim1[l] , "Class")
+
+vars.top
+
+
+vars.mod <- c(sapply(c("Class",vars.top,vars.top1),match, table = colnames(train.data) ) )
+
+
 Strain.data <- train.data[,vars.mod] #add vars
 Strain.label <- Strain.data$Class
 Stest.data <- test.data[,vars.mod]
@@ -199,7 +213,8 @@ sum(diag(lda.mod$Cm.test))/sum(lda.mod$Cm.test)
 # Mclust
 
 component <- 2
-models <- c("EII","VII","EEI")
+#models <- c("EII","VII","EEI")
+models <- c("EEI")
 n.models <- length(models)
 
 tabMClust <- matrix(NA, nrow = length(models), ncol = 2)
@@ -240,9 +255,20 @@ bad.points <- list()
 estimates <- list()
 rownames(tabCMN) <- models
 colnames(tabCMN) <- c("Train","Test")
+
+mod <- CNmixt(X = as.matrix(scale(Strain.data[,-1])), G = component,
+              contamination = T,
+              model = "EEI",
+              label = as.numeric(Strain.label),
+              initialization = "random.clas",
+              seed = 12, parallel = F  )      
+
+
+if(is.vector(Strain.data[,-1]) ) models = c("E","V")
+
 for (m in 1:n.models)
 {
-  mod <- CNmixt(X = as.matrix(Strain.data[,-1]), G = component,
+  mod <- CNmixt(X = as.matrix(scale(Strain.data[,-1])), G = component,
                 contamination = T,
                 model = models[m],
                 label = as.numeric(Strain.label),
@@ -279,7 +305,7 @@ estimates
 
 
 # 11) Simulating bigger samples  --------------------------
-nSim <- 15
+nSim <- 40
 set.seed(123)
 # Simulating Class A 
 sample4A <- gen(nSim, XbarPork, s1 )
@@ -499,11 +525,11 @@ length(mu4.2$Mean2)
 # Wavelengths ranked by F-test
 
 #number.vars <- seq(2,61,1)
-number.vars <- c(15,25,35,45,55,65,156)
+number.vars <- c(2,3,4,5,15,25,35,45,55,65)
 n.rows <- 2+2*n.models
 n.deep <- length(number.vars)
+resumen <- array(NA, dim = c(n.rows,2,2,n.deep))
 resumen1 <- array(NA, dim = c(n.rows,2,2,n.deep))
-resumen2 <- array(NA, dim = c(n.rows,2,2,n.deep))
 
 label1 <- c("LDA","QDA",
             paste0("MCLUST-",models),
@@ -513,6 +539,8 @@ label3 <- c("Error rate", "Classification correction rate")
 label4 <- as.character(number.vars)
 dimnames(resumen) <- list(label1, label2,
                      label3,label4)
+dimnames(resumen1) <- list(label1, label2,
+                           label3,label4)
 
 
 for( tam in 1:n.deep)
