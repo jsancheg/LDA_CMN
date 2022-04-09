@@ -134,35 +134,30 @@ modelAccuracy <- function(X_train,X_test,l_train,l_test,CE)
   return(accTest)
 }
 
-Sim2Classes4d <- function(n)
+Sim2Classes4d <- function(mug,sigmag,pig,n,ptraining,alphag,etag)
   #n : number of observations
 {
   output <- list()
-  mu1 <- c(0,0,0,0)
-  mu2 <- c(0,4,0,4)
-  X <- matrix(0, ncol = 4, nrow = n)
-  p <- ncol(X)
-  l <- rep(0,n)
-  set.seed(123)
-  for( i in 1:n)
-  {
-    u <- runif(1)
-    if(u < 0.5)
-    {
-      X[i,] <- unlist(gen(p, mu = 0, sigma = 1))
-      
-      l[i] <-1
-    }    else    {
-      X[i,1] <- as.numeric(gen(1, mu = 0, sigma = 1))
-      X[i,2] <- as.numeric(gen(1, mu = 4, sigma = 1))
-      X[i,3] <- as.numeric(gen(1, mu = 0, sigma = 1))
-      X[i,4] <- as.numeric(gen(1, mu = 4, sigma = 1))
-      
-      l[i] <- 2
-      
-    } # End-if
-  } # End-for
+  G<-max(nrow(mug),length(pig))
+  p <- length
+  X <- matrix(0, ncol = p , nrow = n)
   
+  # Validate parameters
+  if(sum(pig)!=1) stop("proportions do not sum 1")
+  if(any(pig<0) | any(pig>1)) stop("alpha is not a probability")
+  if(any(ptraining<0) | any(ptraining>1)) stop("ptraining is not a probability")
+  if(any(alphag<0) | any(alphag>1)) stop("alpha is not a probability")
+  if(any(etag < 1))stop("eta has to be greater than 1")  
+  set.seed(123)
+  aux <- (rmultinom(n,1,pig))
+  l <- apply(aux,2,which.max)
+  l
+  
+    if(dim(sg) == 2)
+      # X[i,] <- unlist(gen(p, mu = 0, sigma = 1))
+      X <- rMVNorm(n,mug[,l[i]], sg)
+
+
   ind <- sample(1:n, round(n/2))
   Xtrain <- X[ind,]
   Xtest <- X[-ind,]
@@ -172,123 +167,6 @@ Sim2Classes4d <- function(n)
   output <- list(X = X,l =l, ind = ind,Xtrain = Xtrain,Xtest = Xtest,ltrain = ltrain,ltest = ltest)
   return(output)
 }
-
-nruns = 100
-
-
-# Dataset A ---------------------------------------------------------------
-selectedvariables <- list()
-accuracy <- rep(0,nruns)
-
-for(nrun in 1: nruns)
-{
-  
-  mu1 <- c(0,1,0,2)
-  mu2 <- c(0,2,0,1)
-  n = 160
-  X <- matrix(0, ncol = 4, nrow = n)
-  p <- ncol(X)
-  l <- rep(0,n)
-  
-  
-  #set.seed(123)
-  for( i in 1:n)
-  {
-    u <- runif(1)
-    if(u < 0.5)
-    {
-      #        cat("\n",i)
-      X[i,] <- unlist(gen(p, mu = 0, sigma = 1))
-      
-      l[i] <-1
-    }    else    {
-      X[i,1] <- as.numeric(gen(1, mu = 0, sigma = 1))
-      X[i,2] <- as.numeric(gen(1, mu = 4, sigma = 1))
-      X[i,3] <- as.numeric(gen(1, mu = 0, sigma = 1))
-      X[i,4] <- as.numeric(gen(1, mu = 4, sigma = 1))
-      
-      l[i] <- 2
-    } # End-if
-  } # End-for
-  X
-  l
-  
-  ind <- sample(1:n, round(n/2))
-  Xtrain <- X[ind,]
-  Xtest <- X[-ind,]
-  ltrain <- l[ind]
-  ltest <- l[-ind]
-  
-  
-  dfRW <- getOW(Xtrain,ltrain)
-  RW <- dfRW$Var
-  res <- fHLvarSearch(Xtrain,Xtest,RW,ltrain,ltest,"E")
-  cat("\n", res$model,"-",res$Accuracy,"\n")
-  accuracy[nrun] <- res$Accuracy
-  selectedvariables[[nrun]] <- paste(res$model,sep="-")
-  #  models[i] <- res$model
-  #  accuracy[i] <- res$Accuracy
-  
-} # End-for
-
-
-
-# Dataset B ---------------------------------------------------------------
-
-
-selectedvariables <- list()
-accuracy <- rep(0,nruns)
-
-for(nrun in 1: nruns)
-{
-  
-    mu1 <- c(0,0,0,0)
-    mu2 <- c(0,4,0,4)
-    n = 160
-    X <- matrix(0, ncol = 4, nrow = n)
-    p <- ncol(X)
-    l <- rep(0,n)
-  
-  
-    #set.seed(123)
-  for( i in 1:n)
-  {
-    u <- runif(1)
-    if(u < 0.5)
-    {
-#        cat("\n",i)
-        X[i,] <- unlist(gen(p, mu = 0, sigma = 1))
-      
-        l[i] <-1
-      }    else    {
-        X[i,1] <- as.numeric(gen(1, mu = 0, sigma = 1))
-        X[i,2] <- as.numeric(gen(1, mu = 4, sigma = 1))
-        X[i,3] <- as.numeric(gen(1, mu = 0, sigma = 1))
-        X[i,4] <- as.numeric(gen(1, mu = 4, sigma = 1))
-      
-        l[i] <- 2
-      } # End-if
-    } # End-for
-    X
-    l
-    
-    ind <- sample(1:n, round(n/2))
-    Xtrain <- X[ind,]
-    Xtest <- X[-ind,]
-    ltrain <- l[ind]
-    ltest <- l[-ind]
-
-
-  dfRW <- getOW(Xtrain,ltrain)
-  RW <- dfRW$Var
-  res <- fHLvarSearch(Xtrain,Xtest,RW,ltrain,ltest,"E")
-  cat("\n", res$model,"-",res$Accuracy,"\n")
-  accuracy[nrun] <- res$Accuracy
-  selectedvariables[[nrun]] <- paste(res$model,sep="-")
-#  models[i] <- res$model
-#  accuracy[i] <- res$Accuracy
-    
-} # End-for
 
 
 
