@@ -1,8 +1,8 @@
 # Create dataset
 
 
-work_path <- "E:/University of Glasgow/Literature review/R Code/"
-setwd(work_path)
+#work_path <- "E:/University of Glasgow/Literature review/R Code/"
+#setwd(work_path)
 source("utilities.R")
 
 

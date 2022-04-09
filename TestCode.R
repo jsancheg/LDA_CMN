@@ -1,4 +1,4 @@
-work_path
+getwd()
 source("SimClassfewdim.R")
 
 
