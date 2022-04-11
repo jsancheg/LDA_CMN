@@ -134,31 +134,37 @@ modelAccuracy <- function(X_train,X_test,l_train,l_test,CE)
   return(accTest)
 }
 
-Sim2Classes4d <- function(mug,sigmag,pig,n,ptraining,alphag,etag)
+SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   #n : number of observations
 {
   output <- list()
-  G<-max(nrow(mug),length(pig))
-  p <- length
-  X <- matrix(0, ncol = p , nrow = n)
+  G <- length(pig)
+  p<-nrow(mug)
+  X <- matrix(0.0, ncol = p , nrow = nobs)
   
-  # Validate parameters
+  #Validate parameters
   if(sum(pig)!=1) stop("proportions do not sum 1")
   if(any(pig<0) | any(pig>1)) stop("alpha is not a probability")
   if(any(ptraining<0) | any(ptraining>1)) stop("ptraining is not a probability")
   if(any(alphag<0) | any(alphag>1)) stop("alpha is not a probability")
   if(any(etag < 1))stop("eta has to be greater than 1")  
   set.seed(123)
-  aux <- (rmultinom(n,1,pig))
+  aux <- (rmultinom(nobs,1,pig))
   l <- apply(aux,2,which.max)
   l
   
-    if(dim(sg) == 2)
+    if(length(dim(sg)) == 2)
       # X[i,] <- unlist(gen(p, mu = 0, sigma = 1))
-      X <- rMVNorm(n,mug[,l[i]], sg)
-
-
-  ind <- sample(1:n, round(n/2))
+      X <- sapply(1:G,function(g) {
+        rMVNorm(nobs,mug[,g], sg)
+      })
+    else if(length(dim(sg)) > 2){
+      X <- sapply(1:G,function(g) {
+        rMVNorm(nobs,mug[,g], sg[,,g])
+      })
+    }
+  
+  ind <- sample(1:nobs, round(nobs* ptraining))
   Xtrain <- X[ind,]
   Xtest <- X[-ind,]
   ltrain <- l[ind]
@@ -189,6 +195,120 @@ ModelAccuracy1 <- function(X_train,X_test,l_train,l_test,CE,cont)
 }
 
 
+EContMN <- function(Xtrain,par)
+{
+  m <- nrow(Xtrain)
+  alpha <- par$alpha
+  mu <- par$mu
+  sigma <- par$sigma
+  eta<-par$eta
+  G <- par$G
+  vig <- matriz(0.0, ncol = G, nrow = m)
+  
+  for(g in 1:G)
+  {
+    for(i in 1:m)
+    {
+      if(length(dim(par$sigma))==2)
+      {
+        num <- alpha[g] * dnorm(Xtrain[i,],mu[,g],sigma)
+        den <- num + (1-alpha[g])*dnorm(xtrain[i,],mu[,g],eta[g]*sigma)
+        v[i,g] <- num/den 
+      } else if(length(dim(par$sigma)) > 2)
+      {
+        num <- alpha[g] * dnorm(Xtrain[i,],mu[,g],sigma[,,g])
+        den <- num + (1-alpha[g])*dnorm(xtrain[i,],mu[,g],eta[g]*sigma[,,g])
+        v[i,g] <- num/den 
+        
+      } #End-f
+        
+    }#End-for
+  }#End=for
+    
+  return(v)
+}
+
+MContMN <- function(Xtrain,ltrain,par)
+{
+  m <- nrow(Xtrain)
+  p <- ncol(Xtrain)
+  G <- length(unique(ltrain))
+  alpha <- par$alpha
+  mu <- par$mu
+  sigma <- par$sigma
+  eta<-par$eta
+  v <- par$v
+  
+  factor1 <- 0
+  factor2 <- 0
+  factor3 <- 0 # Malahanobis distance
+  a <- rep(0,G)
+  b <- rep(0,G)
+  
+  S1 <- rep(0,G)
+  eta1 <-  rep(0,G)
+  alpha1 <- rep(0,G)
+  mu1 <- array(0.0,nrow = m, ncol=p)
+  sigma1 <- array(0.0, dim = dim(sigma))
+  W <- array(0.0, dim = dim(sigma) )
+  
+  # Calculate Sg, (r+1)th iteration Sg,mu1, alpha1, and (r-th) a  
+  
+  for(g in 1:G)
+  {
+    for(i in 1:m)
+    {
+        factor1 <-factor1 + ltrain[i,g]*(v[i,g] + (1-v[i,g])/eta[g] )
+        mu1[,g] <- mu1[,g] + factor1 * Xtrain[i,]      
+        alpha1[g] <- alpha[g]+ (ltrain[i,g]*v[i,g])
+        a[g] <- a[g] + ltrain[i,g]*(1-v[i,g])
+        # equal covariance matrix
+      
+    }#End-for
+      
+      S[g] <- factor1
+      mu1[,g] <- mu1[,g]/S[g]  
+      alpha[g] <- alpha[g/eta[g]]
+  }#End=for
+
+  # Calculate Wg and (r+1)th Sigma
+  for(g in 1:G)
+  {
+    for(i in 1:m)
+    {
+        factor2 <- ltrain[i,g]*(v[i,g] + (1-v[i,g])/eta[g])
+        if(length(dim(W)) == 2)
+            W <- W + factor2 * Xtrain[i,]%*%t(Xtrain[i,])
+        else  if(length(dim(W)) == 2){
+            W[,,g] <- W[,,g] + factor2 * Xtrain[i,]%*%t(Xtrain[i,])
+        } #End-f
+      
+    }#End-for
+        if(length(dim(W)) == 2)
+            Sigma1<-W/eta[g]
+        else if(length(dim(W))>2) {
+          Sigma1[,,g] <- Sigma1[,,g]/eta[g]
+        } # End if
+  }#End-for
+    
+  for (g in 1:G)
+  {
+    for( i in 1:n)
+    {
+      if(length(dim(W))==2)
+        factor3 <- t(Xtrain[i]-mu1[,g])%*% Sigma1 %*% (Xtrain[i]-mu1[,g])
+      else if(length(dim(W))>2){
+        factor3 <- t(Xtrain[i]-mu1[,g])%*% Sigma1[,,g] %*% (Xtrain[i]-mu1[,g])
+      }
+      b[g] <- b[g] + ltrain[i,g]*(1-v[i,g])*factor3
+    }
+    eta1[g]<-max(1.001,b[g]/(p*a[g]))
+  }
+  
+  return(v)
+}
+
+ 
 EMContMN <- function(X_train,l_train,CE)
 {
   if(length(dim(X_train)) == 2)
@@ -230,7 +350,7 @@ EMContMN <- function(X_train,l_train,CE)
       for(g in 1:G)
       {
         # Sigma g (r+1)
-        
+        c 
         for(i in 1:n)
         {
           weights[i,g] <- ( v[i,g] + ( 1-v[i,g] ) /etag[g] )
@@ -242,7 +362,7 @@ EMContMN <- function(X_train,l_train,CE)
         {
             W[,,g] <- W[,,g]+ ( z[i,g] *  weights[i,g] ) * ( (X_train[i,]-mug[g,]) %*% t(X_train[i,]-mug[,g]) )
         }# End-For
-      }
+    }
         mug
         Sg
         W[,,1]
