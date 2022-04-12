@@ -153,17 +153,21 @@ SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   l <- apply(aux,2,which.max)
   l
   
-    if(length(dim(sg)) == 2)
+    if(length(dim(sg)) == 2){
       # X[i,] <- unlist(gen(p, mu = 0, sigma = 1))
-      X <- sapply(1:G,function(g) {
-        rMVNorm(nobs,mug[,g], sg)
-      })
-    else if(length(dim(sg)) > 2){
-      X <- sapply(1:G,function(g) {
-        rMVNorm(nobs,mug[,g], sg[,,g])
-      })
-    }
-  
+      l <- sample(1:G,nobs,replace = T, prob = pig)
+      mg <- apply(unmap(l),2,sum)
+      for (i in 1:nobs)
+        X[i,] <- rMVNorm(1,mug[,l[i]],sg)
+      
+    }else if(length(dim(sg)) > 2)
+    {
+      
+      for (i in 1:nobs)
+        X[i,] <- rMVNorm(1,mug[,l[i]],sg[,,l[i]])
+
+    } #End-if
+
   ind <- sample(1:nobs, round(nobs* ptraining))
   Xtrain <- X[ind,]
   Xtest <- X[-ind,]
@@ -195,7 +199,7 @@ ModelAccuracy1 <- function(X_train,X_test,l_train,l_test,CE,cont)
 }
 
 
-EContMN <- function(Xtrain,par)
+eCmn <- function(Xtrain,par)
 {
   m <- nrow(Xtrain)
   alpha <- par$alpha
@@ -203,72 +207,91 @@ EContMN <- function(Xtrain,par)
   sigma <- par$sigma
   eta<-par$eta
   G <- par$G
-  vig <- matriz(0.0, ncol = G, nrow = m)
+  v <- matrix(0.0, ncol = G, nrow = m)
+  z <- matrix(0.0, ncol = G, nrow = m)
+  num1 <-matrix(0.0,ncol = G, nrow = m)  
+  lhat <- rep(0,m)
   
+  output <- list()
   for(g in 1:G)
   {
     for(i in 1:m)
     {
       if(length(dim(par$sigma))==2)
       {
-        num <- alpha[g] * dnorm(Xtrain[i,],mu[,g],sigma)
-        den <- num + (1-alpha[g])*dnorm(xtrain[i,],mu[,g],eta[g]*sigma)
+        num <- alpha[g] * dMVNorm(Xtrain[i,],mu[,g],sigma)
+        den <- num + (1-alpha[g])*dMVNorm(Xtrain[i,],mu[,g],eta[g]*sigma)
         v[i,g] <- num/den 
+        # num1 : numerator for the e-step for z[i,g]
+        num1[i,g] <- pig[g]*den
+        
       } else if(length(dim(par$sigma)) > 2)
       {
-        num <- alpha[g] * dnorm(Xtrain[i,],mu[,g],sigma[,,g])
-        den <- num + (1-alpha[g])*dnorm(xtrain[i,],mu[,g],eta[g]*sigma[,,g])
+        num <- alpha[g] * dMVNorm(Xtrain[i,],mu[,g],sigma[,,g])
+        den <- num + (1-alpha[g])*dMVNorm(Xtrain[i,],mu[,g],eta[g]*sigma[,,g])
         v[i,g] <- num/den 
         
       } #End-f
         
     }#End-for
+
   }#End=for
-    
-  return(v)
+
+  # calculating zhat and lhat
+  
+  for (i in 1:m)
+  {
+    z[i,] <- num1[i,]/sum(num1[i,])
+  }
+      lhat<-apply(z,1,which.max)
+      output <- list(v = v, z = z, lhat = lhat )
+  return(output)
 }
 
-MContMN <- function(Xtrain,ltrain,par)
+mCmn <- function(Xtrain,ltrain,par)
 {
   m <- nrow(Xtrain)
   p <- ncol(Xtrain)
   G <- length(unique(ltrain))
-  alpha <- par$alpha
+  l <- unmap(ltrain)
   mu <- par$mu
   sigma <- par$sigma
+  alpha <- par$alpha
   eta<-par$eta
   v <- par$v
-  
+  mg <- apply(unmap(ltrain),2,sum)
   factor1 <- 0
   factor2 <- 0
   factor3 <- 0 # Malahanobis distance
   a <- rep(0,G)
   b <- rep(0,G)
   
-  S1 <- rep(0,G)
+  S <- rep(0,G)
   eta1 <-  rep(0,G)
   alpha1 <- rep(0,G)
-  mu1 <- array(0.0,nrow = m, ncol=p)
-  sigma1 <- array(0.0, dim = dim(sigma))
-  W <- array(0.0, dim = dim(sigma) )
+  mu1 <- matrix(0.0,nrow = p, ncol = G)
+  sigma1 <- array(0.0, dim = c(p,p,G))
+  W <- array(0.0, dim = c(p,p,G) )
   
+  output <- list()
   # Calculate Sg, (r+1)th iteration Sg,mu1, alpha1, and (r-th) a  
   
   for(g in 1:G)
   {
     for(i in 1:m)
     {
-        factor1 <-factor1 + ltrain[i,g]*(v[i,g] + (1-v[i,g])/eta[g] )
+        factor1 <-l[i,g]*(v[i,g] + (1-v[i,g])/eta[g] )
+        S[g] <- S[g] + factor1
         mu1[,g] <- mu1[,g] + factor1 * Xtrain[i,]      
-        alpha1[g] <- alpha[g]+ (ltrain[i,g]*v[i,g])
-        a[g] <- a[g] + ltrain[i,g]*(1-v[i,g])
+        alpha1[g] <- alpha1[g]+ (l[i,g]*v[i,g])
+        a[g] <- a[g] + l[i,g]*(1-v[i,g])
+        
         # equal covariance matrix
       
     }#End-for
       
-      S[g] <- factor1
       mu1[,g] <- mu1[,g]/S[g]  
-      alpha[g] <- alpha[g/eta[g]]
+      alpha1[g] <- alpha1[g]/mg[g]
   }#End=for
 
   # Calculate Wg and (r+1)th Sigma
@@ -276,37 +299,37 @@ MContMN <- function(Xtrain,ltrain,par)
   {
     for(i in 1:m)
     {
-        factor2 <- ltrain[i,g]*(v[i,g] + (1-v[i,g])/eta[g])
-        if(length(dim(W)) == 2)
-            W <- W + factor2 * Xtrain[i,]%*%t(Xtrain[i,])
-        else  if(length(dim(W)) == 2){
-            W[,,g] <- W[,,g] + factor2 * Xtrain[i,]%*%t(Xtrain[i,])
-        } #End-f
-      
+        factor2 <- l[i,g]*(v[i,g] + (1-v[i,g])/eta[g])
+            W[,,g] <- W[,,g] + factor2 * (Xtrain[i,]-mu1[,g])%*%t(Xtrain[i,]-mu1[,g])
     }#End-for
-        if(length(dim(W)) == 2)
-            Sigma1<-W/eta[g]
-        else if(length(dim(W))>2) {
-          Sigma1[,,g] <- Sigma1[,,g]/eta[g]
-        } # End if
+    # Calculating Sigma1
+          sigma1[,,g] <- W[,,g]/mg[g]
   }#End-for
     
   for (g in 1:G)
   {
-    for( i in 1:n)
+    for( i in 1:m)
     {
-      if(length(dim(W))==2)
-        factor3 <- t(Xtrain[i]-mu1[,g])%*% Sigma1 %*% (Xtrain[i]-mu1[,g])
-      else if(length(dim(W))>2){
-        factor3 <- t(Xtrain[i]-mu1[,g])%*% Sigma1[,,g] %*% (Xtrain[i]-mu1[,g])
-      }
-      b[g] <- b[g] + ltrain[i,g]*(1-v[i,g])*factor3
+        factor3 <- t(Xtrain[i,]-mu1[,g])%*% sigma1[,,g] %*% (Xtrain[i]-mu1[,g])
+        b[g] <- b[g] + l[i,g]*(1-v[i,g])*factor3
     }
-    eta1[g]<-max(1.001,b[g]/(p*a[g]))
+    if(any(a[g]==0, b[g] == 0))
+      eta1[g] <- 1.001
+    else  eta1[g]<-max(1.001,b[g]/(p*a[g]))
   }
   
-  return(v)
+  output <- list(mu = mu1, sigma = sigma1, eta = eta1, alpha = alpha1)
+  return(output)
 }
+
+emCmn <-function(Xtrain,ltrain,par)
+{
+  estep1<-eCmn(Xtrain,par)
+  par$v <- estep1$v
+  mstep1 <- mCmn(Xtrain,ltrain,par)
+  return(mstep1)
+}
+
 
  
 EMContMN <- function(X_train,l_train,CE)

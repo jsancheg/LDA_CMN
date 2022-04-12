@@ -6,7 +6,7 @@ source("SimClassfewdim.R")
 nruns = 10
 selectedvariables <- list()
 mu1 <- c(0,0,0,0)
-mu2 <- c(0,4,0,4)
+mu2 <- c(0,6,0,6)
 mu <- cbind(mu1,mu2)
 sg <- diag(1,4)
 pig<- c(0.5,0.5)
@@ -15,11 +15,20 @@ ptraining = 0.75
 alphag <-c(1,1)
 etag <- c(1,1)
 GenData <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
-
+GenData$ltrain
 GenData$Xtrain
-GenData$Xtest
-GenData$l
-GenData$ind
+
+
+mg <- apply(unmap(GenData$ltrain),2,sum)
+par <- list(mu = mu,sigma = sg, alpha = alphag, eta = etag,G = 2)
+
+est1 <- eCmn(Xtrain = GenData$Xtrain,par = par)
+par$v <- est1$v
+est1$z
+
+mCmn(Xtrain = GenData$Xtrain,ltrain=GenData$ltrain, par = par)
+
+emCmn(GenData$Xtrain,GenData$ltrain,par)
 
 
 
