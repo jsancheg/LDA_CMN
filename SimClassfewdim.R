@@ -212,6 +212,10 @@ ModelAccuracy1 <- function(X_train,X_test,l_train,l_test,CE,alpharef)
   if(length(alpharef)>G) stop("alpharef must be of dimension G")
   if(length(alpharef) == 1) alpharef <- rep(alpharef,G)
     
+  mstep0 <- CNmixt(X = X_train, contamination = F, model = CE,
+                   initialization = "mixt", start.z = unmap(l_train), G = 2 )
+  estep0 <- 
+  mstep0$models
   # Estimate parameters assuming uncontaminated set
   mstep1 <-mstep(data = X_train,modelName = CE, z = unmap(l_train))
   estep1 <- estep(data = X_test, modelName = CE, 
