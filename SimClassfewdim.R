@@ -146,7 +146,7 @@ SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   if(sum(pig)!=1) stop("proportions do not sum 1")
   if(any(pig<0) | any(pig>1)) stop("alpha is not a probability")
   if(any(ptraining<0) | any(ptraining>1)) stop("ptraining is not a probability")
-  if(any(alphag<0) | any(alphag>1)) stop("alpha is not a probability")
+  if(any(alphag<=0) | any(alphag>=1)) stop("alpha takes values in the interval (0,1)")
   if(any(etag < 1))stop("eta has to be greater than 1")  
   set.seed(123)
   aux <- (rmultinom(nobs,1,pig))
@@ -200,7 +200,7 @@ SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
 
 
 
-ModelAccuracy1 <- function(X_train,X_test,l_train,l_test,CE)
+ModelAccuracy1 <- function(X_train,X_test,l_train,l_test,CE,alpharef)
 {
   if(!is.matrix(X_train)) X_train <- as.matrix(X_train)
   if(!is.matrix(X_test)) X_test <- as.matrix(X_test)
@@ -209,6 +209,9 @@ ModelAccuracy1 <- function(X_train,X_test,l_train,l_test,CE)
   nvar <- ncol(X_train)
   nobs <- nrow(X_train)
   G <- length(unique(l_train))
+  if(length(alpharef)>G) stop("alpharef must be of dimension G")
+  if(length(alpharef) == 1) alpharef <- rep(alpharef,G)
+    
   # Estimate parameters assuming uncontaminated set
   mstep1 <-mstep(data = X_train,modelName = CE, z = unmap(l_train))
   estep1 <- estep(data = X_test, modelName = CE, 
@@ -219,10 +222,11 @@ ModelAccuracy1 <- function(X_train,X_test,l_train,l_test,CE)
   
   # Estimated initial parameters
   par$mu <- mstep1$parameters$mean
-  par$sigma <- mstep1$parameters$variance$sigma
+  par$sigma <- mstep1$parameters$variance$sigma/mstep1$parameters$variance$scale
   par$G <- mstep1$parameters$variance$G
   par$pig <- apply(unmap(l_train),2,sum)/nrow(X_train)
-  par$alpha <- rep(0.99,G)
+  # give initial values for alpha
+  par$alpha <- alpharef
   par$eta <- rep(1.011,G)
   
   estep2 <- eCmn(X_train,par)
@@ -230,28 +234,29 @@ ModelAccuracy1 <- function(X_train,X_test,l_train,l_test,CE)
   lhat <-estep2$lhat
   par$v <- vhat  
   # Estimate parameters assuming contaminated set
-  flag1 <- 1
+  iter <- 1
   vr <- list()
   vr[[1]] <- vhat
-  vr[[2]] <- matrix(-1.0, ncol = ncol(vhat0), nrow(vhat0))
-  stop1 = T
-  while (stop1)
+  vr[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
+  flag2 = 0
+  while (flag2 < 10)
   {
     mstep2 <- mCmn(X_train,l_train,par)
     par$mu <- mstep2$mu
     par$sigma <- mstep2$sigma
     par$eta <- mstep2$eta
-    par$alpha <- mstep2$alpha
+    par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 
     estep3 <- eCmn(X_train,mstep2)
-    flag1 <- flag1 + 1
-    vr[[flag1]] <- estep3$v
+    iter <- iter + 1
+    vr[[iter]] <- estep3$v
     
-    if (all(vr[[flag1]] == vr[[flag1-1]]))
-      stop1 = F
+    if (all(vr[[iter]] == vr[[iter-1]]))
+      flag2 <- flag2 + 1
     
   }
     
-    
+  par$alpha
+  
   return(accTest)
 }
 
@@ -328,6 +333,7 @@ mCmn <- function(Xtrain,ltrain,par)
   a <- rep(0,G)
   b <- rep(0,G)
   S <- rep(0,G)
+  
   eta1 <-  rep(0,G)
   alpha1 <- rep(0,G)
   mu1 <- matrix(0.0,nrow = p, ncol = G)
@@ -374,9 +380,10 @@ mCmn <- function(Xtrain,ltrain,par)
         factor3 <- t(Xtrain[i,]-mu1[,g])%*% sigma1[,,g] %*% (Xtrain[i]-mu1[,g])
         b[g] <- b[g] + l[i,g]*(1-v[i,g])*factor3
     }
-    if(any(a[g]==0, b[g] == 0))
-      eta1[g] <- 1.001
-    else  eta1[g]<-max(1.001,b[g]/(p*a[g]))
+#    if(any(b[g] == 0))
+#      eta1[g] <- 1.001
+#    else  eta1[g]<-max(1.001,b[g]/(p*a[g]))
+    eta1[g]<-max(1.001,b[g]/(p*a[g]))
   }
   
   output <- list(mu = mu1, sigma = sigma1, eta = eta1, 
