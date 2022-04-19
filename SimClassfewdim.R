@@ -146,7 +146,7 @@ SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   if(sum(pig)!=1) stop("proportions do not sum 1")
   if(any(pig<0) | any(pig>1)) stop("alpha is not a probability")
   if(any(ptraining<0) | any(ptraining>1)) stop("ptraining is not a probability")
-  if(any(alphag<=0) | any(alphag>=1)) stop("alpha takes values in the interval (0,1)")
+  if(any(alphag<0) | any(alphag>1)) stop("alpha takes values in the interval (0,1)")
   if(any(etag < 1))stop("eta has to be greater than 1")  
   set.seed(123)
   aux <- (rmultinom(nobs,1,pig))
@@ -157,12 +157,9 @@ SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
       # X[i,] <- unlist(gen(p, mu = 0, sigma = 1))
       l <- sample(1:G,nobs,replace = T, prob = pig)
       mg <- apply(unmap(l),2,sum)
-      if (any(alphag!=1)){
         for(i in 1:nobs)
-        {
           v[i,l[i]] <- as.numeric(rbernoulli(1,alphag[l[i]]))  
-        }
-      }
+
       for (i in 1:nobs)
       {
         if(v[i,l[i]] == 1)  
