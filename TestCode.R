@@ -7,7 +7,7 @@ nruns = 10
 selectedvariables <- list()
 
 
-# Dataset A (uncontaminated) ---------------------------------------------------
+# Dataset A.1 (uncontaminated) ---------------------------------------------------
 
 mu1 <- c(0,0,0,0)
 mu2 <- c(0,2,0,2)
@@ -18,11 +18,12 @@ nobservations = 160
 ptraining = 0.75
 alphag <-c(1,1)
 etag <- c(1,1)
-GenDataA <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+GenDataA.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+plot(GenDataA.1$Xtrain[,c(2,4)], col = GenDataA.1$ltrain, pch = 15+GenDataA$ltrain,
+       xlab = "X2", ylab = "X4", main = "Dataset A.1")
 
 
-
-# Dataset B (uncontaminated) ---------------------------------------------------
+# Dataset A.2 (uncontaminated) ---------------------------------------------------
 
 mu1 <- c(0,0,0,0)
 mu2 <- c(0,4,0,4)
@@ -33,12 +34,15 @@ nobservations = 160
 ptraining = 0.75
 alphag <-c(1,1)
 etag <- c(1,1)
-GenDataB <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+GenDataA.2 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+
+plot(GenDataA.2$Xtrain[,c(2,4)], col = GenDataA.2$ltrain, 
+     pch = 15+GenDataA.2$ltrain,
+     xlab = "X2", ylab = "X4", main = "Dataset A.2")
 
 
 
-
-# Dataset C (uncontaminated) ----------------------------------------------
+# Dataset A.3 (uncontaminated) ----------------------------------------------
 
 mu1 <- c(0,0,0,0)
 mu2 <- c(0,6,0,6)
@@ -49,11 +53,14 @@ nobservations = 160
 ptraining = 0.75
 alphag <-c(1,1)
 etag <- c(1,1)
-GenDataC <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+GenDataA.3 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+
+plot(GenDataA.3$Xtrain[,c(2,4)], col = GenDataA.3$ltrain, 
+     pch = 15+GenDataA.3$ltrain,
+     xlab = "X2", ylab = "X4", main = "Dataset A.3")
 
 
-
-# Dataset D (contaminated) ----------------------------------------------
+# Dataset A.4 (contaminated) ----------------------------------------------
 
 mu1 <- c(0,0,0,0)
 mu2 <- c(0,4,0,4)
@@ -64,7 +71,40 @@ nobservations = 160
 ptraining = 0.75
 alphag <-c(0.9,0.8)
 etag <- c(2,3)
-GenDataD <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+GenDataA.4 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+
+plot(GenDataA.4$Xtrain[,c(2,4)], col = GenDataA.4$ltrain, 
+     pch = 15+GenDataA.4$ltrain,
+     xlab = "X2", ylab = "X4", main = "Dataset A.4")
+
+
+
+# Dataset D.1 (contaminated) ----------------------------------------------
+
+mu1 <- c(0,0,0,0)
+mu <- mu1
+sg <- diag(1,4)
+pig<- c(1)
+nobservations = 160
+ptraining = 0.75
+alphag < 0.9
+etag <- 2
+GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+GenDataD.1$vtrain
+
+GenDataD.1$vtrain
+
+plot(GenDataD.1$Xtrain[,c(2,4)], col = GenDataD.1$vtrain+2, 
+     pch = 15+GenDataD.1$ltrain,
+     xlab = "X2", ylab = "X4", main = "Dataset D.4")
+
+
+
+
+
+
+
+
 
 cbind(GenDataD$ltrain,GenDataD$vtrain)
 

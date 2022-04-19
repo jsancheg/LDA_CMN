@@ -134,12 +134,13 @@ modelAccuracy <- function(X_train,X_test,l_train,l_test,CE)
   return(accTest)
 }
 
+
 SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   #n : number of observations
 {
   output <- list()
   G <- length(pig)
-  p<-nrow(mug)
+  if(is.matrix(mug)) p<-nrow(mug) else p <- length(mug)
   X <- matrix(0.0, ncol = p , nrow = nobs)
   v <- matrix(-1, ncol = G , nrow = nobs)
   #Validate parameters
@@ -151,34 +152,52 @@ SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   set.seed(123)
   aux <- (rmultinom(nobs,1,pig))
   l <- apply(aux,2,which.max)
-  l
   
-    if(length(dim(sg)) == 2){
-      # X[i,] <- unlist(gen(p, mu = 0, sigma = 1))
-      l <- sample(1:G,nobs,replace = T, prob = pig)
-      mg <- apply(unmap(l),2,sum)
-        for(i in 1:nobs)
-          v[i,l[i]] <- as.numeric(rbernoulli(1,alphag[l[i]]))  
-
-      for (i in 1:nobs)
-      {
-        if(v[i,l[i]] == 1)  
-          X[i,] <- rMVNorm(1,mug[,l[i]],sg)
-        else if(v[i,l[i]]==0)
-          X[i,] <- rMVNorm(1,mug[,l[i]],etag[l[i]]*sg)
-      }
-      
-    }else if(length(dim(sg)) > 2)
+  
+  if(length(dim(sg)) == 2){
+    # X[i,] <- unlist(gen(p, mu = 0, sigma = 1))
+    l <- sample(1:G,nobs,replace = T, prob = pig)
+    mg <- apply(unmap(l),2,sum)
+    #     if (any(alphag!=1)){
+    for(i in 1:nobs)
+      v[i,l[i]] <- as.numeric(rbernoulli(1,alphag[l[i]]))  
+    #      }
+    for (i in 1:nobs)
     {
+      if(v[i,l[i]] == 1)
+      {  
+        if(is.matrix(mug))
+          X[i,] <- rMVNorm(1,mug[,l[i]],sg)
+        else  X[i,] <- rMVNorm(1,mug,sg)
+        
+      }else if(v[i,l[i]]==0)
+      {  
+        if(is.matrix(mug))
+          X[i,] <- rMVNorm(1,mug[,l[i]],etag[l[i]]*sg)
+        else  X[i,] <- rMVNorm(1,mug,etag[l[i]]*sg)
+      }  
       
-      for (i in 1:nobs)
-        if(v[i,l[i]] == 1)
+    }
+    
+  }else if(length(dim(sg)) > 2)
+  {
+    
+    for (i in 1:nobs)
+      if(v[i,l[i]] == 1)
+      {  
+        if(is.matrix(mug))
           X[i,] <- rMVNorm(1,mug[,l[i]],sg[,,l[i]])
-        else if(v[i,l[i]] == 0)
+        else
+          X[i,] <- rMVNorm(1,mug,sg[,,l[i]])
+      }else if(v[i,l[i]] == 0)
+      {
+        if(is.matrix(mug))
           X[i,] <- rMVNorm(1,mug[,l[i]],etag[l[i]]*sg[,,l[i]])
-
-    } #End-if
-
+        else  X[i,] <- rMVNorm(1,mug,etag[l[i]]*sg[,,l[i]])
+        
+      }
+  } #End-if
+  
   ind <- sample(1:nobs, round(nobs* ptraining))
   Xtrain <- X[ind,]
   Xtest <- X[-ind,]
@@ -190,6 +209,143 @@ SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
                  Xtest = Xtest,ltrain = ltrain,ltest = ltest,
                  v = v, vtrain = vtrain, vtest = vtest)
   return(output)
+}
+
+
+
+
+loglikCMN<-function(X,l, par)
+{
+
+  mu <- par$mu
+  sg <- par$sigma
+  G <- par$G
+  
+  pig <- par$pig
+  alpha <- par$alpha
+  eta <- par$eta
+  v <- par$v
+  m <- nrow(X_train)
+  l <- unmap(l_train)
+  p <- ncol(X_train)
+  M <- matrix(0.0, nrow = m, ncol = G)
+  
+  
+  p1<-0
+  p2<-0
+  
+  
+  for (g in 1:G)
+  {
+    for(i in 1:m)
+    {
+      term1 <- log(pig[g])
+      
+      if(length(dim(sg)) > 2)
+      {
+        term2 <- v[i,g] * log(alpha[g]*dMVNorm(Xtrain[i,],mu[,g],sg[,,g])  )
+        term3<-(1-v[i,g]) * log( (1-alphag[g]) * dMVNorm(Xtrain[i,],mu[,g],eta*sg[,,g]) )
+        
+      }else 
+        {
+          sg <- matrix(sg, ncol = p, nrow = p)
+          term2 <- v[i,g] * log(alpha[g]*dMVNorm(Xtrain[i,],mu[,g],data.matrix(sg)) )
+          term3<-(1-v[i,g]) * log( (1-alphag[g]) * dMVNorm(Xtrain[i,],mu[,g],eta*sg ) )
+        }
+          
+      if(ncol(l)> 1)
+        M[i,g] <- l[i,g]*(term1 + term2 + term3)   
+      else  M[i,g] <- l[i]*(term1 + term2 + term3)   
+
+        
+    }
+  }
+  
+  loglik <- sum(M)
+  
+  return(loglik)
+}
+
+
+ModelAccuracy2 <- function(X_train,X_test,l_train,l_test,CE,
+                           alpharef=NULL, tol = 0.001)
+{
+  if(!is.matrix(X_train)) X_train <- as.matrix(X_train)
+  if(!is.matrix(X_test)) X_test <- as.matrix(X_test)
+  accTest <- 0.0
+  par <- list()
+  nvar <- ncol(X_train)
+  nobs <- nrow(X_train)
+  G <- length(unique(l_train))
+  if(is.null(alpharef)) alpharef <- rep(0.95,G)
+  if(length(alpharef)>G) stop("alpharef must be of dimension G")
+  if(length(alpharef) == 1) alpharef <- rep(alpharef,G)
+  
+  mstep0 <- CNmixt(X = X_train, contamination = F, model = CE,
+                   initialization = "mixt", start.z = unmap(l_train), G = 2 )
+  estep0 <- mstep0$models
+  # Estimate parameters assuming uncontaminated set
+  mstep1 <-mstep(data = X_train,modelName = CE, z = unmap(l_train))
+  estep1 <- estep(data = X_test, modelName = CE, 
+                  parameters = mstep1$parameters)
+  z <- estep1$z  
+  ltest <- apply(z,1,which.max)
+  accTest <- sum(ltest == l_test)/length(l_test)
+  
+  # Estimated initial parameters
+  par$mu <- mstep1$parameters$mean
+  par$sigma <- mstep1$parameters$variance$sigma/mstep1$parameters$variance$scale
+  par$G <- mstep1$parameters$variance$G
+  par$pig <- apply(unmap(l_train),2,sum)/nrow(X_train)
+  # give initial values for alpha
+  par$alpha <- alpharef
+  par$eta <- rep(1.011,G)
+  
+  estep2 <- eCmn(X_train,par)
+  vhat <- estep2$v
+  lhat <-estep2$lhat
+  par$v <- vhat  
+  # Estimate parameters assuming contaminated set
+  iter <- 1
+  vr <- list()
+  ar <- list()
+  logc <- list()
+  lrinf<- list()
+  
+  vr[[iter]] <- vhat
+  logc[[iter]] <-loglikCMN(X_train, l_train,par) 
+  vr[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
+  Stop1 <- F
+  while (Stop1 == F)
+  {
+    mstep2 <- mCmn(X_train,l_train,par)
+    par$mu <- mstep2$mu
+    par$sigma <- mstep2$sigma
+    par$eta <- mstep2$eta
+    par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 
+    estep3 <- eCmn(X_train,mstep2)
+    if (iter >=4 )
+    {
+      ar[[iter-3]] <- ( logc[[iter - 1]] - logc[[iter - 2]] ) / ( logc[[iter-2]]-logc[[iter-3]])
+      lrinf[[iter-2]]<-logc[[iter-3]] + (logc[[iter-2]]-logc[[iter-3]])/(1-ar[[iter-3]]) 
+      
+      if(!is.null(lrinf[[iter-2]]))
+      if( abs(lrinf[[iter-2]] - logc[[iter-2]] )< tol )
+        Stop1 <- T
+      
+    }
+    
+    iter <- iter + 1
+    vr[[iter]] <- estep3$v
+    par$v <- vr[[iter]]
+    logc[[iter]] <- loglikCMN(X_train,l_train,par)
+      
+    
+  }
+      
+  par$alpha
+  
+  return(accTest)
 }
 
 
