@@ -102,8 +102,20 @@ plot(GenDataD.1$Xtrain[,c(2,4)], col = GenDataD.1$vtrain+2,
 
 
 
+par_actual <- list()
+par_actual$mu <-matrix(mu1,nrow = 4,ncol = 1) 
+par_actual$sigma <- sg
+par_actual$alpha <- alphag
+par_actual$eta <- etag
+par_actual$G <- 1
+par_actual$pig <- 1
+par_actual$v <- as.matrix(rep(0.99,nrow(GenDataD.1$Xtrain)),nrow = nrow(GenDataD.1$Xtrain), ncol = 1)
 
+loglikCMN(GenDataD.1$Xtrain, GenDataD.1$ltrain, par_actual)
 
+par$eta <- mstep2$eta
+#  par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 
+par$alpha <- mstep2$alpha
 
 
 cbind(GenDataD$ltrain,GenDataD$vtrain)

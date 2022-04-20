@@ -300,7 +300,7 @@ ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
   # give initial values for alpha
   par$alpha <- alpharef
   par$eta <- rep(1.011,G)
-  cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",eta,"\n")
+  cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
   estep2 <- eCmn(X_train,par)
   vhat <- estep2$v
   cat("\n","vij = ", estep2$v, "\n")
@@ -309,9 +309,9 @@ ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
   # Estimate parameters assuming contaminated set
   iter <- 1
   vr <- list()
-  
+  logc <- list()
   vr[[iter]] <- vhat
-  logc[[iter]] <-loglikCMN(X_train, l_train,par) 
+  logc[[iter]] <- loglikCMN(X_train, l_train,par) 
   vr[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
   
   while (iter <= 10)
@@ -327,7 +327,7 @@ ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
     vr[[iter]] <- estep3$v
     par$v <- vr[[iter]]
     logc[[iter-1]] <- loglikCMN(X_train,l_train,par)
-    cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",eta,"\n")
+    cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
     cat("\n",logc[[iter-1]],"\n")
     cat(estep3$v, "\n")
     
