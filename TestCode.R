@@ -87,7 +87,7 @@ sg <- diag(1,4)
 pig<- c(1)
 nobservations = 160
 ptraining = 0.75
-alphag < 0.9
+alphag <- 0.9
 etag <- 2
 GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
 GenDataD.1$vtrain

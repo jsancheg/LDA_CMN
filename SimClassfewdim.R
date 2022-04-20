@@ -225,9 +225,9 @@ loglikCMN<-function(X,l, par)
   alpha <- par$alpha
   eta <- par$eta
   v <- par$v
-  m <- nrow(X_train)
-  l <- unmap(l_train)
-  p <- ncol(X_train)
+  m <- nrow(X)
+  l <- unmap(l)
+  p <- ncol(X)
   M <- matrix(0.0, nrow = m, ncol = G)
   
   
@@ -243,14 +243,14 @@ loglikCMN<-function(X,l, par)
       
       if(length(dim(sg)) > 2)
       {
-        term2 <- v[i,g] * log(alpha[g]*dMVNorm(Xtrain[i,],mu[,g],sg[,,g])  )
-        term3<-(1-v[i,g]) * log( (1-alphag[g]) * dMVNorm(Xtrain[i,],mu[,g],eta*sg[,,g]) )
+        term2 <- v[i,g] * log(alpha[g]*dMVNorm(X[i,],mu[,g],sg[,,g])  )
+        term3<-(1-v[i,g]) * log( (1-alphag[g]) * dMVNorm(X[i,],mu[,g],eta*sg[,,g]) )
         
       }else 
         {
           sg <- matrix(sg, ncol = p, nrow = p)
-          term2 <- v[i,g] * log(alpha[g]*dMVNorm(Xtrain[i,],mu[,g],data.matrix(sg)) )
-          term3<-(1-v[i,g]) * log( (1-alphag[g]) * dMVNorm(Xtrain[i,],mu[,g],eta*sg ) )
+          term2 <- v[i,g] * log(alpha[g]*dMVNorm(X[i,],mu[,g],data.matrix(sg)) )
+          term3<-(1-v[i,g]) * log( (1-alphag[g]) * dMVNorm(X[i,],mu[,g],eta*sg ) )
         }
           
       if(ncol(l)> 1)
@@ -265,6 +265,80 @@ loglikCMN<-function(X,l, par)
   
   return(loglik)
 }
+
+
+ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
+                           alpharef=NULL, tol = 0.001)
+{
+  if(!is.matrix(X_train)) X_train <- as.matrix(X_train)
+  if(!is.matrix(X_test)) X_test <- as.matrix(X_test)
+  accTest <- 0.0
+  par <- list()
+  nvar <- ncol(X_train)
+  nobs <- nrow(X_train)
+  G <- length(unique(l_train))
+  if(is.null(alpharef)) alpharef <- rep(0.95,G)
+  if(length(alpharef)>G) stop("alpharef must be of dimension G")
+  if(length(alpharef) == 1) alpharef <- rep(alpharef,G)
+  
+  mstep0 <- CNmixt(X = X_train, contamination = F, model = CE,
+                   initialization = "mixt", start.z = unmap(l_train), G = 2 )
+  estep0 <- mstep0$models
+  # Estimate parameters assuming uncontaminated set
+  mstep1 <-mstep(data = X_train,modelName = CE, z = unmap(l_train))
+  estep1 <- estep(data = X_test, modelName = CE, 
+                  parameters = mstep1$parameters)
+  z <- estep1$z  
+  ltest <- apply(z,1,which.max)
+  accTest <- sum(ltest == l_test)/length(l_test)
+  
+  # Estimated initial parameters
+  par$mu <- mstep1$parameters$mean
+  par$sigma <- mstep1$parameters$variance$sigma/mstep1$parameters$variance$scale
+  par$G <- mstep1$parameters$variance$G
+  par$pig <- apply(unmap(l_train),2,sum)/nrow(X_train)
+  # give initial values for alpha
+  par$alpha <- alpharef
+  par$eta <- rep(1.011,G)
+  cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",eta,"\n")
+  estep2 <- eCmn(X_train,par)
+  vhat <- estep2$v
+  cat("\n","vij = ", estep2$v, "\n")
+  lhat <-estep2$lhat
+  par$v <- vhat  
+  # Estimate parameters assuming contaminated set
+  iter <- 1
+  vr <- list()
+  
+  vr[[iter]] <- vhat
+  logc[[iter]] <-loglikCMN(X_train, l_train,par) 
+  vr[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
+
+  while (iter <= 10)
+  {
+    mstep2 <- mCmn(X_train,l_train,par)
+    par$mu <- mstep2$mu
+    par$sigma <- mstep2$sigma
+    par$eta <- mstep2$eta
+  #  par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 
+    par$alpha <- mstep2$alpha
+    estep3 <- eCmn(X_train,mstep2)
+    iter <- iter + 1
+    vr[[iter]] <- estep3$v
+    par$v <- vr[[iter]]
+    logc[[iter-1]] <- loglikCMN(X_train,l_train,par)
+    cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",eta,"\n")
+    cat("\n",logc[[iter-1]],"\n")
+    cat(estep3$v, "\n")
+    
+    
+  }
+  
+  par$alpha
+  
+  return(accTest)
+}
+
 
 
 ModelAccuracy2 <- function(X_train,X_test,l_train,l_test,CE,
@@ -316,13 +390,15 @@ ModelAccuracy2 <- function(X_train,X_test,l_train,l_test,CE,
   logc[[iter]] <-loglikCMN(X_train, l_train,par) 
   vr[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
   Stop1 <- F
-  while (Stop1 == F)
+#  while (Stop1 == F)
+ while (iter <= 300)   
   {
     mstep2 <- mCmn(X_train,l_train,par)
     par$mu <- mstep2$mu
     par$sigma <- mstep2$sigma
     par$eta <- mstep2$eta
-    par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 
+#    par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 
+    par$alpha <- mstep2$alpha
     estep3 <- eCmn(X_train,mstep2)
     if (iter >=4 )
     {
@@ -534,8 +610,9 @@ mCmn <- function(Xtrain,ltrain,par)
   {
     for( i in 1:m)
     {
-        factor3 <- t(Xtrain[i,]-mu1[,g])%*% sigma1[,,g] %*% (Xtrain[i]-mu1[,g])
-        b[g] <- b[g] + l[i,g]*(1-v[i,g])*factor3
+      # factor 3: mahalanobis distance
+      factor3 <- mahalanobis(Xtrain[i,],mu1[,g],sigma1[,,g])
+      b[g] <- b[g] + l[i,g]*(1-v[i,g])*factor3
     }
 #    if(any(b[g] == 0))
 #      eta1[g] <- 1.001
