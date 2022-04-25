@@ -81,29 +81,69 @@ plot(GenDataA.4$Xtrain[,c(2,4)], col = GenDataA.4$ltrain,
 
 # Dataset D.1 (contaminated) ----------------------------------------------
 
-mu1 <- c(0,0,0,0)
+mu1 <- c(0,0)
 mu <- mu1
-sg <- diag(1,4)
+sg <- diag(1,2)
 pig<- c(1)
 nobservations = 160
 ptraining = 0.75
-alphag <- 0.9
-etag <- 2
+alphag <- 0.99
+etag <- 1.011
+set.seed(123)
 GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
 GenDataD.1$vtrain
 
 GenDataD.1$vtrain
 
-plot(GenDataD.1$Xtrain[,c(2,4)], col = GenDataD.1$vtrain+2, 
+plot(GenDataD.1$Xtrain, col = GenDataD.1$vtrain+2, 
      pch = 15+GenDataD.1$ltrain,
      xlab = "X2", ylab = "X4", main = "Dataset D.4")
 
 
 
+resD1<-ModelAccuracy3(GenDataD.1$Xtrain, GenDataD.1$Xtest,
+               GenDataD.1$ltrain, GenDataD.1$ltest,
+               CE = "EII", alpharef = 0.95, tol=0.0001)
+
+resD1$diflog
+
+par <- list()
+par$mu <- resD1$mu
+par$sigma <- resD1$sigma
+par$alpha <- resD1$alpha
+par$eta <- resD1$eta
+par$v <- resD1$v
+par$G <- 1
+par$pig <- 1
+
+resD1$loglikelihod[[5]]
+resD1$loglikelihod[[10]]
+unlist(resD1$loglikelihod)
+
+#mu
+resD1$mu[[3]]
+resD1$mu[[5]]
+resD1$mu[[10]]
+
+#sigma
+resD1$sigma[[3]]
+resD1$sigma[[5]]
+resD1$sigma[[10]]
+
+
+#alpha
+resD1$alpha[[3]]
+resD1$alpha[[5]]
+resD1$alpha[[10]]
+
+#eta
+resD1$eta[[3]]
+resD1$eta[[5]]
+resD1$eta[[10]]
 
 
 par_actual <- list()
-par_actual$mu <-matrix(mu1,nrow = 4,ncol = 1) 
+par_actual$mu <-matrix(mu1,nrow = length(mu1),ncol = 1) 
 par_actual$sigma <- sg
 par_actual$alpha <- alphag
 par_actual$eta <- etag
@@ -112,6 +152,9 @@ par_actual$pig <- 1
 par_actual$v <- as.matrix(rep(0.99,nrow(GenDataD.1$Xtrain)),nrow = nrow(GenDataD.1$Xtrain), ncol = 1)
 
 loglikCMN(GenDataD.1$Xtrain, GenDataD.1$ltrain, par_actual)
+
+
+
 
 par$eta <- mstep2$eta
 #  par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 

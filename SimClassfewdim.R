@@ -273,6 +273,12 @@ ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
   if(!is.matrix(X_train)) X_train <- as.matrix(X_train)
   if(!is.matrix(X_test)) X_test <- as.matrix(X_test)
   accTest <- 0.0
+  output <- list()
+  lmu <- list()
+  lsigma <- list()
+  lalpha <- list()
+  leta <- list()
+  diflog <- list()
   par <- list()
   nvar <- ncol(X_train)
   nobs <- nrow(X_train)
@@ -310,11 +316,14 @@ ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
   iter <- 1
   vr <- list()
   logc <- list()
+  lmu[[iter]] <- par$mu
+  lsigma[[iter]] <- par$sigma
+  leta[[iter]] <- par$eta
   vr[[iter]] <- vhat
   logc[[iter]] <- loglikCMN(X_train, l_train,par) 
   vr[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
-  
-  while (iter <= 10)
+  diflog[[iter]] <- NA
+  while (iter < 3 | diflog[[iter]] > tol )
   {
     mstep2 <- mCmn(X_train,l_train,par)
     par$mu <- mstep2$mu
@@ -324,19 +333,31 @@ ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
     par$alpha <- mstep2$alpha
     estep3 <- eCmn(X_train,mstep2)
     iter <- iter + 1
+    lmu[[iter]]<-par$mu
+    lsigma[[iter]]<-par$sigma
+    lalpha[[iter]]<-par$alpha
+    leta[[iter]] <- par$eta
     vr[[iter]] <- estep3$v
     par$v <- vr[[iter]]
+    
     logc[[iter-1]] <- loglikCMN(X_train,l_train,par)
-    cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
-    cat("\n",logc[[iter-1]],"\n")
-    cat(estep3$v, "\n")
+    
+    if(iter > 2) { diflog[[iter]] <- abs(logc[[iter-2]] - logc[[iter - 1]])
+    }else diflog[[iter]] <- NA    
+    
+#    cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
+    cat("\n","i=",iter,"-",logc[[iter-1]],"\n")
+#    cat(estep3$v, "\n")
     
     
   }
   
-  par$alpha
+  output <- list(accTest = accTest, loglikelihod = logc,
+                 mu = lmu, sigma = lsigma, 
+                 alpha = lalpha, eta = leta,
+                 v = vr, diflog = diflog)
   
-  return(accTest)
+  return(output)
 }
 
 
