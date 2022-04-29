@@ -97,13 +97,13 @@ GenDataD.1$vtrain
 
 plot(GenDataD.1$Xtrain, col = GenDataD.1$vtrain+2, 
      pch = 15+GenDataD.1$ltrain,
-     xlab = "X2", ylab = "X4", main = "Dataset D.4")
+     xlab = "X2", ylab = "X4")
 
 
 
 resD1<-ModelAccuracy3(GenDataD.1$Xtrain, GenDataD.1$Xtest,
                GenDataD.1$ltrain, GenDataD.1$ltest,
-               CE = "EII", alpharef = 0.95, tol=0.0001)
+               CE = "EII", alpharef = 0.90, tol = 0.0001)
 
 resD1$diflog
 
@@ -116,11 +116,38 @@ par$v <- resD1$v
 par$G <- 1
 par$pig <- 1
 
+
+par_actual <- list()
+par_actual$mu <-matrix(mu1,nrow = length(mu1),ncol = 1) 
+par_actual$sigma <- sg
+par_actual$alpha <- alphag
+par_actual$eta <- etag
+par_actual$G <- 1
+par_actual$pig <- 1
+par_actual$v <- as.matrix(rep(0.99,nrow(GenDataD.1$Xtrain)),nrow = nrow(GenDataD.1$Xtrain), ncol = 1)
+
+logLikActual <-loglikCMN(GenDataD.1$Xtrain, GenDataD.1$ltrain, par_actual)
+logLikActual
+
+resD1$loglikelihod[[2]]
+resD1$loglikelihod[[3]]
 resD1$loglikelihod[[5]]
 resD1$loglikelihod[[10]]
-unlist(resD1$loglikelihod)
+resD1$loglikelihod[[length(resD1$loglikelihod)]]
 
+resD1$loglikelihod[[2]] - logLikActual
+resD1$loglikelihod[[3]] - logLikActual
+resD1$loglikelihod[[5]] - logLikActual
+resD1$loglikelihod[[10]] - logLikActual
+
+
+unlist(resD1$loglikelihod)
+length(resD1$loglikelihod)
+
+plot(1:length(resD1$loglikelihod),resD1$loglikelihod, type = "l",
+     xlab = "Iteration", ylab = "log-likelihood")
 #mu
+resD1$mu[[2]]
 resD1$mu[[3]]
 resD1$mu[[5]]
 resD1$mu[[10]]
@@ -142,16 +169,7 @@ resD1$eta[[5]]
 resD1$eta[[10]]
 
 
-par_actual <- list()
-par_actual$mu <-matrix(mu1,nrow = length(mu1),ncol = 1) 
-par_actual$sigma <- sg
-par_actual$alpha <- alphag
-par_actual$eta <- etag
-par_actual$G <- 1
-par_actual$pig <- 1
-par_actual$v <- as.matrix(rep(0.99,nrow(GenDataD.1$Xtrain)),nrow = nrow(GenDataD.1$Xtrain), ncol = 1)
 
-loglikCMN(GenDataD.1$Xtrain, GenDataD.1$ltrain, par_actual)
 
 
 
