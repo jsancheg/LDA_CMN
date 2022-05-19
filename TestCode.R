@@ -243,7 +243,12 @@ resD1$loglikelihod[[2]] - logLikActual
 resD1$loglikelihod[[3]] - logLikActual
 resD1$loglikelihod[[5]] - logLikActual
 resD1$loglikelihod[[10]] - logLikActual
-
+# convergence e = 0.01
+resD1$loglikelihod[[15]] - logLikActual
+# convergence e = 0.001
+resD1$loglikelihod[[17]] - logLikActual
+# convergence e = 0.0001
+resD1$loglikelihod[[20]] - logLikActual
 
 unlist(resD1$loglikelihod)
 length(resD1$loglikelihod)
