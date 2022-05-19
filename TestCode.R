@@ -255,28 +255,86 @@ length(resD1$loglikelihod)
 
 plot(1:length(resD1$loglikelihod),resD1$loglikelihod, type = "l",
      xlab = "Iteration", ylab = "log-likelihood")
+
 #mu
 resD1$mu[[2]]
 resD1$mu[[3]]
 resD1$mu[[5]]
 resD1$mu[[10]]
+# convergence e = 0.01
+resD1$mu[[15]]
+# convergence e = 0.001
+resD1$mu[[17]]
+# convergence e = 0.0001
+resD1$mu[[20]]
+
 
 #sigma
 resD1$sigma[[3]]
 resD1$sigma[[5]]
 resD1$sigma[[10]]
+# convergence e = 0.01
+resD1$sigma[[15]]
+# convergence e = 0.001
+resD1$sigma[[17]]
+# convergence e = 0.0001
+resD1$sigma[[20]]
 
 
 #alpha
 resD1$alpha[[3]]
 resD1$alpha[[5]]
 resD1$alpha[[10]]
+# convergence e = 0.01
+resD1$alpha[[15]]
+# convergence e = 0.001
+resD1$alpha[[17]]
+# convergence e = 0.0001
+resD1$alpha[[20]]
 
 #eta
 resD1$eta[[3]]
 resD1$eta[[5]]
 resD1$eta[[10]]
+# convergence e = 0.01
+resD1$eta[[15]]
+# convergence e = 0.001
+resD1$eta[[17]]
+# convergence e = 0.0001
+resD1$eta[[20]]
 
+# Compare 
+vD1_15 <- ifelse(resD1$v[[15]]<0.5,0,1)
+vD1_17 <- ifelse(resD1$v[[17]]<0.5,0,1)
+vD1_20 <- ifelse(resD1$v[[20]]<0.5,0,1)
+
+# contamination cross classification table
+table(GenDataD.1$vtrain,vD1_15)
+table(GenDataD.1$vtrain,vD1_17)
+table(GenDataD.1$vtrain,vD1_20)
+
+
+# convergence e = 0.01
+parD1_15<-list()
+parD1_15$G <- 1
+parD1_15$pig <- 1
+parD1_15$mu <- resD1$mu[[15]]
+parD1_15$sigma <- resD1$sigma[[15]]
+parD1_15$alpha <- resD1$alpha[[15]]
+parD1_15$eta <- resD1$eta[[15]]
+
+parD1_20<-list()
+parD1_20$G <- 1
+parD1_20$pig <- 1
+parD1_20$mu <- resD1$mu[[20]]
+parD1_20$sigma <- resD1$sigma[[20]]
+parD1_20$alpha <- resD1$alpha[[20]]
+parD1_20$eta <- resD1$eta[[20]]
+
+
+aux15 <- eCmn(GenDataD.1$Xtest,parD1_15)
+vD1_15t <- ifelse(aux15$v<0.5,0,1)
+table(GenDataD.1$vtest,vD1_15t)
 
 # Dataset D.2 (contaminated) ----------------------------------------------
 
