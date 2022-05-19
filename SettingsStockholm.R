@@ -43,7 +43,7 @@ GenDataD.2$vtrain
 
 plot(GenDataD.2$Xtrain, col = GenDataD.2$vtrain+2, 
      pch = 15+GenDataD.2$ltrain,
-     xlab = "X2", ylab = "X4")
+     xlab = "X1", ylab = "X2")
 legend("bottomleft", legend = c("Class A","Contaminated class A"),
        col = c("green","red"),
        pch = c(16,16))
@@ -112,7 +112,7 @@ plot(GenDataD.4$Xtrain, col = (1-v)+2,
      pch = 15+GenDataD.4$ltrain,
      xlab = "X1", ylab = "X2")
 legend("bottomleft", legend = c("Class A","Class B"), 
-       col = c("green","red"),
+       col = c("green","green"),
        pch = c(16,17))
 
 
@@ -155,6 +155,48 @@ v
 plot(GenDataD.5$Xtrain, col = (1-v)+2, 
      pch = 15+GenDataD.5$ltrain,
      xlab = "X1", ylab = "X2")
+legend("bottomleft", legend = c("Class A","Class B"), 
+       col = c("green","green"),
+       pch = c(16,17))
+
+
+# fitting using mixture of contaminated normal 
+library(ContaminatedMixt)
+
+mod1 <-CNmixt(GenDataD.5$Xtrain, G =2, model = "VVV", contamination = T,
+              initialization = "mixt",
+              label = GenDataD.5$ltrain)
+summary(mod1)
+mod1$models
+
+
+mod2 <-CNmixt(GenDataD.5$Xtrain, G =2, model = "VVV", contamination = T,
+              initialization = "mixt",
+              label = rep(0,nrow(GenDataD.5$Xtrain)))
+
+agree(mod2,givgroup = GenDataD.5$ltrain)
+
+
+
+par5 <- list()
+par5$mu <- mod1$models[[1]]$mu
+par5$sigma <-mod1$models[[1]]$Sigma
+par5$G <- 2
+par5$pig <- mod1$models[[1]]$prior
+par5$alpha <- mod1$models[[1]]$alpha
+par5$eta <- mod1$models[[1]]$eta
+par5$v <- mod1$models[[1]]$v
+
+
+
+loglikCMN(GenDataD.5$Xtrain, GenDataD.5$ltrain, par5)
+mod1$models[[1]]$loglik
+
+?CNmixt
+
+mCmn1(GenDataD.5$Xtrain, GenDataD.5$ltrain, par5)
+
+
 
 # Dataset D.7 (2 no contaminated classes)  ----------------------------------------------
 
@@ -202,7 +244,6 @@ plot(GenDataD.7$Xtrain, col = 1,
      pch = 16,
      xlab = "X1", ylab = "X2")
 
-# fitting using mixture of contaminated normal 
-library(ContaminatedMixt)
 
-mod1
+
+

@@ -70,12 +70,110 @@ pig<- c(0.5,0.5)
 nobservations = 160
 ptraining = 0.75
 alphag <-c(0.9,0.8)
-etag <- c(2,3)
+etag <- c(20,30)
 GenDataA.4 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
 
-plot(GenDataA.4$Xtrain[,c(2,4)], col = GenDataA.4$ltrain, 
+v1 <- rep(0,nrow(GenDataA.4$Xtrain))
+
+for (i in 1:nrow(GenDataA.4$Xtrain))
+{
+  if(GenDataA.4$ltrain[i] == 1)
+  {
+    if(GenDataA.4$vtrain[i,1] == 1)
+      v1[i]= 0
+    else if(GenDataA.4$vtrain[i,1] == 0)
+      v1[i] = 1
+  }else  if(GenDataA.4$ltrain[i] == 2)
+  {
+    if(GenDataA.4$vtrain[i,2] == 1)
+      v1[i]= 0
+    else if(GenDataA.4$vtrain[i,2] == 0)
+      v1[i] = 1
+  } 
+}
+v1
+
+
+plot(GenDataA.4$Xtrain, col = (1-v1)+2, 
      pch = 15+GenDataA.4$ltrain,
-     xlab = "X2", ylab = "X4", main = "Dataset A.4")
+     xlab = "X1", ylab = "X2")
+legend("bottomleft", legend = c("Class A","Class B"), 
+       col = c("green","green"),
+       pch = c(16,17))
+
+
+resA4<-ModelAccuracy3(GenDataA.4$Xtrain, GenDataA.4$Xtest,
+                      GenDataA.4$ltrain, GenDataA.4$ltest,
+                      CE = "EII", alpharef = 0.90, tol = 0.0001)
+
+resA4$diflog
+
+par <- list()
+par$mu <- resA4$mu
+par$sigma <- resA4$sigma
+par$alpha <- resA4$alpha
+par$eta <- resA4$eta
+par$v <- resA4$v
+par$G <- 1
+par$pig <- 1
+
+
+par_actual <- list()
+par_actual$mu <-matrix(mu1,nrow = length(mu1),ncol = 1) 
+par_actual$sigma <- sg
+par_actual$alpha <- alphag
+par_actual$eta <- etag
+par_actual$G <- 1
+par_actual$pig <- 1
+par_actual$v <- as.matrix(rep(0.99,nrow(GenDataA.4$Xtrain)),
+                          nrow = nrow(GenDataA.4$Xtrain), ncol = 1)
+
+logLikActual <-loglikCMN(GenDataA.4$Xtrain, GenDataA.4$ltrain, par_actual)
+logLikActual
+
+modA4 <- CNmixt(GenDataA.4$Xtrain,contamination = T, model = "EII",
+                initialization = "mixt", label = GenDataA.4$ltrain, G = 2)
+
+modA4$models[[1]]$loglik
+
+resA4$loglikelihod[[2]]
+resA4$loglikelihod[[3]]
+resA4$loglikelihod[[5]]
+resA4$loglikelihod[[10]]
+resA4$loglikelihod[[length(resA4$loglikelihod)]]
+
+resA4$loglikelihod[[2]] - logLikActual
+resA4$loglikelihod[[3]] - logLikActual
+resA4$loglikelihod[[5]] - logLikActual
+resA4$loglikelihod[[10]] - logLikActual
+
+
+
+plot(1:length(resA4$loglikelihod),resA4$loglikelihod, type = "l",
+     xlab = "Iteration", ylab = "log-likelihood")
+#mu
+resA4$mu[[2]]
+resA4$mu[[3]]
+resA4$mu[[5]]
+resA4$mu[[10]]
+
+#sigma
+resA4$sigma[[3]]
+resA4$sigma[[5]]
+resA4$sigma[[10]]
+
+
+#alpha
+resA4$alpha[[3]]
+resA4$alpha[[5]]
+resA4$alpha[[10]]
+
+#eta
+resA4$eta[[3]]
+resA4$eta[[5]]
+resA4$eta[[10]]
+
+
 
 
 
@@ -88,7 +186,7 @@ pig<- c(1)
 nobservations = 160
 ptraining = 0.75
 alphag <- 0.99
-etag <- 1.011
+etag <- 30
 set.seed(123)
 GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
 GenDataD.1$vtrain
@@ -124,10 +222,16 @@ par_actual$alpha <- alphag
 par_actual$eta <- etag
 par_actual$G <- 1
 par_actual$pig <- 1
-par_actual$v <- as.matrix(rep(0.99,nrow(GenDataD.1$Xtrain)),nrow = nrow(GenDataD.1$Xtrain), ncol = 1)
+par_actual$v <- matrix(GenDataD.1$vtrain,nrow = nrow(GenDataD.1$Xtrain), 
+                          ncol = 1)
 
 logLikActual <-loglikCMN(GenDataD.1$Xtrain, GenDataD.1$ltrain, par_actual)
 logLikActual
+
+modD1 <- CNmixt(GenDataD.1$Xtrain,contamination = T, model = "EII",
+                initialization = "mixt", label = GenDataD.1$ltrain, G = 1)
+
+modD1$models[[1]]$loglik
 
 resD1$loglikelihod[[2]]
 resD1$loglikelihod[[3]]
@@ -167,6 +271,102 @@ resD1$alpha[[10]]
 resD1$eta[[3]]
 resD1$eta[[5]]
 resD1$eta[[10]]
+
+
+# Dataset D.2 (contaminated) ----------------------------------------------
+
+mu1 <- c(0,0)
+mu <- mu1
+sg <- diag(1,2)
+pig<- c(1)
+nobservations = 160
+ptraining = 0.75
+alphag <- 0.95
+etag <- 30
+set.seed(123)
+GenDataD.2 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+GenDataD.2$vtrain
+
+GenDataD.2$vtrain
+
+plot(GenDataD.2$Xtrain, col = GenDataD.2$vtrain+2, 
+     pch = 15+GenDataD.2$ltrain,
+     xlab = "X2", ylab = "X4")
+
+
+
+resD2<-ModelAccuracy3(GenDataD.2$Xtrain, GenDataD.2$Xtest,
+                      GenDataD.2$ltrain, GenDataD.2$ltest,
+                      CE = "EII", alpharef = 0.90, tol = 0.0001)
+
+resD2$diflog
+
+par <- list()
+par$mu <- resD2$mu
+par$sigma <- resD2$sigma
+par$alpha <- resD2$alpha
+par$eta <- resD2$eta
+par$v <- resD2$v
+par$G <- 1
+par$pig <- 1
+
+
+par_actual <- list()
+par_actual$mu <-matrix(mu1,nrow = length(mu1),ncol = 1) 
+par_actual$sigma <- sg
+par_actual$alpha <- alphag
+par_actual$eta <- etag
+par_actual$G <- 1
+par_actual$pig <- 1
+par_actual$v <- as.matrix(rep(0.99,nrow(GenDataD.2$Xtrain)),
+                          nrow = nrow(GenDataD.2$Xtrain), ncol = 1)
+
+logLikActual <-loglikCMN(GenDataD.2$Xtrain, GenDataD.2$ltrain, par_actual)
+logLikActual
+
+modD2 <- CNmixt(GenDataD.2$Xtrain,contamination = T, model = "EII",
+                initialization = "mixt", label = GenDataD.2$ltrain, G = 1)
+
+modD2$models[[1]]$loglik
+
+resD2$loglikelihod[[2]]
+resD2$loglikelihod[[3]]
+resD2$loglikelihod[[5]]
+resD2$loglikelihod[[10]]
+resD2$loglikelihod[[length(resD2$loglikelihod)]]
+
+resD2$loglikelihod[[2]] - logLikActual
+resD2$loglikelihod[[3]] - logLikActual
+resD2$loglikelihod[[5]] - logLikActual
+resD2$loglikelihod[[10]] - logLikActual
+
+
+unlist(resD2$loglikelihod)
+length(resD2$loglikelihod)
+
+plot(1:length(resD2$loglikelihod),resD2$loglikelihod, type = "l",
+     xlab = "Iteration", ylab = "log-likelihood")
+#mu
+resD2$mu[[2]]
+resD2$mu[[3]]
+resD2$mu[[5]]
+resD2$mu[[10]]
+
+#sigma
+resD2$sigma[[3]]
+resD2$sigma[[5]]
+resD2$sigma[[10]]
+
+
+#alpha
+resD2$alpha[[3]]
+resD2$alpha[[5]]
+resD2$alpha[[10]]
+
+#eta
+resD2$eta[[3]]
+resD2$eta[[5]]
+resD2$eta[[10]]
 
 
 
@@ -324,4 +524,4 @@ for(nrun in 1: nruns)
     } # End-if
   } # End-for
   X
-  l
+}

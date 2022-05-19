@@ -212,6 +212,18 @@ SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
 }
 
 
+theta <- function(x,mu,sigma)
+{
+  output <- 0
+  p <- length(x)
+  invsigma <- solve(sigma)
+  factor1 <- (2*pi)^(-p/2)
+  factor2 <- (det(sigma))^(1/2)
+  factor3 <- exp( -0.5*t(x-mu)%*%invsigma%*%(x-mu) )
+  
+  output <- factor1 * factor2 * factor3
+  return(output)
+}
 
 
 loglikCMN<-function(X,l, par)
@@ -220,37 +232,34 @@ loglikCMN<-function(X,l, par)
   mu <- par$mu
   sg <- par$sigma
   G <- par$G
-  
   pig <- par$pig
   alpha <- par$alpha
   eta <- par$eta
   v <- par$v
+  
   m <- nrow(X)
-  l <- unmap(l)
   p <- ncol(X)
+  
+  l <- unmap(l)
   M <- matrix(0.0, nrow = m, ncol = G)
   
   
-  p1<-0
-  p2<-0
-  
-  
+
   for (g in 1:G)
   {
     for(i in 1:m)
     {
       term1 <- log(pig[g])
-      
       if(length(dim(sg)) > 2)
       {
         term2 <- v[i,g] * log(alpha[g]*dMVNorm(X[i,],mu[,g],sg[,,g])  )
-        term3<-(1-v[i,g]) * log( (1-alphag[g]) * dMVNorm(X[i,],mu[,g],eta*sg[,,g]) )
+        term3<-(1-v[i,g]) * log( (1-alphag[g]) * dMVNorm(X[i,],mu[,g],eta[g]*sg[,,g]) )
         
       }else 
       {
-        sg <- matrix(sg, ncol = p, nrow = p)
-        term2 <- v[i,g] * log(alpha[g]*dMVNorm(X[i,],mu[,g],data.matrix(sg)) )
-        term3<-(1-v[i,g]) * log( (1-alphag[g]) * dMVNorm(X[i,],mu[,g],eta*sg ) )
+        s <- matrix(sg, ncol = p, nrow = p)
+        term2 <- v[i,g] * log(alpha[g]*dMVNorm(X[i,],mu[,g],data.matrix(s) ) )
+        term3<-(1-v[i,g]) * log( (1-alphag[g]) * dMVNorm(X[i,],mu[,g],eta[g]*s ) )
       }
       
       if(ncol(l)> 1)
@@ -268,11 +277,12 @@ loglikCMN<-function(X,l, par)
 
 
 ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
-                           alpharef=NULL, tol = 0.001)
+                           alpharef=0.98, tol = 0.01)
 {
   if(!is.matrix(X_train)) X_train <- as.matrix(X_train)
   if(!is.matrix(X_test)) X_test <- as.matrix(X_test)
-  accTest <- 0.0
+  accTest_nc <- 0.0
+  accTest_c <- 0.0
   output <- list()
   lmu <- list()
   lsigma <- list()
@@ -296,11 +306,11 @@ ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
                   parameters = mstep1$parameters)
   z <- estep1$z  
   ltest <- apply(z,1,which.max)
-  accTest <- sum(ltest == l_test)/length(l_test)
+  accTest_nc <- sum(ltest == l_test)/length(l_test)
   
   # Estimated initial parameters
   par$mu <- mstep1$parameters$mean
-  par$sigma <- mstep1$parameters$variance$sigma/mstep1$parameters$variance$scale
+  par$sigma <- mstep1$parameters$variance$sigma
   par$G <- mstep1$parameters$variance$G
   par$pig <- apply(unmap(l_train),2,sum)/nrow(X_train)
   # give initial values for alpha
@@ -329,8 +339,8 @@ ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
     par$mu <- mstep2$mu
     par$sigma <- mstep2$sigma
     par$eta <- mstep2$eta
-    #  par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 
-    par$alpha <- mstep2$alpha
+    par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 
+    #par$alpha <- mstep2$alpha
     estep3 <- eCmn(X_train,mstep2)
     iter <- iter + 1
     lmu[[iter]]<-par$mu
@@ -346,13 +356,20 @@ ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
     }else diflog[[iter]] <- NA    
     
 #    cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
-    cat("\n","i=",iter,"-",logc[[iter-1]],"\n")
+    cat("\n","i=",iter-1,";",logc[[iter-1]],";","diflog=",diflog[[iter]],"\n")
 #    cat(estep3$v, "\n")
     
     
   }
+  estep4 <- eCmn(X_test, mstep2)
+  z <- estep4$z
+  v <- estep4$v
   
-  output <- list(accTest = accTest, loglikelihod = logc,
+  ltest <- apply(z,1,which.max)
+  accTest_c <- sum(ltest == l_test)/length(l_test)
+
+  output <- list(accTestNc = accTest_nc,accTestC = accTest_c,
+                 loglikelihod = logc,
                  mu = lmu, sigma = lsigma, 
                  alpha = lalpha, eta = leta,
                  v = vr, diflog = diflog)
@@ -377,8 +394,8 @@ ModelAccuracy2 <- function(X_train,X_test,l_train,l_test,CE,
   if(length(alpharef) == 1) alpharef <- rep(alpharef,G)
   
   mstep0 <- CNmixt(X = X_train, contamination = F, model = CE,
-                   initialization = "mixt", start.z = unmap(l_train), G = 2 )
-  estep0 <- mstep0$models
+                   initialization = "mixt", label = l_train, G = 2 )
+  aux0 <- mstep0$models
   # Estimate parameters assuming uncontaminated set
   mstep1 <-mstep(data = X_train,modelName = CE, z = unmap(l_train))
   estep1 <- estep(data = X_test, modelName = CE, 
@@ -427,7 +444,7 @@ ModelAccuracy2 <- function(X_train,X_test,l_train,l_test,CE,
       lrinf[[iter-2]]<-logc[[iter-3]] + (logc[[iter-2]]-logc[[iter-3]])/(1-ar[[iter-3]]) 
       
       if(!is.null(lrinf[[iter-2]]))
-        if( abs(lrinf[[iter-2]] - logc[[iter-2]] )< tol )
+        if( abs(lrinf[[iter-3]] - logc[[iter-2]] )< tol )
           Stop1 <- T
       
     }
@@ -476,7 +493,7 @@ ModelAccuracy1 <- function(X_train,X_test,l_train,l_test,CE,alpharef)
   
   # Estimated initial parameters
   par$mu <- mstep1$parameters$mean
-  par$sigma <- mstep1$parameters$variance$sigma/mstep1$parameters$variance$scale
+  par$sigma <- mstep1$parameters$variance$sigma
   par$G <- mstep1$parameters$variance$G
   par$pig <- apply(unmap(l_train),2,sum)/nrow(X_train)
   # give initial values for alpha
@@ -493,7 +510,7 @@ ModelAccuracy1 <- function(X_train,X_test,l_train,l_test,CE,alpharef)
   vr[[1]] <- vhat
   vr[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
   flag2 = 0
-  while (flag2 < 10)
+  while (flag2 < 15)
   {
     mstep2 <- mCmn(X_train,l_train,par)
     par$mu <- mstep2$mu
@@ -503,16 +520,202 @@ ModelAccuracy1 <- function(X_train,X_test,l_train,l_test,CE,alpharef)
     estep3 <- eCmn(X_train,mstep2)
     iter <- iter + 1
     vr[[iter]] <- estep3$v
-    
-    if (all(vr[[iter]] == vr[[iter-1]]))
+    par$v <- estep3$v
       flag2 <- flag2 + 1
     
   }
   
   par$alpha
-  
+  par$eta
+  par$v >0.5
   return(accTest)
 }
+
+
+eCmn1 <- function(Xtrain,par)
+{
+  m <- nrow(Xtrain)
+  alpha <- par$alpha
+  mu <- par$mu
+  sigma <- par$sigma
+  eta<-par$eta
+  G <- par$G
+  pig <- par$pig
+  v <- matrix(0.0, ncol = G, nrow = m)
+  z <- matrix(0.0, ncol = G, nrow = m)
+  num1 <-matrix(0.0,ncol = G, nrow = m)  
+  lhat <- rep(0,m)
+  sum1 <- 0
+  sum2 <- 0
+  
+  output <- list()
+  for(g in 1:G)
+  {
+    for(i in 1:m)
+    {
+      if(length(dim(par$sigma))==2)
+      {
+        num <- alpha[g] * dMVNorm(Xtrain[i,],mu[,g],sigma)
+        den <- num + (1-alpha[g])*dMVNorm(Xtrain[i,],mu[,g],eta[g]*sigma)
+        cat("\n",den,"\n")
+        v[i,g] <- num/den 
+        # num1 : numerator for the e-step for z[i,g]
+
+      } else if(length(dim(par$sigma)) > 2)
+      {
+        num <- alpha[g] * dMVNorm(Xtrain[i,],mu[,g],sigma[,,g])
+        den <- num + (1-alpha[g])*dMVNorm(Xtrain[i,],mu[,g],eta[g]*sigma[,,g])
+        v[i,g] <- num/den 
+
+      } #End-f
+      
+    }#End-for
+    
+  }#End=for
+  
+  # calculating zhat and lhat
+  
+  for(g in 1:G)
+  {
+    for(i in 1:m)
+    {
+      if(length(dim(par$sigma))==2)
+      {
+        sum1 <- alpha[g] * dMVNorm(Xtrain[i,],mu[,g],sigma) 
+        sum2 <- (1-alpha[g])*dMVNorm(Xtrain[i,],mu[,g],eta[g]*sigma)
+      } else if(length(dim(par$sigma))>2)
+      {
+        sum1 <- alpha[g] * dMVNorm(Xtrain[i,],mu[,g],sigma[,,g])
+        sum2 <- (1-alpha[g])*dMVNorm(Xtrain[i,],mu[,g],eta[g]*sigma[,,g])
+      }
+      num1[i,g] <- sum1 + sum2
+    }
+  }
+    
+    
+  for (i in 1:m)
+  {
+    z[i,] <- num1[i,]/sum(num1[i,])
+  }
+
+  
+  lhat<-apply(z,1,which.max)
+  
+  output <- list(v = v, z = z, lhat = lhat )
+  return(output)
+}
+
+f_eta <- function(eta,z, v , X, mu, sigma)
+{
+  p <- ncol(X)
+  m <- nrow(X)
+  fv <- rep(0.0,m)
+  output <- 0.0
+  if(any(nrow(z),nrow(v))== m) stop("z and v has to be same length")
+  sum1 <- 0
+  sum2 <- 0
+
+  for(i in 1:m)
+  {
+    sum1 <- sum1 + z[i]*(1-v[i])*log(eta)
+    sum2 <- sum2 + mahalanobis(X[i,],mu,sigma)*z[i]* (1-v[i])/eta
+  }
+  
+  sum1 <-(-p/2) *sum1
+  sum2 <- (-1/2) * sum2
+  output <- sum1 + sum2
+  
+  return(output)
+  
+}
+
+mCmn1 <- function(Xtrain,ltrain,par,eta_max = 1000)
+{
+  m <- nrow(Xtrain)
+  p <- ncol(Xtrain)
+  G <- length(unique(ltrain))
+  l <- unmap(ltrain)
+  mu <- par$mu
+  sigma <- par$sigma
+  alpha <- par$alpha
+  eta<-par$eta
+  v <- par$v
+  mg <- apply(unmap(ltrain),2,sum)
+  pig <- mg/m
+  fw <- matrix(0.0,nrow = m, ncol = G)
+  fz <- matrix(0.0,nrow = m,ncol = G)
+  fx <- array(0.0, dim = c(p,m,G))
+  faux <- array(0.0, dim = c(p,p,m,G))
+  
+  factor1 <- 0
+  factor2 <- 0
+  factor3 <- 0 # Malahanobis distance
+
+  S <- rep(0,G)
+  
+  eta1 <-  rep(0,G)
+  alpha1 <- rep(0,G)
+  mu1 <- matrix(0.0,nrow = p, ncol = G)
+  sigma1 <- array(0.0, dim = c(p,p,G))
+  W <- array(0.0, dim = c(p,p,G) )
+  
+  output <- list()
+  
+  # Calculate factor weight #
+  for(g in 1:G)
+    for(i in 1:m)
+      fw[i,g] <- v[i,g] + (1-v[i,g])/eta[g]
+  
+  # Calculate Sg #
+  
+  for (g in 1:G)
+  {
+    for(i in 1:m)
+      fz[i,g] <- l[i,g]*fw[i,g]    
+  }
+    S <- apply(fz,2,sum)
+
+  # Calculate alpha1 #
+    for(g in 1:G)
+      alpha1[g] <- (l[,g] %*% v[,g])/mg[g]
+    
+  # Calculate mu1 #
+    for (g in 1:G)
+      for (i in 1:m)
+        fx[,i,g] <- fz[i,g] * Xtrain[i,] /S[g]
+    
+    for(g in 1:G)
+      mu1[,g] <- apply(fx[,,g],1,sum)
+    
+  # Calculate Sigma1 #
+    for(g in 1:G)
+    {  
+      
+      for(i in 1:m)
+        faux[,,i,g] <- fz[i,g] * (Xtrain[i,] - mu1[,g]) %*% t(Xtrain[i,]-mu1[,g])
+
+      for(i in 1:m)
+        W[,,g] <- W[,,g] + faux[,,i,g]
+      
+      sigma1[,,g] <- W[,,g]/mg[g]
+    }  
+  
+    # calculate eta1 #
+    
+  for(g in 1:G)
+  {
+    factor1 <- optimize(f_eta,c(1,eta_max),tol=0.0001, 
+                        z = l[,g], v = v[,g], X = Xtrain,
+                        mu = mu1[,g], sigma = sigma1[,,g], maximum = T)
+    eta1[g] <- factor1$maximum 
+    
+  }
+
+  output <- list(mu = mu1, sigma = sigma1, eta = eta1, 
+                 alpha = alpha1, v = v, pig = pig, G = G)
+  return(output)
+}
+
 
 
 eCmn <- function(Xtrain,par)
