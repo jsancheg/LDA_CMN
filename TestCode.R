@@ -20,7 +20,7 @@ alphag <-c(1,1)
 etag <- c(1,1)
 GenDataA.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
 plot(GenDataA.1$Xtrain[,c(2,4)], col = GenDataA.1$ltrain, pch = 15+GenDataA$ltrain,
-       xlab = "X2", ylab = "X4", main = "Dataset A.1")
+     xlab = "X2", ylab = "X4", main = "Dataset A.1")
 
 
 # Dataset A.2 (uncontaminated) ---------------------------------------------------
@@ -63,11 +63,11 @@ plot(GenDataA.3$Xtrain[,c(2,4)], col = GenDataA.3$ltrain,
 # Dataset A.4 (contaminated) ----------------------------------------------
 
 mu1 <- c(0,0,0,0)
-mu2 <- c(0,4,0,4)
+mu2 <- c(0,6,0,6)
 mu <- cbind(mu1,mu2)
 sg <- diag(1,4)
 pig<- c(0.5,0.5)
-nobservations = 160
+nobservations = 320
 ptraining = 0.75
 alphag <-c(0.9,0.8)
 etag <- c(20,30)
@@ -94,13 +94,20 @@ for (i in 1:nrow(GenDataA.4$Xtrain))
 v1
 
 # plot training set
-plot(GenDataA.4$Xtrain, col = (1-v1)+2, 
+plot(GenDataA.4$Xtrain[,c(2,4)], col = (1-v1)+2, 
      pch = 15+GenDataA.4$ltrain,
-     xlab = "X1", ylab = "X2")
-legend("bottomleft", legend = c("Class A","Class B"), 
+     xlab = "X2", ylab = "X4")
+legend("topright", legend = c("Class A","Class B"), 
        col = c("green","green"),
        pch = c(16,17))
 
+# plot testing set
+plot(GenDataA.4$Xtest[,c(2,4)], col = (1-v1)+2, 
+     pch = 15+GenDataA.4$ltest,
+     xlab = "X1", ylab = "X2")
+legend("topright", legend = c("Class A","Class B"), 
+       col = c("green","green"),
+       pch = c(16,17))
 
 
 
@@ -143,11 +150,19 @@ resA4$loglikelihod[[3]]
 resA4$loglikelihod[[5]]
 resA4$loglikelihod[[10]]
 resA4$loglikelihod[[length(resA4$loglikelihod)]]
+#convergence at e=0.01
+#convergence at e=0.001
+#convergence at e=0.0001
+resA4$loglikelihod[[18]]
+
+
 
 resA4$loglikelihod[[2]] - logLikActual
 resA4$loglikelihod[[3]] - logLikActual
 resA4$loglikelihod[[5]] - logLikActual
 resA4$loglikelihod[[10]] - logLikActual
+#convergence at e=0.0001
+resA4$loglikelihod[[18]] - logLikActual
 
 
 
@@ -158,24 +173,87 @@ resA4$mu[[2]]
 resA4$mu[[3]]
 resA4$mu[[5]]
 resA4$mu[[10]]
+# convergence at e=0.0001
+resA4$mu[[18]]
 
 #sigma
 resA4$sigma[[3]]
 resA4$sigma[[5]]
 resA4$sigma[[10]]
+# convergence at e=0.0001
+resA4$sigma[[18]]
 
 
 #alpha
 resA4$alpha[[3]]
 resA4$alpha[[5]]
 resA4$alpha[[10]]
+# convergence at e=0.0001
+resA4$alpha[[18]]
 
 #eta
 resA4$eta[[3]]
 resA4$eta[[5]]
 resA4$eta[[10]]
+# convergence at e=0.0001
+resA4$eta[[18]]
 
 
+# Compare 
+# v Class1
+vA4_18.1 <- ifelse(resA4$v[[18]][,1]<0.5,0,1)
+# v Class2
+vA4_18.2 <- ifelse(resA4$v[[18]][,2]<0.5,0,1)
+
+indA4.1<-which(GenDataA.4$vtrain[,1]!=-1)
+auxA4.1_18<-cbind(GenDataA.4$vtrain[,1],vA4_18.1)[indA4.1,]
+tA4.1_18 <- table(GenDataA.4$vtrain[indA4.1,1],vA4_18.1[indA4.1])
+tA4.1_18
+indA4.2<-which(GenDataA.4$vtrain[,2]!=-1)
+auxA4.2<-cbind(GenDataA.4$vtrain[,2],vA4_18.2)[indA4.2,]
+tA4.2_18 <- table(GenDataA.4$vtrain[indA4.2,2],vA4_18.2[indA4.2])
+tA4.2_18
+
+# contamination cross classification table
+
+table(GenDataD.1$vtrain,vD1_15)
+table(GenDataD.1$vtrain,vD1_17)
+cbind(GenDataD.1$vtrain,vD1_20)
+GenDataD.1$Xtrain[56,]
+tD1_20 <- table(GenDataD.1$vtrain,vD1_20)
+sum(diag(tD1_20))/sum(tD1_20)
+
+# convergence e = 0.01
+parD1_15<-list()
+parD1_15$G <- 1
+parD1_15$pig <- 1
+parD1_15$mu <- resD1$mu[[15]]
+parD1_15$sigma <- resD1$sigma[[15]]
+parD1_15$alpha <- resD1$alpha[[15]]
+parD1_15$eta <- resD1$eta[[15]]
+
+# convergence e = 0.001
+parD1_17<-list()
+parD1_17$G <- 1
+parD1_17$pig <- 1
+parD1_17$mu <- resD1$mu[[15]]
+parD1_17$sigma <- resD1$sigma[[15]]
+parD1_17$alpha <- resD1$alpha[[15]]
+parD1_17$eta <- resD1$eta[[15]]
+
+# convergence 0.0001
+parD1_20<-list()
+parD1_20$G <- 1
+parD1_20$pig <- 1
+parD1_20$mu <- resD1$mu[[20]]
+parD1_20$sigma <- resD1$sigma[[20]]
+parD1_20$alpha <- resD1$alpha[[20]]
+parD1_20$eta <- resD1$eta[[20]]
+
+
+aux15 <- eCmn(GenDataD.1$Xtest,parD1_15)
+vD1_15t <- ifelse(aux15$v<0.5,0,1)
+table(GenDataD.1$vtest,vD1_15t)
 
 
 
@@ -217,8 +295,8 @@ text(3.614436,-1.094842,"56",-0.5)
 
 
 resD1<-ModelAccuracy3(GenDataD.1$Xtrain, GenDataD.1$Xtest,
-               GenDataD.1$ltrain, GenDataD.1$ltest,
-               CE = "EII", alpharef = 0.90, tol = 0.0001)
+                      GenDataD.1$ltrain, GenDataD.1$ltest,
+                      CE = "EII", alpharef = 0.90, tol = 0.0001)
 
 resD1$diflog
 
@@ -240,7 +318,7 @@ par_actual$eta <- etag
 par_actual$G <- 1
 par_actual$pig <- 1
 par_actual$v <- matrix(GenDataD.1$vtrain,nrow = nrow(GenDataD.1$Xtrain), 
-                          ncol = 1)
+                       ncol = 1)
 
 logLikActual <-loglikCMN(GenDataD.1$Xtrain, GenDataD.1$ltrain, par_actual)
 logLikActual
@@ -386,22 +464,28 @@ GenDataD.2$vtrain
 plot(GenDataD.2$Xtrain, col = GenDataD.2$vtrain+2, 
      pch = 15+GenDataD.2$ltrain,
      xlab = "X1", ylab = "X2")
-legend("bottomleft", legend = c("Non Contaminated","Contaminated"), 
+legend("bottomright", legend = c("Non Contaminated","Contaminated"), 
        col = c("green","red"),
        pch = c(16,16))
-
+text(GenDataD.2$Xtrain[43,1],GenDataD.2$Xtrain[43,2],"43",c(0,0))
+text(GenDataD.2$Xtrain[45,1],GenDataD.2$Xtrain[45,2],"45",c(0,0))
+text(GenDataD.2$Xtrain[48,1],GenDataD.2$Xtrain[48,2],"48",c(0,0))
+text(GenDataD.2$Xtrain[125,1],GenDataD.2$Xtrain[125,2],"125",c(0,0))
 
 #text(3.614436,-1.094842,"56",-0.5)
+GenDataD.2$Xtrain[45,]
 
 # plot testing set
 plot(GenDataD.2$Xtest, col = GenDataD.2$vtest+2, 
      pch = 15+GenDataD.2$ltest,
      xlab = "X1", ylab = "X2")
-legend("bottomleft", legend = c("Non Contaminated","Contaminated"), 
+legend("topleft", legend = c("Non Contaminated","Contaminated"), 
        col = c("green","red"),
        pch = c(16,16))
-#text(3.614436,-1.094842,"56",-0.5)
-
+text(GenDataD.2$Xtrain[26,1],GenDataD.2$Xtrain[26,2],"26",c(0,0))
+text(GenDataD.2$Xtest[32,1],GenDataD.2$Xtest[32,2],"43",c(0,0))
+text(GenDataD.2$Xtest[51,1],GenDataD.2$Xtest[51,2],"45",c(0,0))
+text(GenDataD.2$Xtest[66,1],GenDataD.2$Xtest[66,2],"66",c(0,0))
 
 
 resD2<-ModelAccuracy3(GenDataD.2$Xtrain, GenDataD.2$Xtest,
@@ -527,8 +611,9 @@ vD2_18 <- ifelse(resD2$v[[18]]<0.5,0,1)
 
 # contamination cross classification table
 
-table(GenDataD.2$vtrain,vD2_14)
-table(GenDataD.2$vtrain,vD2_16)
+tD2_14 <- table(GenDataD.2$vtrain,vD2_14)
+tD2_16 <- table(GenDataD.2$vtrain,vD2_16)
+
 cbind(GenDataD.2$vtrain,vD2_18)
 GenDataD.1$Xtrain[56,]
 
@@ -584,15 +669,11 @@ parD2_18$eta <- resD2$eta[[18]]
 auxD2_10 <- eCmn(GenDataD.2$Xtest,parD2_10)
 vD2_10t <- ifelse(auxD2_10$v<0.5,0,1)
 tD2_10t <- table(GenDataD.2$vtest,vD2_10t)
-tD2_10t
-sum(diag(tD2_10t))/sum(tD2_10t)
 
 auxD2_18 <- eCmn(GenDataD.2$Xtest,parD2_18)
 vD2_18t <- ifelse(auxD2_18$v<0.5,0,1)
 tD2_18t <- table(GenDataD.2$vtest,vD2_18t)
 tD2_18t
-sum(diag(tD2_18t))/sum(tD2_18t)
-
 
 
 
