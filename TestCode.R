@@ -669,11 +669,15 @@ parD2_18$eta <- resD2$eta[[18]]
 auxD2_10 <- eCmn(GenDataD.2$Xtest,parD2_10)
 vD2_10t <- ifelse(auxD2_10$v<0.5,0,1)
 tD2_10t <- table(GenDataD.2$vtest,vD2_10t)
+tD2_10t
+sum(diag(tD2_10t))/sum(tD2_10t)
+
 
 auxD2_18 <- eCmn(GenDataD.2$Xtest,parD2_18)
 vD2_18t <- ifelse(auxD2_18$v<0.5,0,1)
 tD2_18t <- table(GenDataD.2$vtest,vD2_18t)
 tD2_18t
+sum(diag(tD2_18t))/sum(tD2_18t)
 
 
 
