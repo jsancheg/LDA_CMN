@@ -520,6 +520,7 @@ resD2$eta[[18]]
 
 
 # Compare 
+vD2_10 <- ifelse(resD2$v[[10]]<0.5,0,1)
 vD2_14 <- ifelse(resD2$v[[14]]<0.5,0,1)
 vD2_16 <- ifelse(resD2$v[[16]]<0.5,0,1)
 vD2_18 <- ifelse(resD2$v[[18]]<0.5,0,1)
@@ -530,6 +531,11 @@ table(GenDataD.2$vtrain,vD2_14)
 table(GenDataD.2$vtrain,vD2_16)
 cbind(GenDataD.2$vtrain,vD2_18)
 GenDataD.1$Xtrain[56,]
+
+tD2_10 <- table(GenDataD.2$vtrain,vD2_10)
+tD2_10
+sum(diag(tD2_10))/sum(tD2_10)
+
 tD2_18 <- table(GenDataD.2$vtrain,vD2_18)
 sum(diag(tD2_18))/sum(tD2_18)
 tD2_18
@@ -577,12 +583,15 @@ parD2_18$eta <- resD2$eta[[18]]
 
 auxD2_10 <- eCmn(GenDataD.2$Xtest,parD2_10)
 vD2_10t <- ifelse(auxD2_10$v<0.5,0,1)
-table(GenDataD.2$vtest,vD2_10t)
-
+tD2_10t <- table(GenDataD.2$vtest,vD2_10t)
+tD2_10t
+sum(diag(tD2_10t))/sum(tD2_10t)
 
 auxD2_18 <- eCmn(GenDataD.2$Xtest,parD2_18)
 vD2_18t <- ifelse(auxD2_18$v<0.5,0,1)
-table(GenDataD.2$vtest,vD2_18t)
+tD2_18t <- table(GenDataD.2$vtest,vD2_18t)
+tD2_18t
+sum(diag(tD2_18t))/sum(tD2_18t)
 
 
 
