@@ -79,7 +79,65 @@ plot(GenDataA.4$Xtrain[,c(2,4)], col = GenDataA.4$ltrain,
 
 
 
-# Dataset D.1 (contaminated) ----------------------------------------------
+# Dataset D.1 Non Contaminated dimension 2 --------------------------------
+
+
+mu1 <- c(0,0)
+mu <- mu1
+sg <- diag(1,2)
+pig<- 1
+nobservations = 160
+ptraining = 0.75
+alphag <- 0.99
+etag <- 10
+GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+GenDataD.1$vtrain
+
+plot(GenDataD.1$Xtrain, col = GenDataD.1$vtrain+2, 
+     pch = 15+GenDataD.1$ltrain,
+     xlab = "X2", ylab = "X4", main = "Dataset D.1 Bivariate normal")
+
+par_actual <- list()
+par_actual$mu <-matrix(mu1,nrow = 2,ncol = 1) 
+par_actual$sigma <- sg
+par_actual$alpha <- alphag
+par_actual$eta <- etag
+par_actual$G <- 1
+par_actual$pig <- 1
+par_actual$v <- as.matrix(rep(0.99,nrow(GenDataD.1$Xtrain)),nrow = nrow(GenDataD.10$Xtrain), 
+                          ncol = 1)
+
+true.max <- loglikCMN(GenDataD.1$Xtrain, GenDataD.1$ltrain, par_actual)
+
+
+
+resD.1 <- ModelAccuracy3(GenDataD.1$Xtrain,GenDataD.1$Xtest,
+               GenDataD.1$ltrain,GenDataD.1$ltest,"EEI",
+               alpharef = 0.95, tol = 0.001)
+
+true.max
+
+resD.1$mu[2]
+resD.1$sigma[2]
+resD.1$alpha[2]
+resD.1$eta[2]
+resD.1$v[2]
+
+convergence.value <- resD.1$loglikelihood[length(resD.1$loglikelihood)]
+
+max.ind <- which.max(resD.1$loglikelihood) 
+max.value <- resD.1$loglikelihood[max.ind]
+max.value
+
+sum(unlist(resD.1$loglikelihood[max.value])  > resD.1$loglikelihood)
+
+length(resD.1$loglikelihood)
+
+plot(x = 1:length(resD.1$loglikelihood), resD.1$loglikelihood, type = "l",
+     xlab = "number of iterations", ylab = "log-likelihood")
+
+
+# Dataset D.10 (contaminated) ----------------------------------------------
 
 mu1 <- c(0,0,0,0)
 mu <- mu1
@@ -89,14 +147,14 @@ nobservations = 160
 ptraining = 0.75
 alphag <- 0.9
 etag <- 2
-GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
-GenDataD.1$vtrain
+GenDataD.10 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+GenDataD.10$vtrain
 
-GenDataD.1$vtrain
+GenDataD.10$vtrain
 
-plot(GenDataD.1$Xtrain[,c(2,4)], col = GenDataD.1$vtrain+2, 
-     pch = 15+GenDataD.1$ltrain,
-     xlab = "X2", ylab = "X4", main = "Dataset D.4")
+plot(GenDataD.10$Xtrain[,c(2,4)], col = GenDataD.10$vtrain+2, 
+     pch = 15+GenDataD.10$ltrain,
+     xlab = "X2", ylab = "X4", main = "Dataset D.10")
 
 
 
@@ -109,9 +167,17 @@ par_actual$alpha <- alphag
 par_actual$eta <- etag
 par_actual$G <- 1
 par_actual$pig <- 1
-par_actual$v <- as.matrix(rep(0.99,nrow(GenDataD.1$Xtrain)),nrow = nrow(GenDataD.1$Xtrain), ncol = 1)
+par_actual$v <- as.matrix(rep(0.99,nrow(GenDataD.10$Xtrain)),nrow = nrow(GenDataD.10$Xtrain), 
+                          ncol = 1)
 
-loglikCMN(GenDataD.1$Xtrain, GenDataD.1$ltrain, par_actual)
+loglikCMN(GenDataD.10$Xtrain, GenDataD.10$ltrain, par_actual)
+
+
+
+
+
+
+
 
 par$eta <- mstep2$eta
 #  par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 
