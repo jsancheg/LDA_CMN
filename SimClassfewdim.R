@@ -273,6 +273,12 @@ ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
   if(!is.matrix(X_train)) X_train <- as.matrix(X_train)
   if(!is.matrix(X_test)) X_test <- as.matrix(X_test)
   accTest <- 0.0
+  output <- list()
+  lmu <- list()
+  lsigma <- list()
+  lalpha <- list()
+  leta <- list()
+  diflog <- list()
   par <- list()
   nvar <- ncol(X_train)
   nobs <- nrow(X_train)
@@ -310,11 +316,14 @@ ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
   iter <- 1
   vr <- list()
   logc <- list()
+  lmu[[iter]] <- par$mu
+  lsigma[[iter]] <- par$sigma
+  leta[[iter]] <- par$eta
   vr[[iter]] <- vhat
   logc[[iter]] <- loglikCMN(X_train, l_train,par) 
   vr[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
-  
-  while (iter <= 10)
+  diflog[[iter]] <- NA
+  while (iter < 3 | diflog[[iter]] > tol )
   {
     mstep2 <- mCmn(X_train,l_train,par)
     par$mu <- mstep2$mu
@@ -324,19 +333,145 @@ ModelAccuracy3 <- function(X_train,X_test,l_train,l_test,CE,
     par$alpha <- mstep2$alpha
     estep3 <- eCmn(X_train,mstep2)
     iter <- iter + 1
+    lmu[[iter]]<-par$mu
+    lsigma[[iter]]<-par$sigma
+    lalpha[[iter]]<-par$alpha
+    leta[[iter]] <- par$eta
     vr[[iter]] <- estep3$v
     par$v <- vr[[iter]]
+    
     logc[[iter-1]] <- loglikCMN(X_train,l_train,par)
-    cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
-    cat("\n",logc[[iter-1]],"\n")
-    cat(estep3$v, "\n")
+    
+    if(iter > 2) { diflog[[iter]] <- abs(logc[[iter-2]] - logc[[iter - 1]])
+    }else diflog[[iter]] <- NA    
+    
+    #    cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
+    cat("\n","i=",iter,"-",logc[[iter-1]],"\n")
+    #    cat(estep3$v, "\n")
     
     
   }
   
-  par$alpha
+  output <- list(accTest = accTest, loglikelihod = logc,
+                 mu = lmu, sigma = lsigma, 
+                 alpha = lalpha, eta = leta,
+                 v = vr, diflog = diflog)
   
-  return(accTest)
+  return(output)
+}
+
+
+ModelAccuracy4 <- function(X_train,X_test,l_train,l_test,CE,
+                           alpharef=NULL, tol = 0.001)
+{
+  output <- list()
+  if(!is.matrix(X_train)) X_train <- as.matrix(X_train)
+  if(!is.matrix(X_test)) X_test <- as.matrix(X_test)
+  accTest <- 0.0
+  par <- list()
+  par.mu <- list()
+  par.sigma <- list()
+  par.alpha <- list()
+  par.eta <- list()
+  vr <- list()
+  logc <- list()
+  pig <-  apply(unmap(l_train),2,sum)/nrow(X_train)
+  nvar <- ncol(X_train)
+  nobs <- nrow(X_train)
+  G <- length(unique(l_train))
+  if(is.null(alpharef)) alpharef <- rep(0.95,G)
+  if(length(alpharef)>G) stop("alpharef must be of dimension G")
+  if(length(alpharef) == 1) alpharef <- rep(alpharef,G)
+  
+  iter <- 1
+  
+  #mstep0 <- CNmixt(X = X_train, contamination = F, model = CE,
+  #                 initialization = "mixt", start.z = unmap(l_train), G  )
+  #estep0 <- mstep0$models
+  
+  # Estimate parameters assuming uncontaminated set
+  
+  mstep1 <-mstep(data = X_train,modelName = CE, z = unmap(l_train))
+  estep1 <- estep(data = X_test, modelName = CE, 
+                  parameters = mstep1$parameters)
+  z <- estep1$z  
+  ltest <- apply(z,1,which.max)
+  accTest <- sum(ltest == l_test)/length(l_test)
+  
+  # Estimated initial parameters
+  par.mu[[iter]] <- mstep1$parameters$mean
+  par.sigma[[iter]] <- mstep1$parameters$variance$sigma/mstep1$parameters$variance$scale
+  par.alpha[[iter]] <-  alpharef
+  par.eta[[iter]] <- rep(1.011,G)
+  vr[[iter]] <- rep(0.9999,nobs)    
+  par <- list(mu = par.mu[[iter]], 
+                   sigma = par.sigma[[iter]]  ,
+                   G = mstep1$parameters$variance$G, 
+                   pig = pig,
+                   alpha = par.alpha[[iter]],
+                   eta = par.eta[[iter]],
+                   v = vr[[iter]])
+  
+#  cat("\n","mu=",par[[1]]$mu,"-","alpha=",par[[1]]$alpha,"- eta=",par[[1]]$eta,"\n")
+  estep2 <- eCmn(X_train,par)
+  vhat <- estep2$v
+  cat("\n","vij = ", estep2$v, "\n")
+  lhat <-estep2$lhat
+  par$v <- vhat  
+  # Estimate parameters assuming contaminated set
+  vr[[iter]] <- vhat
+  logc[[iter]] <- loglikCMN(X_train, l_train,par) 
+  vr[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
+  logc[[iter + 1]] <- -10000
+  
+  iter <- iter + 1
+  
+  repeat
+  {
+    mstep2 <- mCmn(X_train,l_train,par)
+    par.mu[[iter]] <-mstep2$mu
+    par.sigma[[iter]] <- mstep2$sigma
+    par.alpha[[iter]] <- mstep2$alpha
+    par.eta[[iter]] <- mstep2$eta
+    vr[[iter]] <- matrix(runif(nobs*G,0,1),nrow=nobs,ncol=G)
+      
+    par <- list(mu = par.mu[[iter]], 
+                     sigma =  par.sigma[[iter]],
+                     G = G, 
+                     pig = apply(unmap(l_train),2,sum)/nrow(X_train),
+                     alpha = par.alpha[[iter]],
+                     eta = par.eta[[iter]],
+                     v = vr[[iter]] )
+    
+    #par[[iter+1]]$mu <- mstep2$mu
+    #par[[iter+1]]$sigma <- mstep2$sigma
+    #par[[iter+1]]$eta <- mstep2$eta
+    #  par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 
+    #par[[iter+1]]$alpha <- mstep2$alpha
+    estep3 <- eCmn(X_train,mstep2)
+    par$v <- estep3$v
+    logc[[iter]] <- loglikCMN(X_train,l_train,par)
+#    cat("\n","mu=",par[[iter+1]]$mu,"-","alpha=",par[[iter+1]]$alpha,"- eta=",par[[iter+1]]$eta,"\n")
+#    cat("\n",logc[[iter+1]],"\n")
+    cat("\n i=", iter, "\n")
+    vr[[iter ]] <- estep3$v
+    cat(estep3$v, "\n")
+    
+     if(abs(logc[[iter]]-logc[[iter-1]]) <= tol)
+          break
+       
+       iter <- iter + 1
+    
+    
+  }
+  
+  output <- list(accTest = accTest,loglikelihood = logc, 
+                 pig = pig, G = G,
+                 mu = par.mu, sigma = par.sigma,
+                 alpha = par.alpha, eta = par.eta,
+                 v = vr)
+  
+  return(output)
 }
 
 
@@ -414,7 +549,8 @@ ModelAccuracy2 <- function(X_train,X_test,l_train,l_test,CE,
     iter <- iter + 1
     vr[[iter]] <- estep3$v
     par$v <- vr[[iter]]
-    logc[[iter]] <- loglikCMN(X_train,l_train,par)
+    logc[[iter]] <- loglikCMN(X_train,l_train,par,
+                              )
     
     
   }
