@@ -94,108 +94,135 @@ for (i in 1:nrow(GenDataA.4$Xtrain))
 v1
 
 # plot training set
-plot(GenDataA.4$Xtrain[,c(2,4)], col = (1-v1)+2, 
+plot(GenDataA.4$Xtrain[,c(2,4)], col = (1-v1)*GenDataA.4$ltrain+2, 
      pch = 15+GenDataA.4$ltrain,
      xlab = "X2", ylab = "X4")
 legend("topright", legend = c("Class A","Class B"), 
-       col = c("green","green"),
+       col = c("green","steelblue"),
        pch = c(16,17))
 
 # plot testing set
-plot(GenDataA.4$Xtest[,c(2,4)], col = (1-v1)+2, 
+
+# v1te it is changed to obtain suitable colors 
+
+v1te <- rep(0,nrow(GenDataA.4$Xtest))
+for (i in 1:nrow(GenDataA.4$Xtest))
+{
+  if(GenDataA.4$ltest[i] == 1)
+  {
+    if(GenDataA.4$vtest[i,1] == 1)
+      v1te[i]= 0
+    else if(GenDataA.4$vtest[i,1] == 0)
+      v1te[i] = 1
+  }else  if(GenDataA.4$ltest[i] == 2)
+  {
+    if(GenDataA.4$vtest[i,2] == 1)
+      v1te[i]= 0
+    else if(GenDataA.4$vtest[i,2] == 0)
+      v1te[i] = 1
+  } 
+}
+v1te
+
+
+plot(GenDataA.4$Xtest[,c(2,4)], col = (1-v1te)*GenDataA.4$ltest+2, 
      pch = 15+GenDataA.4$ltest,
-     xlab = "X1", ylab = "X2")
+     xlab = "X2", ylab = "X4")
 legend("topright", legend = c("Class A","Class B"), 
-       col = c("green","green"),
+       col = c("green","steelblue"),
        pch = c(16,17))
 
+# 25 and 71 misclassified samples class A and 11 and 33 are the position in ind_class1
+text(GenDataA.4$Xtest[25,2],GenDataA.4$Xtest[25,4],"25",c(0,0))
+text(GenDataA.4$Xtest[71,2],GenDataA.4$Xtest[71,4],"71",c(0,0))
 
-
-<<<<<<< HEAD
-# Dataset D.1 Non Contaminated dimension 2 --------------------------------
-
-
-mu1 <- c(0,0)
-mu <- mu1
-sg <- diag(1,2)
-pig<- 1
-nobservations = 160
-ptraining = 0.75
-alphag <- 0.99
-etag <- 10
-GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
-GenDataD.1$vtrain
-
-plot(GenDataD.1$Xtrain, col = GenDataD.1$vtrain+2, 
-     pch = 15+GenDataD.1$ltrain,
-     xlab = "X2", ylab = "X4", main = "Dataset D.1 Bivariate normal")
-
-par_actual <- list()
-par_actual$mu <-matrix(mu1,nrow = 2,ncol = 1) 
-par_actual$sigma <- sg
-par_actual$alpha <- alphag
-par_actual$eta <- etag
-par_actual$G <- 1
-par_actual$pig <- 1
-par_actual$v <- as.matrix(rep(0.99,nrow(GenDataD.1$Xtrain)),nrow = nrow(GenDataD.10$Xtrain), 
-                          ncol = 1)
-
-true.max <- loglikCMN(GenDataD.1$Xtrain, GenDataD.1$ltrain, par_actual)
+# 2,31,49 contaminated samples in class B and 2, 20, 30 are the position in ind_class2 
+text(GenDataA.4$Xtest[2,2],GenDataA.4$Xtest[2,4],"2",c(0,0))
+text(GenDataA.4$Xtest[31,2],GenDataA.4$Xtest[31,4],"31",c(0,0))
+text(GenDataA.4$Xtest[49,2],GenDataA.4$Xtest[49,4],"49",c(0,0))
 
 
 
-resD.1 <- ModelAccuracy3(GenDataD.1$Xtrain,GenDataD.1$Xtest,
-               GenDataD.1$ltrain,GenDataD.1$ltest,"EEI",
-               alpharef = 0.95, tol = 0.001)
+# plot pairs
 
-true.max
-
-resD.1$mu[2]
-resD.1$sigma[2]
-resD.1$alpha[2]
-resD.1$eta[2]
-resD.1$v[2]
-
-convergence.value <- resD.1$loglikelihood[length(resD.1$loglikelihood)]
-
-max.ind <- which.max(resD.1$loglikelihood) 
-max.value <- resD.1$loglikelihood[max.ind]
-max.value
-
-sum(unlist(resD.1$loglikelihood[max.value])  > resD.1$loglikelihood)
-
-length(resD.1$loglikelihood)
-
-plot(x = 1:length(resD.1$loglikelihood), resD.1$loglikelihood, type = "l",
-     xlab = "number of iterations", ylab = "log-likelihood")
+pairs(GenDataA.4$Xtrain, col = (1-v1te)*GenDataA.4$ltrain+2,
+      pch = c(16,16)[GenDataA.4$ltrain])
 
 
-# Dataset D.10 (contaminated) ----------------------------------------------
 
-mu1 <- c(0,0,0,0)
-mu <- mu1
-sg <- diag(1,4)
-pig<- c(1)
-nobservations = 160
-ptraining = 0.75
-alphag <- 0.9
-etag <- 2
-GenDataD.10 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
-GenDataD.10$vtrain
+dfRW <- getOW(GenDataA.4$Xtrain,GenDataA.4$ltrain)
+RW <- dfRW$Var
 
-GenDataD.10$vtrain
+modA4.1 <-fHLvarSearch(GenDataA.4$Xtrain,GenDataA.4$Xtest,RW,
+                     GenDataA.4$ltrain,GenDataA.4$ltest,"E")
 
-plot(GenDataD.10$Xtrain[,c(2,4)], col = GenDataD.10$vtrain+2, 
-     pch = 15+GenDataD.10$ltrain,
-     xlab = "X2", ylab = "X4", main = "Dataset D.10")
+actualParall <- TrueParameters(GenDataA.4$Xtrain[,],GenDataA.4$ltrain,
+                            GenDataA.4$vtrain)
 
-=======
+actualPar <- TrueParameters(GenDataA.4$Xtrain[,c(2,4)],GenDataA.4$ltrain,
+                            GenDataA.4$vtrain)
+
+p<-ncol(as.matrix(GenDataA.4$Xtrain[,c(2,4)]))
+m<- matrix(0, nrow = p,ncol = p)
+for(row in 1:p)
+  for(col in 1:p)
+    m[row,col] <- actualPar$Sgc[row,col,1]/actualPar$Sgnc[row,col,1]    
+
+m
+
+# Class 1
+actualPar$mu
+actualPar$S[,,1]
+actualPar$Sgnc[,,1]
+actualPar$Sgc[,,1]
+actualPar$alpha
+# Eta class 1
+(actualPar$S[,,1]-actualPar$alpha[1]*actualPar$Sgnc[,,1])%*% solve(actualPar$Sgnc[,,1])/(1-actualPar$alpha[1])
+
+# Class 2
+actualPar$mu
+actualPar$S[,,2]
+actualPar$Sgnc[,,2]
+actualPar$Sgc[,,1]
+actualPar$alpha
+# Eta class 2
+(actualPar$S[,,2]-actualPar$alpha[2]*actualPar$Sgnc[,,2])%*% solve(actualPar$Sgnc[,,2])/(1-actualPar$alpha[2])
+
+
+
+tic("VariableSearch")
+resA4 <-fHLvarSearch3(GenDataA.4$Xtrain,GenDataA.4$Xtest,RW,
+                     GenDataA.4$ltrain,GenDataA.4$ltest,"E")
+toc()
+tresA4_test <- table(GenDataA.4$ltest,resA4$models[[5]]$predlabel)
+sum(diag(tresA4_test))/sum(tresA4_test)
+cat("\n", resA4$Selectedmodel,"-",resA4$Accuracy,"\n")
+
+# Class B is Class 1 here
+ind_class1 <- which(GenDataA.4$vtest[,1]!=-1)
+# Class A is Class 2 here
+ind_class2 <- which(GenDataA.4$vtest[,2]!=-1)
+vtest_actual<- GenDataA.4$vtest
+
+  
+tresA4_class1 <- table(vtest_actual[ind_class1,1],resA4$models[[5]]$predv[ind_class1,1])
+tresA4_class1
+sum(diag(tresA4_class1))/sum(tresA4_class1)
+
+tresA4_class2 <- table(vtest_actual[ind_class2,2],resA4$models[[5]]$predv[ind_class2,2])
+tresA4_class2
+sum(diag(tresA4_class2))/sum(tresA4_class2)
+
+
+accuracy[nrun] <- modA4$Accuracy
+selectedvariables[[nrun]] <- paste(res$model,sep="-")
+
+
 resA4<-ModelAccuracy3(GenDataA.4$Xtrain, GenDataA.4$Xtest,
                       GenDataA.4$ltrain, GenDataA.4$ltest,
                       CE = "EII", alpharef = 0.90, tol = 0.0001)
->>>>>>> 21e4e554314c358cc3fb65c1bc7ffa01ff8539a9
 
-resA4$diflog
+resA4$models[[1]]$accTestNc
 
 par <- list()
 par$mu <- resA4$mu
@@ -214,25 +241,11 @@ par_actual$alpha <- alphag
 par_actual$eta <- etag
 par_actual$G <- 1
 par_actual$pig <- 1
-<<<<<<< HEAD
-par_actual$v <- as.matrix(rep(0.99,nrow(GenDataD.10$Xtrain)),nrow = nrow(GenDataD.10$Xtrain), 
-                          ncol = 1)
-
-loglikCMN(GenDataD.10$Xtrain, GenDataD.10$ltrain, par_actual)
-
-
-
-
-
-
-
-=======
 par_actual$v <- as.matrix(rep(0.99,nrow(GenDataA.4$Xtrain)),
                           nrow = nrow(GenDataA.4$Xtrain), ncol = 1)
 
 logLikActual <-loglikCMN(GenDataA.4$Xtrain, GenDataA.4$ltrain, par_actual)
 logLikActual
->>>>>>> 21e4e554314c358cc3fb65c1bc7ffa01ff8539a9
 
 modA4 <- CNmixt(GenDataA.4$Xtrain,contamination = T, model = "EII",
                 initialization = "mixt", label = GenDataA.4$ltrain, G = 2)
@@ -262,7 +275,7 @@ resA4$loglikelihod[[18]] - logLikActual
 
 plot(1:length(resA4$loglikelihod),resA4$loglikelihod, type = "l",
      xlab = "Iteration", ylab = "log-likelihood")
-#mu
+# mu
 resA4$mu[[2]]
 resA4$mu[[3]]
 resA4$mu[[5]]
@@ -386,8 +399,34 @@ legend("bottomleft", legend = c("Non Contaminated","Contaminated"),
 text(3.614436,-1.094842,"56",-0.5)
 
 
+# actual values for mu sigma and pi in the training set
+#---------------------------------------------
+actual_mean = apply(GenDataD.1$Xtrain,2,mean)
+actual_var = var(GenDataD.1$Xtrain)
+mg <- sum(GenDataD.1$vtrain)
+ntrain <- length(GenDataD.1$vtrain)
 
+actual_pi = mg/ntrain
+actual_alpha <- 0
+actual_eta <-0
+aux1<-0
+aux2 <- 0
+aux3 <- 0
+a <-0
+b<-0
+for (i in 1:ntrain)
+{
+  aux1 <- GenDataD.1$ltrain[i]*(GenDataD.1$vtrain[i])
+  actual_alpha <- actual_alpha  + aux1 
+  aux2 <- GenDataD.1$ltrain[i]*(1-GenDataD.1$vtrain[i])
 
+  a <- a + aux2
+  aux3 <- aux2* mahalanobis(GenDataD.1$Xtrain[i,],actual_mean,actual_var)
+  b <- b + aux3
+}
+actual_alpha <- actual_alpha/ntrain
+actual_eta <- b/(2*a)
+#---------------------------------------------
 resD1<-ModelAccuracy3(GenDataD.1$Xtrain, GenDataD.1$Xtest,
                       GenDataD.1$ltrain, GenDataD.1$ltest,
                       CE = "EII", alpharef = 0.90, tol = 0.0001)
@@ -538,6 +577,11 @@ aux15 <- eCmn(GenDataD.1$Xtest,parD1_15)
 vD1_15t <- ifelse(aux15$v<0.5,0,1)
 table(GenDataD.1$vtest,vD1_15t)
 
+aux20 <- eCmn(GenDataD.1$Xtest,parD1_20)
+vD1_20t <- ifelse(aux20$v<0.5,0,1)
+table(GenDataD.1$vtest,vD1_20t)
+
+
 # Dataset D.2 (contaminated) ----------------------------------------------
 
 mu1 <- c(0,0)
@@ -580,6 +624,35 @@ text(GenDataD.2$Xtrain[26,1],GenDataD.2$Xtrain[26,2],"26",c(0,0))
 text(GenDataD.2$Xtest[32,1],GenDataD.2$Xtest[32,2],"43",c(0,0))
 text(GenDataD.2$Xtest[51,1],GenDataD.2$Xtest[51,2],"45",c(0,0))
 text(GenDataD.2$Xtest[66,1],GenDataD.2$Xtest[66,2],"66",c(0,0))
+
+
+# actual values for mu sigma and pi in the training set
+#---------------------------------------------
+actual_mean = apply(GenDataD.2$Xtrain,2,mean)
+actual_var = var(GenDataD.2$Xtrain)
+mg <- sum(GenDataD.2$vtrain)
+ntrain <- length(GenDataD.2$vtrain)
+
+actual_pi = mg/ntrain
+actual_alpha <- 0
+actual_eta <-0
+aux1<-0
+aux2 <- 0
+aux3 <- 0
+a <-0
+b<-0
+for (i in 1:ntrain)
+{
+  aux1 <- GenDataD.2$ltrain[i]*(GenDataD.2$vtrain[i])
+  actual_alpha <- actual_alpha  + aux1 
+  aux2 <- GenDataD.2$ltrain[i]*(1-GenDataD.2$vtrain[i])
+  
+  a <- a + aux2
+  aux3 <- aux2* mahalanobis(GenDataD.2$Xtrain[i,],actual_mean,actual_var)
+  b <- b + aux3
+}
+actual_alpha <- actual_alpha/ntrain
+actual_eta <- b/(2*a)
 
 
 resD2<-ModelAccuracy3(GenDataD.2$Xtrain, GenDataD.2$Xtest,
@@ -787,15 +860,15 @@ accuracy <- rep(0,nruns)
 for(nrun in 1: nruns)
 {
   
-  mu1 <- c(0,1,0,2)
-  mu2 <- c(0,2,0,1)
-  n = 160
+  mu1 <- c(0,0,0,0)
+  mu2 <- c(0,4,0,4)
+  n = 320
   X <- matrix(0, ncol = 4, nrow = n)
   p <- ncol(X)
   l <- rep(0,n)
   
   
-  #set.seed(123)
+  set.seed(123)
   for( i in 1:n)
   {
     u <- runif(1)
@@ -817,12 +890,16 @@ for(nrun in 1: nruns)
   X
   l
   
-  ind <- sample(1:n, round(n/2))
+  ind <- sample(1:n, round(n*0.75))
   Xtrain <- X[ind,]
   Xtest <- X[-ind,]
   ltrain <- l[ind]
   ltest <- l[-ind]
   
+  # plot pairs
+  
+  pairs(Xtrain, col = c("green", "blue")[ltrain],
+        pch = c(16,16)[ltrain])
   
   dfRW <- getOW(Xtrain,ltrain)
   RW <- dfRW$Var
@@ -875,3 +952,4 @@ for(nrun in 1: nruns)
   } # End-for
   X
 }
+
