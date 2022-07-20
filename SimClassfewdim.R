@@ -5,6 +5,98 @@
 #setwd(work_path)
 source("utilities.R")
 
+MultSimSetting <- function(mu, sg, pig, nobsevations,alpha,etag)
+{
+  # mu: vector or matrix containing mu
+  nVarSel <- 0 
+  GenData <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+
+  dfRW <- getOW(GenData$Xtrain,GenData$ltrain)
+  RW <- dfRW$Var
+  
+  
+  mod <-fHLvarSearch3(GenData$Xtrain,GenData$Xtest,RW,
+                      GenData$ltrain,GenData$ltest,"E")
+  
+  pos <- mod$posCM
+  nVarSel <- length(mod$Selectedmodel)
+  
+  PM <-mod$Selectedmodel
+  
+  Xsubset <- data.frame(GenData$Xtrain) %>% select(all_of(PM))
+  
+  actualPar <- TrueParameters(as.matrix(Xsubset),GenData$ltrain,
+                              GenData$vtrain)
+  
+  
+  t_test <- table(GenData$ltest,mod$models[[pos]]$predlabel)
+  acctest <- sum(diag(t_test))/sum(t_test)
+  
+  cat("\n", "model", "test set ",mod$Selectedmodel,"-",acctest,"\n")
+  
+  # Class B is Class 1 here
+  ind_class1 <- which(GenData$vtest[,1]!=-1)
+  # Class A is Class 2 here
+  ind_class2 <- which(GenData$vtest[,2]!=-1)
+  vtest_actual<- GenData$vtest
+  
+  
+  tresA4_class1 <- table(vtest_actual[ind_class1,1],mod$models[[pos]]$predv[ind_class1,1])
+  tresA4_class1
+  accA4cont_Class1 <- sum(vtest_actual[ind_class2,2] == mod$models[[pos]]$predv[ind_class2,2])/ length(vtest_actual[ind_class2,2])*100
+  accA4cont_Class1
+  # Because the contaminated are label as 0 the value calculated for sensitivity is
+  # in reality specificty and vice versa
+  
+  if(length(unique(mod$models[[pos]]$predv[ind_class1,1])) > 1)
+  {
+    sensitivity_Class1 <- tresA4_class1[1,1]/sum(tresA4_class1[1,]) 
+    specificity_Class1 <- tresA4_class1[2,2]/sum(tresA4_class1[2,]) 
+  }else if(length(unique(mod$models[[pos]]$predv[ind_class1,1])) == 1)
+  {
+    sensitivity_Class1 <- 0
+    specificity_Class1 <- 1  
+  }else if(length(unique(mod$models[[pos]]$predv[ind_class1,2])) == 0)
+  {
+    sensitivity_Class1 <- 1
+    specificity_Class1 <- 0  
+  }
+
+  
+  tresA4_class2 <- table(vtest_actual[ind_class2,2],mod$models[[pos]]$predv[ind_class2,2])
+  tresA4_class2
+  accA4cont_Class2 <- sum(vtest_actual[ind_class2,2] == mod$models[[pos]]$predv[ind_class2,2])/ length(vtest_actual[ind_class2,2])*100 
+  accA4cont_Class2
+  
+  if(length(unique(mod$models[[pos]]$predv[ind_class2,2])) > 1 )
+  {
+    sensitivity_Class2 <- tresA4_class2[1,1]/sum(tresA4_class2[1,])
+    specificity_Class2 <- tresA4_class2[2,2]/sum(tresA4_class2[2,])
+    
+  }else if(length(unique(mod$models[[pos]]$predv[ind_class2,2])) == 1)
+  {
+    sensitivity_Class2 <- 0
+    specificity_Class2 <- 1  
+  }else if(length(unique(mod$models[[pos]]$predv[ind_class2,2])) == 0)
+  {
+    sensitivity_Class2 <- 1
+    specificity_Class2 <- 0  
+  }
+  
+  
+
+  
+  return( list(CM = mod$Selectedmodel, Accuracy = mod$Accuracy, nVarSel = nVarSel,
+               sensitivity_Class1 = sensitivity_Class1, 
+               sensitivity_Class2 = sensitivity_Class2,
+               specificity_Class1 = specificity_Class1,
+               specificity_Class2 = specificity_Class2,
+               Parameters = actualPar) )
+}
+
+
+
+
 TrueParameters<-function(Xtrain,ltrain, v)
 {
 
@@ -123,6 +215,8 @@ fHLvarSearch3 <- function(X_train, X_test, RW,l_train, l_test, CE,
   p <- length(RW)
   ARW <- NULL
   CM <- NULL
+  # position of the current model selected
+  posCM <- 0
   OldCM <- "NA"
   PM <- NULL
   AccPM <- 0
@@ -154,6 +248,9 @@ fHLvarSearch3 <- function(X_train, X_test, RW,l_train, l_test, CE,
     {
       CM <- PM
       AccCM <- AccPM
+      # save the position on the list 
+      # of the model selected
+      posCM <- cont
     }
   }
   
@@ -188,6 +285,7 @@ fHLvarSearch3 <- function(X_train, X_test, RW,l_train, l_test, CE,
       {
         CM <- PM
         AccCM <- AccPM 
+        posCM <- cont
         break
       } # end if
         
@@ -196,7 +294,7 @@ fHLvarSearch3 <- function(X_train, X_test, RW,l_train, l_test, CE,
     
   } # end while
   
-  return(list(Selectedmodel = CM, Accuracy = AccCM, models = model))
+  return(list(Selectedmodel = CM, Accuracy = AccCM, posCM = posCM,  models = model))
 }
 
 
@@ -399,7 +497,6 @@ SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   if(any(ptraining<0) | any(ptraining>1)) stop("ptraining is not a probability")
   if(any(alphag<0) | any(alphag>1)) stop("alpha takes values in the interval (0,1)")
   if(any(etag < 1))stop("eta has to be greater than 1")  
-  set.seed(123)
   aux <- (rmultinom(nobs,1,pig))
   l <- apply(aux,2,which.max)
   
@@ -448,6 +545,7 @@ SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
       }
   } #End-if
   
+  colnames(X) <- paste("X",1:p,sep = "")
   ind <- sample(1:nobs, round(nobs* ptraining))
   Xtrain <- X[ind,]
   Xtest <- X[-ind,]
@@ -605,7 +703,7 @@ ModelAccuracy3 <- function(X_train1,X_test1,l_train,l_test,CE,
   logc[[iter]] <- loglikCMN(X_train1, l_train,par) 
   vr[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
   diflog[[iter]] <- NA
-  while ( iter < 3  | (diflog[[iter]] > tol & iter < 50) )
+  while ( iter < 3  | (diflog[[iter]] > tol & iter < 20) )
   {
     mstep2 <- mCmn(X_train1,l_train,par)
     par$mu <- mstep2$mu
