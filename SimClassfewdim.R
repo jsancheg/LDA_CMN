@@ -1,11 +1,96 @@
 # Create dataset
 
 
-#work_path <- "E:/University of Glasgow/Literature review/R Code/"
-#setwd(work_path)
+work_path <- "E:/University of Glasgow/Literature review/R Code/"
+setwd(work_path)
 source("utilities.R")
 
-MultSimSetting <- function(mu, sg, pig, nobsevations,alpha,etag)
+
+MultSimPar <- function(nruns,nSteps = 15)
+{
+  selectedvariables <- list()
+  mu1 <- rep(0,100)
+  mu2 <- c(0,6,0,6,rep(0,96))
+  mu <- cbind(mu1,mu2)
+  sg <- diag(1,100)
+  pig<- c(0.5,0.5)
+  nobservations = 320
+  ptraining = 0.75
+  alphag <-c(0.9,0.8)
+  etag <- c(20,30)
+  CM <- list()
+  Accuracy <- list()
+  ModelSize <- list()
+  Inclusion_correctness <- list()
+  Exclusion_correctness <- list()
+  Number_var_incorrect_included <- list()
+  AccuracyTrueModel <- list()
+  Accuracy_TrueModel_contaminated <- list()
+  Accuracy_TrueModel_no_contaminated <- list()
+  Accuracy_contaminated <- list()
+  Accuracy_no_contaminated <- list()
+  True_model <- c("X2","X4")
+  for (i_runs in 1:nruns)
+  {
+    cat("\n ---- Run: ", i_runs,"-----\n")
+    aux <- MultSimSetting(mu, sg, pig, nobservations, ptraining, alphag , etag, 
+                          True_model, nSteps)
+    
+    pos_True_model <- findPosModel(aux$models,True_model)  
+    AccuracyTrueModel[[i_runs]] <- aux$models[[pos_True_model]]$accTestC
+
+      
+    CM[[i_runs]] <- paste(unlist(aux$CM),collapse="-")
+    Accuracy[[i_runs]]<-aux$Accuracy
+    ModelSize[[i_runs]] <- aux$nVarSel
+    Inclusion_correctness[[i_runs]] <- sum(length(intersect(aux$CM,real_model)) == length(real_model))
+    Number_var_incorrect_included[[i_runs]] <- length(setdiff(aux$CM,real_model)) 
+    Exclusion_correctness[[i_runs]] <- sum(length(setdiff(aux$CM,real_model)) == 0)
+    Accuracy_TrueModel_contaminated[[i_runs]]<- aux$TrueModelAccuracyCont
+    Accuracy_TrueModel_no_contaminated[[i_runs]]<- aux$TrueModelAccuracyNoCont
+    Accuracy_contaminated[[i_runs]] <- aux$AccuracyCont
+    Accuracy_no_contaminated[[i_runs]] <- aux$AccuracyNoCont
+    
+    #25:54
+  }
+  res <- data.frame(CM = CM,Accuracy = (unlist(Accuracy)),
+                    ModelSize = (unlist(ModelSize)),
+                    Inclusion_correctness = (unlist(Inclusion_correctness)),
+                    Number_var_incorrect_included = (unlist(Number_var_incorrect_included)),
+                    Exclusion_correctness = (unlist(Exclusion_correctness)),
+                    Accuracy_TrueModel_contaminated = unlist(Accuracy_TrueModel_contaminated),
+                    Accuracy_TrueModel_no_contaminated = unlist(Accuracy_TrueModel_no_contaminated),
+                    Accuracy_contaminated = (unlist(Accuracy_contaminated)),
+                    Accuracy_no_contaminated = (unlist(Accuracy_no_contaminated)))
+  
+  # ruta <- "/home/pgrad1/2201449s/R/CMN/Output/" 
+  # saveRDS(salida,paste0(ruta,"Seg_",i_i,"_node_",i_x,"_warping_",i_u,".RDS"))
+  
+  output <- list(CM = CM, Accuracy = Accuracy, ModelSize = ModelSize, 
+                 Inclusion_correctness = Inclusion_correctness, 
+                 Exclusion_correctness = Exclusion_correctness)
+  return(res)
+  
+}
+
+findPosModel <- function(ListofModels,modeltofind)
+{
+  posinList <- 0
+  nmodels <- length(ListofModels)
+  for (i_model in 1:nmodels)
+  {
+    model<-ListofModels[[i_model]]$PM
+    if(setequal(model,modeltofind)==TRUE) 
+      {
+          posinList <- i_model
+          break
+      }    
+  }
+   return(posinList)
+}
+
+MultSimSetting <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,True_Model,
+                           nSteps = 15)
 {
   # mu: vector or matrix containing mu
   nVarSel <- 0 
@@ -13,11 +98,14 @@ MultSimSetting <- function(mu, sg, pig, nobsevations,alpha,etag)
 
   dfRW <- getOW(GenData$Xtrain,GenData$ltrain)
   RW <- dfRW$Var
-  
-  
+
   mod <-fHLvarSearch3(GenData$Xtrain,GenData$Xtest,RW,
-                      GenData$ltrain,GenData$ltest,"E")
+                      GenData$ltrain,GenData$ltest,"E",
+                      nSteps)
   
+  pos_True_model <- findPosModel(aux$models,True_model)  
+  TrueModel <- aux$models[[pos_True_model]]
+
   pos <- mod$posCM
   nVarSel <- length(mod$Selectedmodel)
   
@@ -34,63 +122,61 @@ MultSimSetting <- function(mu, sg, pig, nobsevations,alpha,etag)
   
   cat("\n", "model", "test set ",mod$Selectedmodel,"-",acctest,"\n")
   
-  # Class B is Class 1 here
-  ind_class1 <- which(GenData$vtest[,1]!=-1)
-  # Class A is Class 2 here
-  ind_class2 <- which(GenData$vtest[,2]!=-1)
-  vtest_actual<- GenData$vtest
   
+  # Filter contaminated vs non-contaminated samples
+  # non contaminated samples in class1 and class2
+  ind_nocont_class1 <- which(GenData$vtest[,1]!=0 & GenData$vtest[,1]!=-1)
+  ind_nocont_class2 <- which(GenData$vtest[,2]!=0 & GenData$vtest[,2]!=-1)
+  # contaminated samples in class1 and class2 
+  # non contaminated samples in class1 and class2
+  ind_cont_class1 <- which(GenData$vtest[,1]==0 & GenData$vtest[,1]!=-1)
+  ind_cont_class2 <- which(GenData$vtest[,2]==0 & GenData$vtest[,2]!=-1)
   
-  tresA4_class1 <- table(vtest_actual[ind_class1,1],mod$models[[pos]]$predv[ind_class1,1])
-  tresA4_class1
-  accA4cont_Class1 <- sum(vtest_actual[ind_class2,2] == mod$models[[pos]]$predv[ind_class2,2])/ length(vtest_actual[ind_class2,2])*100
-  accA4cont_Class1
-  # Because the contaminated are label as 0 the value calculated for sensitivity is
-  # in reality specificty and vice versa
-  
-  if(length(unique(mod$models[[pos]]$predv[ind_class1,1])) > 1)
-  {
-    sensitivity_Class1 <- tresA4_class1[1,1]/sum(tresA4_class1[1,]) 
-    specificity_Class1 <- tresA4_class1[2,2]/sum(tresA4_class1[2,]) 
-  }else if(length(unique(mod$models[[pos]]$predv[ind_class1,1])) == 1)
-  {
-    sensitivity_Class1 <- 0
-    specificity_Class1 <- 1  
-  }else if(length(unique(mod$models[[pos]]$predv[ind_class1,2])) == 0)
-  {
-    sensitivity_Class1 <- 1
-    specificity_Class1 <- 0  
-  }
-
-  
-  tresA4_class2 <- table(vtest_actual[ind_class2,2],mod$models[[pos]]$predv[ind_class2,2])
-  tresA4_class2
-  accA4cont_Class2 <- sum(vtest_actual[ind_class2,2] == mod$models[[pos]]$predv[ind_class2,2])/ length(vtest_actual[ind_class2,2])*100 
-  accA4cont_Class2
-  
-  if(length(unique(mod$models[[pos]]$predv[ind_class2,2])) > 1 )
-  {
-    sensitivity_Class2 <- tresA4_class2[1,1]/sum(tresA4_class2[1,])
-    specificity_Class2 <- tresA4_class2[2,2]/sum(tresA4_class2[2,])
-    
-  }else if(length(unique(mod$models[[pos]]$predv[ind_class2,2])) == 1)
-  {
-    sensitivity_Class2 <- 0
-    specificity_Class2 <- 1  
-  }else if(length(unique(mod$models[[pos]]$predv[ind_class2,2])) == 0)
-  {
-    sensitivity_Class2 <- 1
-    specificity_Class2 <- 0  
-  }
-  
+  # Accuracy for contaminated and non-contaminated samples
+  # non contaminated samples 
+  nocont_samples <- c(GenData$ltest[ind_nocont_class1],GenData$ltest[ind_nocont_class2])
+  # contaminated samples
+  cont_samples <- c(GenData$ltest[ind_cont_class1], GenData$ltest[ind_cont_class2])
   
 
   
-  return( list(CM = mod$Selectedmodel, Accuracy = mod$Accuracy, nVarSel = nVarSel,
-               sensitivity_Class1 = sensitivity_Class1, 
-               sensitivity_Class2 = sensitivity_Class2,
-               specificity_Class1 = specificity_Class1,
-               specificity_Class2 = specificity_Class2,
+  # predicted class for non contaminated samples for selected model
+  pred_nocont_samples <- c(mod$models[[pos]]$predlabel[ind_nocont_class1],
+                           mod$models[[pos]]$predlabel[ind_nocont_class2])
+
+  pred_cont_samples <- c(mod$models[[pos]]$predlabel[ind_cont_class1],
+                           mod$models[[pos]]$predlabel[ind_cont_class2])
+  
+  # predicted class for non contaminated samples for the true model
+  pred_TrueModel_nocont_samples <- c(mod$models[[pos_True_model]]$predlabel[ind_nocont_class1],
+                           mod$models[[pos_True_model]]$predlabel[ind_nocont_class2])
+  
+  pred_TrueModel_cont_samples <- c(mod$models[[pos_True_model]]$predlabel[ind_cont_class1],
+                         mod$models[[pos_True_model]]$predlabel[ind_cont_class2])
+  
+  
+  tresA5_nocont <- table(nocont_samples,pred_nocont_samples)
+  tresA5_cont <- table(cont_samples,pred_cont_samples)
+  
+  tresA5_TrueModel_nocont <- table(nocont_samples,pred_TrueModel_nocont_samples)
+  tresA5_TrueModel_cont <- table(cont_samples,pred_TrueModel_cont_samples)
+  
+  accuracyNoCont <- (sum(nocont_samples == pred_nocont_samples)/length(nocont_samples))*100
+  accuracyCont <- (sum(cont_samples == pred_cont_samples)/length(cont_samples))*100
+  
+  accuracyTrueModelNoCont <- (sum(nocont_samples == pred_TrueModel_nocont_samples)/length(nocont_samples))*100
+  accuracyTrueModelCont <- (sum(cont_samples == pred_TrueModel_cont_samples)/length(cont_samples))*100
+  
+
+  
+  return( list(models = mod$models ,
+               CM = mod$Selectedmodel, Accuracy = mod$Accuracy, 
+               AccuracyCont = accuracyCont,
+               AccuracyNoCont = accuracyNoCont,
+               nVarSel = nVarSel,
+               TrueModelAccuracy = TrueModel$accTestC,
+               TrueModelAccuracyCont = accuracyTrueModelCont,
+               TrueModelAccuracyNoCont = accuracyTrueModelNoCont,
                Parameters = actualPar) )
 }
 
@@ -99,81 +185,81 @@ MultSimSetting <- function(mu, sg, pig, nobsevations,alpha,etag)
 
 TrueParameters<-function(Xtrain,ltrain, v)
 {
-
-indNoCont <- apply(v,2,function(x) which(x==1))
-indCont <- apply(v,2,function(x) which(x==0))
-    
-Xtrain <- as.matrix(Xtrain)  
-G <- length(unique(ltrain))  
-l <- unmap(ltrain)
-mg <- apply(l,2,sum)
-m <- sum(mg)
-pg <- apply(l,2,sum)/m
-p<-ncol(Xtrain)
-S <- array(0,dim=c(p,p,G))
-Sg <- array(0,dim=c(p,p,G))
-Sgc <- array(0,dim=c(p,p,G))
-a <- rep(0,G)
-b <- rep(0,G)
-eta <- rep(0,G)
-
-mNoCont <- apply(v,2,function(row) length(which(row==1)) )
-mCont <- apply(v,2,function(row) length(which(row==0)) )
-
-alpha <- mNoCont/mg
-mu <- t(aggregate(Xtrain,by = list(ltrain),FUN = "mean")[,-1])
-v1 <- as.matrix(v)
-
-# factor1: matrix that contains the distance
-factor1 <- matrix(0, nrow = m,ncol = G)
-
-# factor2: matrix that contains the Mahalanobis distance for each
-# observation in each group
-factor2 <- matrix(0, nrow = m,ncol = G)
-
-for(g in 1:G)
-  for(i in 1:nrow(v1))
-    if(v1[i,g]==-1) v1[i,g]<-1 else v1[i,g]<-0 
-
-
-
-for (g in 1:G)
-{
-  one <- rep(1,mg[g])
-  Xc <- (diag(1,mg[g]) - (one %*% t(one))/mg[g])%*% Xtrain[l[,g]==1,]
-  S[,,g] <- (t(Xc)%*%Xc)/(mg[g]-1)
   
-  # Sigma group G no contaminated samples
-  one <-rep(1,mNoCont[g])
-  Xc <- (diag(1,mNoCont[g]) - (one %*% t(one))/mNoCont[g])%*% Xtrain[indNoCont[[g]],]
-  Sg[,,g] <- (t(Xc)%*%Xc)/(mNoCont[g]-1)
+  indNoCont <- apply(v,2,function(x) which(x==1))
+  indCont <- apply(v,2,function(x) which(x==0))
   
-  # Sigma group G contaminated samples
-  one <-rep(1,mCont[g])
-  Xc <- (diag(1,mCont[g]) - (one %*% t(one))/mCont[g])%*% Xtrain[indCont[[g]],]
-  Sgc[,,g] <- (t(Xc)%*%Xc)/(mCont[g]-1)
+  Xtrain <- as.matrix(Xtrain)  
+  G <- length(unique(ltrain))  
+  l <- unmap(ltrain)
+  mg <- apply(l,2,sum)
+  m <- sum(mg)
+  pg <- apply(l,2,sum)/m
+  p<-ncol(Xtrain)
+  S <- array(0,dim=c(p,p,G))
+  Sg <- array(0,dim=c(p,p,G))
+  Sgc <- array(0,dim=c(p,p,G))
+  a <- rep(0,G)
+  b <- rep(0,G)
+  eta <- rep(0,G)
+  
+  mNoCont <- apply(v,2,function(row) length(which(row==1)) )
+  mCont <- apply(v,2,function(row) length(which(row==0)) )
+  
+  alpha <- mNoCont/mg
+  mu <- t(aggregate(Xtrain,by = list(ltrain),FUN = "mean")[,-1])
+  v1 <- as.matrix(v)
+  
+  # factor1: matrix that contains the distance
+  factor1 <- matrix(0, nrow = m,ncol = G)
+  
+  # factor2: matrix that contains the Mahalanobis distance for each
+  # observation in each group
+  factor2 <- matrix(0, nrow = m,ncol = G)
+  
+  for(g in 1:G)
+    for(i in 1:nrow(v1))
+      if(v1[i,g]==-1) v1[i,g]<-1 else v1[i,g]<-0 
   
   
   
-}
-#Sg
-#Sgc
-
-for(g in 1:G)
-{
-  for(i in 1:m)
+  for (g in 1:G)
   {
-    factor1[i,g] <- l[i,g]*(1-v1[i,g])
-    factor2[i,g] <- mahalanobis(Xtrain[i,],mu[,g],Sg[,,g])
-    b[g] <- b[g] + factor1[i,g]*factor2[i,g]
+    one <- rep(1,mg[g])
+    Xc <- (diag(1,mg[g]) - (one %*% t(one))/mg[g])%*% Xtrain[l[,g]==1,]
+    S[,,g] <- (t(Xc)%*%Xc)/(mg[g]-1)
+    
+    # Sigma group G no contaminated samples
+    one <-rep(1,mNoCont[g])
+    Xc <- (diag(1,mNoCont[g]) - (one %*% t(one))/mNoCont[g])%*% Xtrain[indNoCont[[g]],]
+    Sg[,,g] <- (t(Xc)%*%Xc)/(mNoCont[g]-1)
+    
+    # Sigma group G contaminated samples
+    one <-rep(1,mCont[g])
+    Xc <- (diag(1,mCont[g]) - (one %*% t(one))/mCont[g])%*% Xtrain[indCont[[g]],]
+    Sgc[,,g] <- (t(Xc)%*%Xc)/(mCont[g]-1)
+    
+    
+    
   }
-  a[g] <- sum(factor1[,g])
-  eta[g] <- b[g]/(p*a[g])
-}
+  #Sg
+  #Sgc
   
-
-return(list(pig = pg, mu = mu,  S=S,Sgnc = Sg, Sgc=Sgc, alpha = alpha, eta = eta))
-
+  for(g in 1:G)
+  {
+    for(i in 1:m)
+    {
+      factor1[i,g] <- l[i,g]*(1-v1[i,g])
+      factor2[i,g] <- mahalanobis(Xtrain[i,],mu[,g],Sg[,,g])
+      b[g] <- b[g] + factor1[i,g]*factor2[i,g]
+    }
+    a[g] <- sum(factor1[,g])
+    eta[g] <- b[g]/(p*a[g])
+  }
+  
+  
+  return(list(pig = pg, mu = mu,  S=S,Sgnc = Sg, Sgc=Sgc, alpha = alpha, eta = eta))
+  
 }
 
 
@@ -208,7 +294,8 @@ getOW <- function(df_train, l_train)
 }
 
 fHLvarSearch3 <- function(X_train, X_test, RW,l_train, l_test, CE, 
-                          alpharef =0.99,tol=0.01,epsilon = 0)
+                          alpharef =0.99,tol=0.01,epsilon = 0,
+                          nSteps = 15)
   # forward Headlong  variable selection
 {
   stop2 = F
@@ -230,7 +317,7 @@ fHLvarSearch3 <- function(X_train, X_test, RW,l_train, l_test, CE,
   
   for (cont in 1:p)
   {
-  
+    
     PM <-RW[cont]
     
     X_train1 <- X_train %>% select(all_of(PM))
@@ -239,8 +326,10 @@ fHLvarSearch3 <- function(X_train, X_test, RW,l_train, l_test, CE,
     head(X_train1)
     head(X_test1)
     
+    cat("\n Model ",unlist(PM))
+    
     model[[cont]] <- ModelAccuracy3(X_train1,X_test1,l_train,l_test,"E",
-                            alpharef, tol)
+                                    alpharef, tol,nSteps)
     model[[cont]]$PM <- PM
     AccPM <-model[[cont]]$accTestC
     
@@ -275,9 +364,9 @@ fHLvarSearch3 <- function(X_train, X_test, RW,l_train, l_test, CE,
       X_test1 <- X_test %>% select(all_of(PM))
       
       model[[cont]] <- ModelAccuracy3(X_train1,X_test1,l_train,l_test,"EEI",
-                              alpharef, tol)
+                                      alpharef, tol,nSteps)
       model[[cont]]$PM <- PM
-      cat("\n",cont,"\n")
+      cat("\n",cont," ,model = ",unlist(PM),"\n")
       AccPM <- model[[cont]]$accTestC
       cont <- cont + 1
       
@@ -288,8 +377,8 @@ fHLvarSearch3 <- function(X_train, X_test, RW,l_train, l_test, CE,
         posCM <- cont
         break
       } # end if
-        
-        j <- j + 1
+      
+      j <- j + 1
     } # end while (stop2 == F & j <= nARW)
     
   } # end while
@@ -483,7 +572,7 @@ modelAccuracy <- function(X_train,X_test,l_train,l_test,CE)
 }
 
 
-SimGClasses <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
+SimGClasses <- function(mug,sg,pig,nobs,ptraining,alphag,etag)
   #n : number of observations
 {
   output <- list()
@@ -579,7 +668,7 @@ loglikCMN<-function(X,l, par)
   
   mu <- as.matrix(par$mu)
   if(is.matrix(X) & ncol(X)==1) 
-    { 
+  { 
     if(length(dim(par$sigma))>2)
     {
       sg <- as.vector(par$sigma)
@@ -587,8 +676,8 @@ loglikCMN<-function(X,l, par)
     {
       sg <- rep(par$sigma,par$G)
     }
-    }else  sg <- par$sigma
-
+  }else  sg <- par$sigma
+  
   G <- par$G
   pig <- par$pig
   alpha <- par$alpha
@@ -602,7 +691,7 @@ loglikCMN<-function(X,l, par)
   M <- matrix(0.0, nrow = m, ncol = G)
   
   
-
+  
   for (g in 1:G)
   {
     for(i in 1:m)
@@ -610,21 +699,21 @@ loglikCMN<-function(X,l, par)
       term1 <- log(pig[g])
       if(length(dim(sg)) > 2)
       {
-          term2 <- v[i,g] * log(alpha[g]*dMVNorm(X[i,],mu[,g],sg[,,g])  )
-          term3<-(1-v[i,g]) * log( (1-alphag[g]) * dMVNorm(X[i,],mu[,g],eta[g]*sg[,,g]) )
-
+        term2 <- v[i,g] * (log(alpha[g]) + dMVNorm(X[i,],mu[,g],sg[,,g],log = TRUE))
+        term3<-(1-v[i,g]) *( log(1-alpha[g]) + dMVNorm(X[i,],mu[,g],eta[g]*sg[,,g],log = TRUE) )
+        
       }else if(length(dim(sg))<=2)
       {
         if(ncol(X)>1)
         {
           s <- matrix(sg, ncol = p, nrow = p)
-          term2 <- v[i,g] * log(alpha[g]*dMVNorm(X[i,],mu[,g],data.matrix(s) ) )
-          term3<-(1-v[i,g]) * log( (1-alphag[g]) * dMVNorm(X[i,],mu[,g],eta[g]*s ) )
+          term2 <- v[i,g] * ( log(alpha[g]) + dMVNorm(X[i,],mu[,g],data.matrix(s),log = TRUE ) ) 
+          term3<-(1-v[i,g]) * ( log (1-alpha[g]) + dMVNorm(X[i,],mu[,g],eta[g]*s,log = TRUE ) )
         } else if(ncol(X)==1)
         {
           mu <- as.vector(mu)
           term2 <- v[i,g] * log(alpha[g]*dnorm(X[i,],mu[g],sg[g] ) )
-          term3<-(1-v[i,g]) * log( (1-alphag[g]) * dnorm(X[i,],mu[g],eta[g]*sg[g] ) )
+          term3<-(1-v[i,g]) * log( (1-alpha[g]) * dnorm(X[i,],mu[g],eta[g]*sg[g] ) )
         }
       }
       
@@ -643,7 +732,7 @@ loglikCMN<-function(X,l, par)
 
 
 ModelAccuracy3 <- function(X_train1,X_test1,l_train,l_test,CE,
-                           alpharef=0.98, tol = 0.01)
+                           alpharef=0.98, tol = 0.01,nSteps = 15)
 {
   if(!is.matrix(X_train1)) X_train1 <- as.matrix(X_train1)
   if(!is.matrix(X_test1)) X_test1 <- as.matrix(X_test1)
@@ -664,12 +753,13 @@ ModelAccuracy3 <- function(X_train1,X_test1,l_train,l_test,CE,
   if(length(alpharef) == 1) alpharef <- rep(alpharef,G)
   if(ncol(X_train1)==1) CE <- "E" else CE <- "EII"
   
-  if(ncol(X_train1)>1)
-  {
-    mstep0 <- CNmixt(X = X_train1, contamination = F, model = CE,
-                     initialization = "mixt", start.z = unmap(l_train), G = 2 )
-    estep0 <- mstep0$models
-  }
+#  if(ncol(X_train1)>1)
+#  {
+#    mstep0 <- CNmixt(X = X_train1, contamination = F, model = CE,
+#                     initialization = "mixt", start.z = unmap(l_train), G = 2 )
+#    estep0 <- mstep0$models
+#  }
+  
   # Estimated parameters assuming no contaminated set
   mstep1 <-mstep(data = X_train1,modelName = CE, z = unmap(l_train))
   estep1 <- estep(data = X_test1, modelName = CE, 
@@ -686,7 +776,7 @@ ModelAccuracy3 <- function(X_train1,X_test1,l_train,l_test,CE,
   # give initial values for alpha
   par$alpha <- alpharef
   par$eta <- rep(1.011,G)
-  cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
+#  cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
   estep2 <- eCmn(X_train1,par)
   vhat <- estep2$v
   #cat("\n","vij = ", estep2$v, "\n")
@@ -703,13 +793,13 @@ ModelAccuracy3 <- function(X_train1,X_test1,l_train,l_test,CE,
   logc[[iter]] <- loglikCMN(X_train1, l_train,par) 
   vr[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
   diflog[[iter]] <- NA
-  while ( iter < 3  | (diflog[[iter]] > tol & iter < 20) )
+  while ( iter < 3  | (diflog[[iter]] > tol & iter < nSteps) )
   {
     mstep2 <- mCmn(X_train1,l_train,par)
     par$mu <- mstep2$mu
     par$sigma <- mstep2$sigma
     par$eta <- mstep2$eta
-    cat("\n",par$eta,"\n")
+    #cat("\n",par$eta,"\n")
     par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 
     #par$alpha <- mstep2$alpha
     estep3 <- eCmn(X_train1,mstep2)
@@ -727,9 +817,9 @@ ModelAccuracy3 <- function(X_train1,X_test1,l_train,l_test,CE,
     }else diflog[[iter]] <- NA    
     
     cat("\n","iter=",iter-1,";",logc[[iter-1]],";","diflog=",diflog[[iter]])
-    cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
-    cat("\n","Sigma =",par$sigma,"\n")
-#    cat(estep3$v, "\n")
+#    cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
+#    cat("\n","Sigma =",par$sigma,"\n")
+    #    cat(estep3$v, "\n")
     
     
   }
@@ -741,7 +831,7 @@ ModelAccuracy3 <- function(X_train1,X_test1,l_train,l_test,CE,
   ltest <- apply(z,1,which.max)
   accTest_c <- sum(ltest == l_test)/length(l_test)
   
-    
+  
   output <- list(accTestNc = accTest_nc,accTestC = accTest_c, 
                  predlabel = ltest, predv = predv,
                  loglikelihood_nc = estep1$loglik,loglikelihod = logc,
@@ -896,7 +986,7 @@ ModelAccuracy1 <- function(X_train,X_test,l_train,l_test,CE,alpharef)
     iter <- iter + 1
     vr[[iter]] <- estep3$v
     par$v <- estep3$v
-      flag2 <- flag2 + 1
+    flag2 <- flag2 + 1
     
   }
   
@@ -935,13 +1025,13 @@ eCmn1 <- function(Xtrain,par)
         cat("\n",den,"\n")
         v[i,g] <- num/den 
         # num1 : numerator for the e-step for z[i,g]
-
+        
       } else if(length(dim(par$sigma)) > 2)
       {
         num <- alpha[g] * dMVNorm(Xtrain[i,],mu[,g],sigma[,,g])
         den <- num + (1-alpha[g])*dMVNorm(Xtrain[i,],mu[,g],eta[g]*sigma[,,g])
         v[i,g] <- num/den 
-
+        
       } #End-f
       
     }#End-for
@@ -966,13 +1056,13 @@ eCmn1 <- function(Xtrain,par)
       num1[i,g] <- sum1 + sum2
     }
   }
-    
-    
+  
+  
   for (i in 1:m)
   {
     z[i,] <- num1[i,]/sum(num1[i,])
   }
-
+  
   
   lhat<-apply(z,1,which.max)
   
@@ -989,7 +1079,7 @@ f_eta <- function(eta,z, v , X, mu, sigma)
   if(any(nrow(z),nrow(v))== m) stop("z and v has to be same length")
   sum1 <- 0
   sum2 <- 0
-
+  
   for(i in 1:m)
   {
     sum1 <- sum1 + z[i]*(1-v[i])*log(eta)
@@ -1025,7 +1115,7 @@ mCmn1 <- function(Xtrain,ltrain,par,eta_max = 1000)
   factor1 <- 0
   factor2 <- 0
   factor3 <- 0 # Malahanobis distance
-
+  
   S <- rep(0,G)
   
   eta1 <-  rep(0,G)
@@ -1048,35 +1138,35 @@ mCmn1 <- function(Xtrain,ltrain,par,eta_max = 1000)
     for(i in 1:m)
       fz[i,g] <- l[i,g]*fw[i,g]    
   }
-    S <- apply(fz,2,sum)
-
-  # Calculate alpha1 #
-    for(g in 1:G)
-      alpha1[g] <- (l[,g] %*% v[,g])/mg[g]
-    
-  # Calculate mu1 #
-    for (g in 1:G)
-      for (i in 1:m)
-        fx[,i,g] <- fz[i,g] * Xtrain[i,] /S[g]
-    
-    for(g in 1:G)
-      mu1[,g] <- apply(fx[,,g],1,sum)
-    
-  # Calculate Sigma1 #
-    for(g in 1:G)
-    {  
-      
-      for(i in 1:m)
-        faux[,,i,g] <- fz[i,g] * (Xtrain[i,] - mu1[,g]) %*% t(Xtrain[i,]-mu1[,g])
-
-      for(i in 1:m)
-        W[,,g] <- W[,,g] + faux[,,i,g]
-      
-      sigma1[,,g] <- W[,,g]/mg[g]
-    }  
+  S <- apply(fz,2,sum)
   
-    # calculate eta1 #
+  # Calculate alpha1 #
+  for(g in 1:G)
+    alpha1[g] <- (l[,g] %*% v[,g])/mg[g]
+  
+  # Calculate mu1 #
+  for (g in 1:G)
+    for (i in 1:m)
+      fx[,i,g] <- fz[i,g] * Xtrain[i,] /S[g]
+  
+  for(g in 1:G)
+    mu1[,g] <- apply(fx[,,g],1,sum)
+  
+  # Calculate Sigma1 #
+  for(g in 1:G)
+  {  
     
+    for(i in 1:m)
+      faux[,,i,g] <- fz[i,g] * (Xtrain[i,] - mu1[,g]) %*% t(Xtrain[i,]-mu1[,g])
+    
+    for(i in 1:m)
+      W[,,g] <- W[,,g] + faux[,,i,g]
+    
+    sigma1[,,g] <- W[,,g]/mg[g]
+  }  
+  
+  # calculate eta1 #
+  
   for(g in 1:G)
   {
     factor1 <- optimize(f_eta,c(1,eta_max),tol=0.0001, 
@@ -1085,7 +1175,7 @@ mCmn1 <- function(Xtrain,ltrain,par,eta_max = 1000)
     eta1[g] <- factor1$maximum 
     
   }
-
+  
   output <- list(mu = mu1, sigma = sigma1, eta = eta1, 
                  alpha = alpha1, v = v, pig = pig, G = G)
   return(output)
@@ -1119,8 +1209,8 @@ eCmn <- function(Xtrain,par)
         
       } else if(length(dim(par$sigma))==2)
       {
-          num <- alpha[g] * dMVNorm(Xtrain[i,],mu[,g],sigma)
-          den <- num + (1-alpha[g])*dMVNorm(Xtrain[i,],mu[,g],eta[g]*sigma)
+        num <- alpha[g] * dMVNorm(Xtrain[i,],mu[,g],sigma)
+        den <- num + (1-alpha[g])*dMVNorm(Xtrain[i,],mu[,g],eta[g]*sigma)
         
       } else if(length(dim(par$sigma)) > 2)
       {
@@ -1227,9 +1317,9 @@ mCmn <- function(Xtrain,ltrain,par)
     #      eta1[g] <- 1.001
     #    else  eta1[g]<-max(1.001,b[g]/(p*a[g]))
     if(a[g]!=0) 
-      {
-        eta1[g]<-max(1.001,b[g]/(p*a[g]))
-      }else eta1[g] <- 1
+    {
+      eta1[g]<-max(1.001,b[g]/(p*a[g]))
+    }else eta1[g] <- 1
   }
   
   output <- list(mu = mu1, sigma = sigma1, eta = eta1, 
