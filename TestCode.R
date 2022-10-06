@@ -1,5 +1,8 @@
 getwd()
-source("SimClassfewdim.R")
+ruta <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
+setwd(ruta)
+#source("SimClassfewdim.R")
+source("SimClassEM20Steps.R")
 
 
 
@@ -18,6 +21,7 @@ nobservations = 160
 ptraining = 0.75
 alphag <-c(1,1)
 etag <- c(1,1)
+set.seed(123)
 GenDataA.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
 plot(GenDataA.1$Xtrain[,c(2,4)], col = GenDataA.1$ltrain, pch = 15+GenDataA$ltrain,
      xlab = "X2", ylab = "X4", main = "Dataset A.1")
@@ -34,6 +38,7 @@ nobservations = 160
 ptraining = 0.75
 alphag <-c(1,1)
 etag <- c(1,1)
+set.seed(123)
 GenDataA.2 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
 
 plot(GenDataA.2$Xtrain[,c(2,4)], col = GenDataA.2$ltrain, 
@@ -42,25 +47,174 @@ plot(GenDataA.2$Xtrain[,c(2,4)], col = GenDataA.2$ltrain,
 
 
 
-# Dataset A.3 (uncontaminated) ----------------------------------------------
+# Dataset A3 (2 contaminated samples with correlated uninformative variables) ----------
 
 mu1 <- c(0,0,0,0)
 mu2 <- c(0,6,0,6)
 mu <- cbind(mu1,mu2)
-sg <- diag(1,4)
+
+aux1 <- matrix(c(3,0,1,0,0,5,0,0,1,0,3,0,0,0,0,1),ncol = 4, byrow = TRUE)
+aux1
+sg <- aux1
+
 pig<- c(0.5,0.5)
-nobservations = 160
+nobservations = 320
 ptraining = 0.75
-alphag <-c(1,1)
-etag <- c(1,1)
-GenDataA.3 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+alphag <-c(0.9,0.8)
+etag <- c(20,30)
+set.seed(123)
+GenDataA3 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
 
-plot(GenDataA.3$Xtrain[,c(2,4)], col = GenDataA.3$ltrain, 
-     pch = 15+GenDataA.3$ltrain,
-     xlab = "X2", ylab = "X4", main = "Dataset A.3")
+v1 <- rep(0,nrow(GenDataA3$Xtrain))
+
+for (i in 1:nrow(GenDataA3$Xtrain))
+{
+  if(GenDataA3$ltrain[i] == 1)
+  {
+    if(GenDataA3$vtrain[i,1] == 1)
+      v1[i]= 0
+    else if(GenDataA3$vtrain[i,1] == 0)
+      v1[i] = 1
+  }else  if(GenDataA3$ltrain[i] == 2)
+  {
+    if(GenDataA3$vtrain[i,2] == 1)
+      v1[i]= 0
+    else if(GenDataA3$vtrain[i,2] == 0)
+      v1[i] = 1
+  } 
+}
+v1
+
+# plot training set
+plot(GenDataA3$Xtrain[,c(2,4)], col = (1-v1)*GenDataA3$ltrain+2, 
+     pch = 15+GenDataA3$ltrain,
+     xlab = "X2", ylab = "X4")
+legend("topright", legend = c("Class A","Class B"), 
+       col = c("green","steelblue"),
+       pch = c(16,17))
+
+# plot testing set
+
+# v1te it is changed to obtain suitable colors 
+
+v1te <- rep(0,nrow(GenDataA3$Xtest))
+for (i in 1:nrow(GenDataA3$Xtest))
+{
+  if(GenDataA3$ltest[i] == 1)
+  {
+    if(GenDataA3$vtest[i,1] == 1)
+      v1te[i]= 0
+    else if(GenDataA3$vtest[i,1] == 0)
+      v1te[i] = 1
+  }else  if(GenDataA3$ltest[i] == 2)
+  {
+    if(GenDataA3$vtest[i,2] == 1)
+      v1te[i]= 0
+    else if(GenDataA3$vtest[i,2] == 0)
+      v1te[i] = 1
+  } 
+}
+v1te
 
 
-# Dataset A.4 (contaminated) ----------------------------------------------
+plot(GenDataA3$Xtest[,c(2,4)], col = (1-v1te)*GenDataA3$ltest+2, 
+     pch = 15+GenDataA3$ltest,
+     xlab = "X2", ylab = "X4")
+legend("topright", legend = c("Class A","Class B"), 
+       col = c("green","steelblue"),
+       pch = c(16,17))
+
+
+# 25 and 71 misclassified samples class A and 11 and 33 are the position in ind_class1
+text(GenDataA.4$Xtest[25,2],GenDataA.4$Xtest[25,4],"25",c(0,0))
+text(GenDataA.4$Xtest[71,2],GenDataA.4$Xtest[71,4],"71",c(0,0))
+
+# 2,31,49 contaminated samples in class B and 2, 20, 30 are the position in ind_class2 
+text(GenDataA.4$Xtest[2,2],GenDataA.4$Xtest[2,4],"2",c(0,0))
+text(GenDataA.4$Xtest[31,2],GenDataA.4$Xtest[31,4],"31",c(0,0))
+text(GenDataA.4$Xtest[49,2],GenDataA.4$Xtest[49,4],"49",c(0,0))
+
+
+
+# plot pairs
+
+pairs(GenDataA3$Xtrain, col = (1-v1te)*GenDataA3$ltrain+2,
+      pch = c(16,16)[GenDataA3$ltrain])
+
+
+
+dfRW <- getOW(GenDataA3$Xtrain,GenDataA3$ltrain)
+RW <- dfRW$Var
+
+modA3.1 <-fHLvarSearch(GenDataA3$Xtrain,GenDataA3$Xtest,RW,
+                       GenDataA3$ltrain,GenDataA3$ltest,"E")
+
+actualParall <- TrueParameters(GenDataA3$Xtrain[,],GenDataA3$ltrain,
+                               GenDataA3$vtrain)
+
+actualPar <- TrueParameters(GenDataA3$Xtrain[,c(2,4)],GenDataA3$ltrain,
+                            GenDataA3$vtrain)
+
+p<-ncol(as.matrix(GenDataA3$Xtrain[,c(2,4)]))
+m<- matrix(0, nrow = p,ncol = p)
+for(row in 1:p)
+  for(col in 1:p)
+    m[row,col] <- actualPar$Sgc[row,col,1]/actualPar$Sgnc[row,col,1]    
+
+m
+
+# Class 1
+actualPar$mu
+actualPar$S[,,1]
+actualPar$Sgnc[,,1]
+actualPar$Sgc[,,1]
+actualPar$alpha
+# Eta class 1
+(actualPar$S[,,1]-actualPar$alpha[1]*actualPar$Sgnc[,,1])%*% solve(actualPar$Sgnc[,,1])/(1-actualPar$alpha[1])
+
+# Class 2
+actualPar$mu
+actualPar$S[,,2]
+actualPar$Sgnc[,,2]
+actualPar$Sgc[,,1]
+actualPar$alpha
+# Eta class 2
+(actualPar$S[,,2]-actualPar$alpha[2]*actualPar$Sgnc[,,2])%*% solve(actualPar$Sgnc[,,2])/(1-actualPar$alpha[2])
+
+
+
+tic("VariableSearch")
+resA3 <-fHLvarSearch3(GenDataA3$Xtrain,GenDataA3$Xtest,RW,
+                      GenDataA3$ltrain,GenDataA3$ltest,"E")
+toc()
+
+tresA3_test <- table(GenDataA3$ltest,resA3$models[[5]]$predlabel)
+sum(diag(tresA3_test))/sum(tresA3_test)
+cat("\n", resA3$Selectedmodel,"-",resA3$Accuracy,"\n")
+
+# Class B is Class 1 here
+ind_class1 <- which(GenDataA3$vtest[,1]!=-1)
+# Class A is Class 2 here
+ind_class2 <- which(GenDataA3$vtest[,2]!=-1)
+vtest_actual<- GenDataA3$vtest
+
+
+tresA3_class1 <- table(vtest_actual[ind_class1,1],resA3$models[[5]]$predv[ind_class1,1])
+tresA3_class1
+sum(diag(tresA4_class1))/sum(tresA4_class1)
+
+tresA4_class2 <- table(vtest_actual[ind_class2,2],resA4$models[[5]]$predv[ind_class2,2])
+tresA4_class2
+sum(diag(tresA4_class2))/sum(tresA4_class2)
+
+
+accuracy[nrun] <- modA4$Accuracy
+selectedvariables[[nrun]] <- paste(res$model,sep="-")
+
+
+
+
+# Dataset A.4 (2 contaminated classes in 4 dimensions) ----------------------------------------------
 
 mu1 <- c(0,0,0,0)
 mu2 <- c(0,6,0,6)
@@ -71,6 +225,7 @@ nobservations = 320
 ptraining = 0.75
 alphag <-c(0.9,0.8)
 etag <- c(20,30)
+set.seed(123)
 GenDataA.4 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
 
 v1 <- rep(0,nrow(GenDataA.4$Xtrain))
@@ -153,8 +308,16 @@ pairs(GenDataA.4$Xtrain, col = (1-v1te)*GenDataA.4$ltrain+2,
 dfRW <- getOW(GenDataA.4$Xtrain,GenDataA.4$ltrain)
 RW <- dfRW$Var
 
+
 modA4.1 <-fHLvarSearch(GenDataA.4$Xtrain,GenDataA.4$Xtest,RW,
                      GenDataA.4$ltrain,GenDataA.4$ltest,"E")
+
+modA4.1.1 <-fHLvarSearch2(GenDataA.4$Xtrain,GenDataA.4$Xtest,RW,
+                       GenDataA.4$ltrain,GenDataA.4$ltest,"E")
+
+modA4.1.2 <-fHLvarSearch3(GenDataA.4$Xtrain,GenDataA.4$Xtest,RW,
+                        GenDataA.4$ltrain,GenDataA.4$ltest,"E")
+
 
 actualParall <- TrueParameters(GenDataA.4$Xtrain[,],GenDataA.4$ltrain,
                             GenDataA.4$vtrain)
@@ -191,8 +354,6 @@ actualPar$alpha
 
 
 tic("VariableSearch")
-resA4 <-fHLvarSearch3(GenDataA.4$Xtrain,GenDataA.4$Xtest,RW,
-                     GenDataA.4$ltrain,GenDataA.4$ltest,"E")
 toc()
 tresA4_test <- table(GenDataA.4$ltest,resA4$models[[5]]$predlabel)
 sum(diag(tresA4_test))/sum(tresA4_test)
@@ -362,6 +523,217 @@ aux15 <- eCmn(GenDataD.1$Xtest,parD1_15)
 vD1_15t <- ifelse(aux15$v<0.5,0,1)
 table(GenDataD.1$vtest,vD1_15t)
 
+
+
+# Dataset A.5 (2 contaminated classes in 100 dimensions)  -----------------
+
+mu1 <- rep(0,100)
+mu2 <- c(0,6,0,6,rep(0,96))
+mu <- cbind(mu1,mu2)
+sg <- diag(1,100)
+pig<- c(0.5,0.5)
+nobservations = 320
+ptraining = 0.75
+alphag <-c(0.9,0.8)
+etag <- c(20,30)
+set.seed(123)
+
+GenDataA.5 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+
+v1 <- rep(0,nrow(GenDataA.5$Xtrain))
+
+for (i in 1:nrow(GenDataA.5$Xtrain))
+{
+  if(GenDataA.5$ltrain[i] == 1)
+  {
+    if(GenDataA.5$vtrain[i,1] == 1)
+      v1[i]= 0
+    else if(GenDataA.5$vtrain[i,1] == 0)
+      v1[i] = 1
+  }else  if(GenDataA.5$ltrain[i] == 2)
+  {
+    if(GenDataA.5$vtrain[i,2] == 1)
+      v1[i]= 0
+    else if(GenDataA.5$vtrain[i,2] == 0)
+      v1[i] = 1
+  } 
+}
+v1
+
+# plot training set
+plot(GenDataA.5$Xtrain[,c(2,4)], col = (1-v1)*GenDataA.5$ltrain+2, 
+     pch = 15+GenDataA.5$ltrain,
+     xlab = "X2", ylab = "X4")
+legend("topright", legend = c("Class A","Class B"), 
+       col = c("green","steelblue"),
+       pch = c(16,17))
+
+# plot testing set
+# v1te it is changed to obtain suitable colors 
+
+v1te <- rep(0,nrow(GenDataA.5$Xtest))
+for (i in 1:nrow(GenDataA.5$Xtest))
+{
+  if(GenDataA.5$ltest[i] == 1)
+  {
+    if(GenDataA.5$vtest[i,1] == 1)
+      v1te[i]= 0
+    else if(GenDataA.5$vtest[i,1] == 0)
+      v1te[i] = 1
+  }else  if(GenDataA.5$ltest[i] == 2)
+  {
+    if(GenDataA.5$vtest[i,2] == 1)
+      v1te[i]= 0
+    else if(GenDataA.5$vtest[i,2] == 0)
+      v1te[i] = 1
+  } 
+}
+v1te
+
+# Plot the misclassified samples for model {X2,X4}
+
+plot(GenDataA.5$Xtest[,c(2,4)], col = (1-v1te)*GenDataA.5$ltest+2, 
+     pch = 15+GenDataA.5$ltest,
+     xlab = "X2", ylab = "X4")
+legend("topright", legend = c("Class A","Class B"), 
+       col = c("green","steelblue"),
+       pch = c(16,17))
+# 68 sample classify as class 1 when it is class 2
+text(GenDataA.5$Xtest[68,2],GenDataA.5$Xtest[68,4],"68",c(0,0))
+
+# Plot the misclassified samples for model {X2,X4,X66}
+library(rgl)
+
+plot3d(GenDataA.5$Xtest[,2],GenDataA.5$Xtest[,4],GenDataA.5$Xtest[,66],
+              radius = 1,
+              col = (1-v1te)*GenDataA.5$ltest+2, 
+              pch = 15 + GenDataA.5$ltest,
+              xlab = "X2",
+              ylab = "X4",
+              zlab = "X66")
+# 68 sample classify as class 1 when it is class 2
+text3d(GenDataA.5$Xtest[68,2],GenDataA.5$Xtest[68,4],GenDataA.5$Xtest[68,66],
+       "68",c(0,0))
+zz <- scatterplot3d(GenDataA.5$Xtest[,2],GenDataA.5$Xtest[,4],GenDataA.5$Xtest[,66],
+       color = (1-v1te)*GenDataA.5$ltest+2, 
+       pch = 15 + GenDataA.5$ltest,
+       xlab = "X2",
+       ylab = "X4",
+       zlab = "X66")
+# 68 sample classify as class 1 when it is class 2
+zz.coords <- zz$xyz.convert(GenDataA.5$Xtest[,2],
+                            GenDataA.5$Xtest[,4],
+                            GenDataA.5$Xtest[,66])
+
+text(zz.coords$x,
+     zz.coords$y,
+     zz.coords$z,
+     labels = c(rep("",67),"68",rep("",32)),
+      cex = 0.5,
+     pos = 4)
+legend("topright", inset=.05,
+       bty="n", cex = 0.5,
+       )
+
+plot(GenDataA.5$Xtest[,c(2,4)], col = (1-v1te)*GenDataA.5$ltest+2, 
+     pch = 15+GenDataA.5$ltest,
+     xlab = "X2", ylab = "X4")
+legend("topright", legend = c("Class A","Class B"), 
+       col = c("green","steelblue"),
+       pch = c(16,17))
+
+# 25 and 71 misclassified samples class A and 11 and 33 are the position in ind_class1
+text(GenDataA.5$Xtest[25,2],GenDataA.5$Xtest[25,4],"25",c(0,0))
+text(GenDataA.5$Xtest[71,2],GenDataA.5$Xtest[71,4],"71",c(0,0))
+
+# 2,31,49 contaminated samples in class B and 2, 20, 30 are the position in ind_class2 
+text(GenDataA.5$Xtest[2,2],GenDataA.5$Xtest[2,4],"2",c(0,0))
+text(GenDataA.5$Xtest[31,2],GenDataA.5$Xtest[31,4],"31",c(0,0))
+text(GenDataA.5$Xtest[49,2],GenDataA.5$Xtest[49,4],"49",c(0,0))
+
+# plot pairs
+
+pairs(GenDataA.5$Xtrain[,c(2,4,66)], col = (1-v1te)*GenDataA.5$ltrain+2,
+      pch = c(16,16)[GenDataA.5$ltrain])
+
+
+
+
+dfRW <- getOW(GenDataA.5$Xtrain,GenDataA.5$ltrain)
+RW <- dfRW$Var
+
+modA5.1 <-fHLvarSearch(GenDataA.5$Xtrain,GenDataA.5$Xtest,RW,
+                       GenDataA.5$ltrain,GenDataA.5$ltest,"E")
+
+actualPar <- TrueParameters(GenDataA.5$Xtrain[,c(2,4,66)],GenDataA.5$ltrain,
+                            GenDataA.5$vtrain)
+
+p<-ncol(as.matrix(GenDataA.5$Xtrain[,c(2,4)]))
+m<- matrix(0, nrow = p,ncol = p)
+for(row in 1:p)
+  for(col in 1:p)
+    m[row,col] <- actualPar$Sgc[row,col,1]/actualPar$Sgnc[row,col,1]    
+
+m
+
+# Class 1
+actualPar$mu
+actualPar$S[,,1]
+actualPar$Sgnc[,,1]
+actualPar$Sgc[,,1]
+actualPar$alpha
+# Eta class 1
+(actualPar$S[,,1]-actualPar$alpha[1]*actualPar$Sgnc[,,1])%*% solve(actualPar$Sgnc[,,1])/(1-actualPar$alpha[1])
+
+# Class 2
+actualPar$mu
+actualPar$S[,,2]
+actualPar$Sgnc[,,2]
+actualPar$Sgc[,,1]
+actualPar$alpha
+# Eta class 2
+(actualPar$S[,,2]-actualPar$alpha[2]*actualPar$Sgnc[,,2])%*% solve(actualPar$Sgnc[,,2])/(1-actualPar$alpha[2])
+
+
+
+tic("VariableSearch")
+resA5 <-fHLvarSearch3(GenDataA.5$Xtrain,GenDataA.5$Xtest,RW,
+                      GenDataA.5$ltrain,GenDataA.5$ltest,"E")
+toc()
+
+cat("\n", "model", "train set ",resA5$Selectedmodel,"-",resA5$Accuracy,"\n")
+
+resA5$models[[101]]$PM
+tresA5_test <- table(GenDataA.5$ltest,resA5$models[[101]]$predlabel)
+cbind(GenDataA.5$ltest,resA5$models[[101]]$predlabel)
+
+tresA5_test <- table(GenDataA.5$ltest,resA5$models[[123]]$predlabel)
+accA5test <- sum(diag(tresA5_test))/sum(tresA5_test)
+
+cat("\n", "model", "test set ",resA5$Selectedmodel,"-",accA5test,"\n")
+
+
+
+# Class B is Class 1 here
+ind_class1 <- which(GenDataA.5$vtest[,1]!=-1)
+# Class A is Class 2 here
+ind_class2 <- which(GenDataA.5$vtest[,2]!=-1)
+vtest_actual<- GenDataA.5$vtest
+
+
+tresA5_class1 <- table(vtest_actual[ind_class1,1],resA5$models[[123]]$predv[ind_class1,1])
+tresA5_class1
+accA5cont_Class1 <-round(sum(diag(tresA5_class1))/sum(tresA5_class1)*100,2)
+accA5cont_Class1
+
+
+tresA5_class2 <- table(vtest_actual[ind_class2,2],resA5$models[[123]]$predv[ind_class2,2])
+tresA5_class2
+accA5cont_Class2 <- sum(diag(tresA5_class2))/sum(tresA5_class2)
+accA5cont_Class2
+
+
+    
 
 
 # Dataset D.1 (contaminated) ----------------------------------------------
@@ -600,7 +972,7 @@ GenDataD.2$vtrain
 
 # plot training set
 plot(GenDataD.2$Xtrain, col = GenDataD.2$vtrain+2, 
-     pch = 15+GenDataD.2$ltrain,
+     pch = 15+GenDataD.2$ltrain,ylim = c(-15,10),
      xlab = "X1", ylab = "X2")
 legend("bottomright", legend = c("Non Contaminated","Contaminated"), 
        col = c("green","red"),
@@ -615,9 +987,9 @@ GenDataD.2$Xtrain[45,]
 
 # plot testing set
 plot(GenDataD.2$Xtest, col = GenDataD.2$vtest+2, 
-     pch = 15+GenDataD.2$ltest,
+     pch = 15+GenDataD.2$ltest, ylim = c(-15,10),
      xlab = "X1", ylab = "X2")
-legend("topleft", legend = c("Non Contaminated","Contaminated"), 
+legend("bottomleft", legend = c("Non Contaminated","Contaminated"), 
        col = c("green","red"),
        pch = c(16,16))
 text(GenDataD.2$Xtrain[26,1],GenDataD.2$Xtrain[26,2],"26",c(0,0))
@@ -778,15 +1150,22 @@ vD2_18 <- ifelse(resD2$v[[18]]<0.5,0,1)
 
 # contamination cross classification table
 
+tD2_10 <- table(GenDataD.2$vtrain,vD2_10)
 tD2_14 <- table(GenDataD.2$vtrain,vD2_14)
 tD2_16 <- table(GenDataD.2$vtrain,vD2_16)
+tD2_18 <- table(GenDataD.2$vtrain,vD2_18)
 
+cbind(GenDataD.2$vtrain,vD2_10)
 cbind(GenDataD.2$vtrain,vD2_18)
 GenDataD.1$Xtrain[56,]
 
 tD2_10 <- table(GenDataD.2$vtrain,vD2_10)
 tD2_10
 sum(diag(tD2_10))/sum(tD2_10)
+
+tD2_14 <- table(GenDataD.2$vtrain,vD2_14)
+sum(diag(tD2_14))/sum(tD2_14)
+tD2_14
 
 tD2_18 <- table(GenDataD.2$vtrain,vD2_18)
 sum(diag(tD2_18))/sum(tD2_18)
@@ -838,6 +1217,13 @@ vD2_10t <- ifelse(auxD2_10$v<0.5,0,1)
 tD2_10t <- table(GenDataD.2$vtest,vD2_10t)
 tD2_10t
 sum(diag(tD2_10t))/sum(tD2_10t)
+
+
+auxD2_14 <- eCmn(GenDataD.2$Xtest,parD2_14)
+vD2_14t <- ifelse(auxD2_14$v<0.5,0,1)
+tD2_14t <- table(GenDataD.2$vtest,vD2_14t)
+tD2_14t
+sum(diag(tD2_14t))/sum(tD2_14t)
 
 
 auxD2_18 <- eCmn(GenDataD.2$Xtest,parD2_18)
