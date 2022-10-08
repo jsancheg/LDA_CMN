@@ -10,8 +10,8 @@ process_collection1<- function(filepath)
   res1 <- process_file1(filenames[1])
   Accuracy_TM_cont <- res1$Accuracy_TM_cont
   Accuracy_TM_nocont <- res1$Accuracy_TM_nocont
-  Accuracy_TM_cont <- res1$Accuracy_TM_cont
-  Accuracy_TM_nocont <- res1$Accuracy_TM_nocont
+  Accuracy_SM_cont <- res1$Accuracy_SM_cont
+  Accuracy_SM_nocont <- res1$Accuracy_SM_nocont
   
   nrows_TM_cont <- nrow(Accuracy_TM_cont)
   nrows_TM_nocont <- nrow(Accuracy_TM_nocont)
@@ -59,12 +59,38 @@ process_file1 <- function(filename)
                       "Inclusion_correctness","Number_var_incorrect_included",
                       "Exclusion_correctness")
   
-  Accuracy_TM_cont <- data.frame(Sim = 1,Accuracy_TM_cont5 = sim.A5[[1]]$details[5,1],
+  Accuracy_TM_cont <- data.frame(Sim = 1,
+                                 Accuracy_TM_cont1 = sim.A5[[1]]$details[1,1],
+                                 Accuracy_TM_cont2 = sim.A5[[1]]$details[2,1],
+                                 Accuracy_TM_cont3 = sim.A5[[1]]$details[3,1],
+                                 Accuracy_TM_cont4 = sim.A5[[1]]$details[4,1],
+                                 Accuracy_TM_cont5 = sim.A5[[1]]$details[5,1],
+                                 Accuracy_TM_cont6 = sim.A5[[1]]$details[6,1],
+                                 Accuracy_TM_cont7 = sim.A5[[1]]$details[7,1],
+                                 Accuracy_TM_cont8 = sim.A5[[1]]$details[8,1],
+                                 Accuracy_TM_cont9 = sim.A5[[1]]$details[9,1],
                                  Accuracy_TM_cont10 = sim.A5[[1]]$details[10,1],
+                                 Accuracy_TM_cont11 = sim.A5[[1]]$details[11,1],
+                                 Accuracy_TM_cont12 = sim.A5[[1]]$details[12,1],
+                                 Accuracy_TM_cont13 = sim.A5[[1]]$details[13,1],
+                                 Accuracy_TM_cont14 = sim.A5[[1]]$details[14,1],
                                  Accuracy_TM_cont15 = sim.A5[[1]]$details[15,1],
+                                 Accuracy_TM_cont16 = sim.A5[[1]]$details[16,1],
+                                 Accuracy_TM_cont17 = sim.A5[[1]]$details[17,1],
+                                 Accuracy_TM_cont18 = sim.A5[[1]]$details[18,1],
+                                 Accuracy_TM_cont19 = sim.A5[[1]]$details[19,1],
                                  Accuracy_TM_cont20 = sim.A5[[1]]$details[20,1])
   
-  Accuracy_TM_nocont <- data.frame(Sim = 1,Accuracy_TM_nocont5 = sim.A5[[1]]$details[5,2],
+  Accuracy_TM_nocont <- data.frame(Sim = 1,
+                                 Accuracy_TM_nocont1 = sim.A5[[1]]$details[1,2],
+                                 Accuracy_TM_nocont2 = sim.A5[[1]]$details[2,2],
+                                 Accuracy_TM_nocont3 = sim.A5[[1]]$details[3,2],
+                                 Accuracy_TM_nocont4 = sim.A5[[1]]$details[4,2],
+                                 Accuracy_TM_nocont5 = sim.A5[[1]]$details[5,2],
+                                 Accuracy_TM_nocont6 = sim.A5[[1]]$details[6,2],
+                                 Accuracy_TM_nocont7 = sim.A5[[1]]$details[7,2],
+                                 Accuracy_TM_nocont8 = sim.A5[[1]]$details[8,2],
+                                 Accuracy_TM_nocont9 = sim.A5[[1]]$details[9,2],
                                  Accuracy_TM_nocont10 = sim.A5[[1]]$details[10,2],
                                  Accuracy_TM_nocont15 = sim.A5[[1]]$details[15,2],
                                  Accuracy_TM_nocont20 = sim.A5[[1]]$details[20,2])
@@ -129,8 +155,12 @@ process_file1 <- function(filename)
 
 
 cdir <- c(pathOutput)
-res <- process_collection1(cdir[1])
+res <- process_collection1(cdir)
 res$resumen
+boxplot(res$resumen$ModelSizeSM)
+boxplot(res$resumen$Number_var_incorrect_included)
+boxplot(res$resumen$AccuracySM)
+
 apply(res$resumen[,-1],2,mean)
 apply(res$Accuracy_TM_contaminated[,-1],2,mean)
 apply(res$Accuracy_TM_no_contaminated[,-1],2,mean)

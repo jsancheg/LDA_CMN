@@ -126,7 +126,8 @@ MultSimPar2 <- function(nruns)
     
     #25:54
   }
-  res1 <- data.frame(SM = SM,AccuracySM = (unlist(AccuracySM)),
+  res1 <- data.frame(SM = SM, AccuracyTM = unlist(AccuracyTM),
+                    AccuracySM = (unlist(AccuracySM)),
                     ModelSizeSM = (unlist(ModelSizeSM)),
                     Inclusion_correctness = (unlist(Inclusion_correctness)),
                     Number_var_incorrect_included = (unlist(Number_var_incorrect_included)),
