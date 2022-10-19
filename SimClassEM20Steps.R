@@ -1,11 +1,16 @@
-# Create dataset
+# Create dataset#
+# how to install packages on linux
+# https://www.youtube.com/watch?v=NvZ66dqQarg 
 
 
 work_path <- "E:/University of Glasgow/Literature review/R Code/"
 setwd(work_path)
 source("utilities.R")
 
-MultSimPar <- function(nruns)
+library(dplyr)
+library(mclust)
+
+libMultSimPar <- function(nruns)
 {
   selectedvariables <- list()
   mu1 <- rep(0,100)
@@ -185,7 +190,7 @@ MultSimPar3 <- function(nruns)
   for (i_runs in 1:nruns)
   {
     cat("\n ---- Run: ", i_runs,"-----\n")
-    aux <- MultSimSetting2(mu, sg, pig, nobservations, ptraining, alphag , 
+    aux <- MultSimSetting3(mu, sg, pig, nobservations, ptraining, alphag , 
                            etag, variables_True_model)
     
     #Check code from this line
@@ -489,7 +494,7 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
   
   PM <-mod$Selectedmodel
   
-  Xsubset <- data.frame(GenData$Xtrain) %>% select(all_of(PM))
+  Xsubset <- data.frame(GenData$Xtrain) %>% dplyr::select(all_of(PM))
   
   #actualPar <- TrueParameters(as.matrix(Xsubset),GenData$ltrain,
   #                            GenData$vtrain)
@@ -800,8 +805,8 @@ fHLvarSearch2 <- function(X_train, X_test, RW,l_train, l_test, CE,
     
     PM <-RW[cont]
     
-    X_train1 <- X_train %>% select(all_of(PM))
-    X_test1 <- X_test %>% select(all_of(PM))
+    X_train1 <- X_train %>% dplyr::select(all_of(PM))
+    X_test1 <- X_test %>% dplyr::select(all_of(PM))
     
     head(X_train1)
     head(X_test1)
@@ -839,8 +844,8 @@ fHLvarSearch2 <- function(X_train, X_test, RW,l_train, l_test, CE,
     {
       PM <- union(CM,ARW[j])
       
-      X_train1 <- X_train %>% select(all_of(PM))
-      X_test1 <- X_test %>% select(all_of(PM))
+      X_train1 <- X_train %>% dplyr::select(all_of(PM))
+      X_test1 <- X_test %>% dplyr::select(all_of(PM))
       
       model[[cont]] <- ModelAccuracy2(X_train1,X_test1,l_train,l_test,"EEI",
                                       alpharef, tol)
