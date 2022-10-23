@@ -1,5 +1,5 @@
 pathPro <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/"
-pathOutput <- paste0(pathPro,"/OutputA5.2/") 
+pathOutput <- paste0(pathPro,"/OutputA4_4/") 
 
 filepath <- pathOutput
 
@@ -307,17 +307,21 @@ df_models <- data.frame(frequency = as.vector(my_tab1_sort),
                         model = rownames(my_tab1_sort))
 
 plt_boxplotmodels <- ggplot(df_models) +
-  geom_col(aes(frequency,model),fill = "#076fa2", width = 0.6)
+  geom_col(aes(reorder(model,-frequency),frequency),fill = "#076fa2", width = 0.6)
 
 plt_boxplotmodels
+df_models_topn <- df_models %>% top_n(7,df_models$frequency)
+nrow(df_models_topn)
 
-ggp <- ggplot(df_models, aes(x = model, y = frequency)) +
+ggp <- ggplot(df_models_topn, 
+              aes(x = reorder(model,+frequency), y = frequency)) +
   geom_bar(stat = "identity", fill = "lightblue") +
   coord_flip()+
   ylab("Model") + xlab("Frequency") +
   geom_text(aes(x = model, y = frequency + 0.3, label = frequency),check_overlap = TRUE)
 ggp
 
+head(df_models)
 library(plotly)
 ggp %>% ggplotly
 
@@ -337,6 +341,7 @@ df_resumen <- df_resumen %>%
 head(df_resumen)
 apply(df_resumen[,-1],2,mean)
 names(res$resumen)
+df_resumen
 
 aux_TM_cont <- res$Accuracy_TM_contaminated
 ncol_TM_cont <- ncol(aux_TM_cont)
