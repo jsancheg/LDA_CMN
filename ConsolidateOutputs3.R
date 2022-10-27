@@ -264,6 +264,61 @@ process_file3 <- function(filename)
   return(output)
 }
 
+find_unique_labels<-function(labels)
+{  
+  filas <- length(labels) 
+  rawlabels<-unique(labels)
+  rawlabels <- sort(rawlabels)
+  nrawlabels <- length(rawlabels)
+  transformlabels<-rawlabels
+  registerchanges <- rep(0,nrawlabels)
+  
+  for(i_raw1 in 1:(nrawlabels-1) )
+  {
+    a <-  unlist(str_split(rawlabels[i_raw1],"-"))
+    
+    for(i_raw2 in 2:nrawlabels)
+    {
+      b <- unlist(str_split(rawlabels[i_raw2],"-")) 
+      # compare two list of variables without taking in account order of variables
+      if(registerchanges[i_raw2]==0)
+        if(setequal(a,b)) 
+        {
+          transformlabels[i_raw1]<-rawlabels[i_raw1]
+          transformlabels[i_raw2]<-rawlabels[i_raw1]
+          registerchanges[i_raw2]<- 1
+        } # end-if
+    }# end-for i_raw2
+  }# end-for i_raw1
+  uniquelabels<- unique(transformlabels)
+  nuniquelabels <- length(uniquelabels)
+  newlabels <- labels
+  registerchangedlabels <- rep(0,filas)
+  for(i_raw1 in 1:(nuniquelabels) )
+  {
+    a <-  unlist(str_split(uniquelabels[i_raw1],"-"))
+    
+    for(i_raw2 in 1:filas)
+    {
+      b <- unlist(str_split(labels[i_raw2],"-")) 
+      # compare two list of variables without taking in account order of variables
+      if(registerchangedlabels[i_raw2]==0)
+        if(setequal(a,b)) 
+        {
+          newlabels[i_raw1]<-uniquelabels[i_raw1]
+          newlabels[i_raw2]<-uniquelabels[i_raw1]
+          registerchangedlabels[i_raw2]<- 1
+        } # end-if
+    }# end-for i_raw2
+  }# end-for i_raw1
+  
+  #cbind.data.frame(labels,newlabels)
+  #uniquelabels<-unique(transformlabels)
+  #uniquelabels
+  return(cbind.data.frame(labels,newlabels))
+}
+
+
 
 cdir <- c(pathOutput)
 res <- process_collection3(cdir)
@@ -273,7 +328,17 @@ library("dplyr")
 library("tidyr")
 
 df_resumen <- res$resumen
+head(df_resumen)
 
+df_resumen <- rename(df_resumen,Model1 = Model)
+
+df_resumen <- df_resumen %>% relocate(Model, .before = Model1)
+colnames(df_resumen)
+
+labels<-df_resumen$Model1
+
+find_unique_labels(labels)
+df_resumen$Model <- find_unique_labels(df_resumen$Model1)[,2]
 df_resumen$IncludeX2 <- as.numeric(str_detect(res$resumen$Model,"X2"))
 df_resumen$IncludeX4 <- as.numeric(str_detect(res$resumen$Model,"X4"))
 #df_resumen <- dplyr::mutate(res$resumen, 
@@ -431,3 +496,8 @@ apply(res$Accuracy_TM_contaminated[,-1],2,mean)
 apply(res$Accuracy_TM_no_contaminated[,-1],2,mean)
 apply(res$Accuracy_SM_contaminated[,-1],2,mean)
 apply(res$Accuracy_SM_no_contaminated[,-1],2,mean)
+
+apply(res$Accuracy_TM_contaminated[,-1],2,sd)
+apply(res$Accuracy_TM_no_contaminated[,-1],2,sd)
+apply(res$Accuracy_SM_contaminated[,-1],2,sd)
+apply(res$Accuracy_SM_no_contaminated[,-1],2,sd)
