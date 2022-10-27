@@ -21,12 +21,11 @@ library(caret)
 library(e1071) # SVM
 library(class) # k nearest neighborhood
 library(gmodels) # CrossTable
-library(fda)
 library(ggplot2)
 library(gridExtra) # combine plots
 library(ggthemes)
 library(ggfortify)
-library(tidyverse)
+library(tidyverse) # rbernoulli function
 library(pls)
 library(fastDummies)
 library(factoextra) # PCA , Factor analysis
@@ -39,12 +38,11 @@ library(nlme) # Correlation structure
 library(MixSim) # Simulating multinomial distribution
 library(MASS)   # Linear Mixed Models
 library(lme4)   # Linear Mixed Models
-library(gee)    # Linear Mixed Models Generalised estimating equations
+library(gee)    # Linear Mixed Models Generalised estimating equations  rMVNorm
 library(forecast) # time series function autoarima
 library(tseries) # time series
 library(dplyr)
 library(MBESS) # cor2cov
-library(chemometrics)
 library(ContaminatedMixt)# Mixture of contaminated normal distributions
 library(mnormt)
 library(clustvarsel) # Mixture of normal distributions
