@@ -51,6 +51,7 @@ library(parallelly)
 library(doParallel)
 library(BMA) # function bicreg
 library(mclust)
+library(MLmetrics) # calculate metrrics accuracy, precision, recall, F1 score
 rm(list = ls())
 
 WorkPath <- getwd()

@@ -10,7 +10,7 @@ source("utilities.R")
 library(dplyr)
 library(mclust)
 
-libMultSimPar <- function(nruns)
+MultSimPar <- function(nruns)
 {
   selectedvariables <- list()
   mu1 <- rep(0,100)
@@ -155,7 +155,6 @@ MultSimPar2 <- function(nruns)
 
 MultSimPar3 <- function(nruns)
 {
-  selectedvariables <- list()
   mu1 <- rep(0,4)
   mu2 <- c(0,6,0,6)
   mu <- cbind(mu1,mu2)
@@ -166,6 +165,7 @@ MultSimPar3 <- function(nruns)
   alphag <-c(0.9,0.8)
   etag <- c(20,30)
   SM <- list()
+  selectedvariables <- list()
   AccuracySM <- list()
   ModelSizeSM <- list()
   Inclusion_correctness <- list()
@@ -185,6 +185,22 @@ MultSimPar3 <- function(nruns)
   Accuracy_saturated <- list()
   Accuracy_saturated_contaminated <- list()
   Accuracy_saturated_no_contaminated <- list()
+  # F1 score
+  F1_TM <- list()
+  F1_SM <- list()
+  F1_SaturatedM <- list()
+  precision_TM_V <- list()
+  precision_SM_V <-list()
+  precision_saturated_V <- list()
+  recall_TM_V <- list()
+  recall_SM_V <- list()
+  recall_saturated_V <- list()
+  F1_TM_V <- list()
+  F1_SM_V <- list()
+  F1_Saturated_V <- list()
+  Metrics_SaturatedM <- list()
+  Metrics_SM <- list()
+  Metrics_TM <- list()
   variables_True_model <- c("X2","X4")
   
   for (i_runs in 1:nruns)
@@ -197,6 +213,9 @@ MultSimPar3 <- function(nruns)
     #    pos_True_model <- findPosModel(aux$models,True_model)  
     #    AccuracyTrueModel[[i_runs]] <- aux$models[[pos_True_model]]$accTestC
     
+    F1_SaturatedM[[i_runs]] <- aux$F1SaturatedM
+    F1_TM[[i_runs]] <- aux$F1TM
+    F1_SM[[i_runs]] <- aux$F1CM
     AccuracyTM[[i_runs]] <- aux$AccuracyTM
     SM[[i_runs]] <- paste(unlist(aux$CM),collapse="-")
     AccuracySM[[i_runs]]<-aux$AccuracyCM
@@ -208,7 +227,16 @@ MultSimPar3 <- function(nruns)
     Accuracy_TM_no_contaminated[[i_runs]]<- aux$AccuracyTM_NoCont
     Accuracy_SM_contaminated[[i_runs]] <- aux$AccuracyCM_Cont_list
     Accuracy_SM_no_contaminated[[i_runs]] <- aux$AccuracyCM_NoCont_list
-    
+    precision_saturated_V[[i_runs]] <- aux$precision_saturated_V
+    precision_SM_V[[i_runs]] <- aux$precision_SM_V
+    precision_TM_V[[i_runs]] <- aux$precision_TM_V
+    recall_saturated_V[[i_runs]] <- aux$recall_saturated_V
+    recall_SM_V[[i_runs]] <- aux$recall_SM_V
+    recall_TM_V[[i_runs]] <- aux$recall_TM_V
+    F1_saturated_V[[i_runs]] <- aux$F1_saturated_V
+    F1_SM_V[[i_runs]] <- aux$F1_SM_V
+    F1_TM_V[[i_runs]] <- aux$F1_TM_V
+    Metrics_SaturatedM[[i_runs]] <- 
     #25:54
   }
   res1 <- data.frame(SM = SM, AccuracyTM = unlist(AccuracyTM),
@@ -216,7 +244,19 @@ MultSimPar3 <- function(nruns)
                      ModelSizeSM = (unlist(ModelSizeSM)),
                      Inclusion_correctness = (unlist(Inclusion_correctness)),
                      Number_var_incorrect_included = (unlist(Number_var_incorrect_included)),
-                     Exclusion_correctness = (unlist(Exclusion_correctness)) )
+                     Exclusion_correctness = (unlist(Exclusion_correctness)),
+                     F1_SaturatedM = unlist(F1_SaturatedM),
+                     F1_SM = unlist(F1_SM),
+                     F1_TM = unlist(F1_TM),
+                     precision_saturated_V = unlist(precision_saturated_V),
+                     precision_SM_V = unlist(precision_SM_V),
+                     precision_TM_V = unlist(precision_TM_V),
+                     recall_saturated_V = unlist(recall_saturated_V),
+                     recall_SM_V = unlist(recall_SM_V),
+                     recall_TM_V = unlist(recall_TM_V),
+                     F1_Saturated_V = unlist(F1_saturated_V),
+                     F1_SM_V = unlist(F1_SM_V),
+                     F1_TM_V = unlist(F1_TM_V))
   
   res1detail <- data.frame(Accuracy_TM_contaminated = unlist(Accuracy_TM_contaminated),
                            Accuracy_TM_no_contaminated = unlist(Accuracy_TM_no_contaminated),
@@ -230,6 +270,8 @@ MultSimPar3 <- function(nruns)
   return(output)
   
 }
+
+
 
 
 findPosModel <- function(ListofModels,modeltofind)
@@ -469,6 +511,15 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
   
   nVarSel <- 0 
   GenData <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+  G = max(length(unique(GenData$l)),length(pig))
+  
+  MmetricsSaturatedM <- data.frame(Group = 1:G, Precision = rep(0,G), 
+                           Recall = rep(0,G), F1 = rep(0,G)) 
+  MmetricsTM <- data.frame(Group = 1:G, Precision = rep(0,G), 
+                         Recall = rep(0,G), F1 = rep(0,G)) 
+  MmetricsSM <- data.frame(Group = 1:G, Precision = rep(0,G), 
+                           Recall = rep(0,G), F1 = rep(0,G)) 
+  
   
   dfRW <- getOW(GenData$Xtrain,GenData$ltrain)
   RW <- dfRW$Var
@@ -506,7 +557,6 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
   cat("\n", "model", "test set ",mod$Selectedmodel,"-",acctest,"\n")
   
   # Filter contaminated vs non-contaminated samples
-  G <- length(pig)
   lind_nocont_class <- list()
   lind_cont_class <- list()
   
@@ -516,10 +566,17 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
     lind_nocont_class[[i_g]] <- which(GenData$vtest[,i_g]!=0 & GenData$vtest[,i_g]!=-1)
     # contaminated samples in classes
     lind_cont_class[[i_g]] <- which(GenData$vtest[,i_g]==0 & GenData$vtest[,i_g]!=-1)
-    
+    MmetricsSaturatedM[i_g,2] <- Precision(GenData$ltest,saturated_mod$predlabel,positive = i_g)
+    MmetricsTM[i_g,2] <- Precision(GenData$ltest,TrueModel$predlabel,positive = i_g)
+    MmetricsSM[i_g,2] <-Precision(GenData$ltest,mod$models[[pos]]$predlabel,positive = i_g)
+    MmetricsSaturatedM[i_g,3] <- Recall(GenData$ltest,saturated_mod$predlabel,positive = i_g)
+    MmetricsTM[i_g,3] <- Recall(GenData$ltest,TrueModel$predlabel,positive = i_g)
+    MmetricsSM[i_g,3] <-Recall(GenData$ltest,mod$models[[pos]]$predlabel,positive = i_g)
   }
-  
-  
+    MmetricsSaturatedM$F1 <- 2*(MmetricsSaturatedM$Precision*MmetricsSaturatedM$Recall)/(MmetricsSaturatedM$Precision+MmetricsSaturatedM$Recall)
+    MmetricsTM$F1 <- 2*(MmetricsTM$Precision*MmetricsTM$Recall)/(MmetricsTM$Precision+MmetricsTM$Recall)
+    MmetricsSM$F1 <- 2*(MmetricsSM$Precision*MmetricsSM$Recall)/(MmetricsSM$Precision+MmetricsSM$Recall)
+    
   ind_nocont_samples <- unlist(lind_nocont_class)
   ind_cont_samples <- unlist(lind_cont_class)
   
@@ -532,24 +589,71 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
   accSM_no_cont_samples <- rep(0,Nsteps)
   accTM_cont_samples <- rep(0,Nsteps)
   accTM_no_cont_samples <- rep(0,Nsteps)
+  accSaturated_no_cont_samples <- rep(0,Nsteps)
+  accSaturated_cont_samples <- rep(0,Nsteps)
+  
+
+  # Calculating precision, recall, and F1 metrics
+  Vtest <- GenData$vectorVtest
+  saturated_Vtest <- apply(saturated_mod$predv,1,max)
+  TM_Vtest <- apply(TrueModel$predv,1,max) # check why all predicted V are 1
+  SM_Vtest <- apply(mod$models[[pos]]$predv,1,max)
   
   
+  # Calculating accuracy of detecting whether sample is contaminated or not, precision, recall, and F1 
+  accSaturated_V_test <- 100*sum(Vtest ==saturated_Vtest)/length(Vtest) 
+  accTM_V_test <- 100*sum(Vtest ==TM_Vtest)/length(Vtest)
+  accSM_V_test <- 100*sum(Vtest==SM_Vtest)/length(Vtest)
+  
+  library("MLmetrics")
+  table(saturated_Vtest,GenData$vectorVtest)
+  
+  precision_saturated_V <- Precision(GenData$vectorVtest,saturated_Vtest,positive = 0)
+  precision_TM_V <- Precision(GenData$vectorVtest,TM_Vtest,positive = 0)
+  precision_SM_V <- Precision(GenData$vectorVtest,SM_Vtest,positive = 0)
+  
+  recall_saturated_V <- Recall(GenData$vectorVtest,saturated_Vtest,positive = 0)
+  recall_TM_V <- Recall(GenData$vectorVtest,TM_Vtest,positive = 0)
+  recall_SM_V <- Recall(GenData$vectorVtest,SM_Vtest,positive = 0)
+  
+  F1_saturated_V <- 2*(precision_saturated_V * recall_saturated_V)/(precision_saturated_V+recall_saturated_V)
+  F1_TM_V <- 2*(precision_TM_V * recall_TM_V)/(precision_TM_V + recall_TM_V)
+  F1_SM_V <- 2*(precision_SM_V * recall_SM_V)/(precision_SM_V + recall_SM_V)
+  
+  #precision_saturated_V <- 100*sum(GenData$vectorVtest[ind_cont_samples]==saturated_Vtest[ind_cont_samples])/sum(saturated_Vtest==0)
+  #precision_TM_V <- 100*sum(GenData$vectorVtest[ind_cont_samples]== TM_Vtest[ind_cont_samples])/sum(TM_Vtest==0)
+  #precision_SM_V <- 100*sum(GenData$vectorVtest[ind_cont_samples]==SM_Vtest[ind_cont_samples])/sum(SM_Vtest==0)
+  
+  accSM_Identifying_cont_samples <- 0
+  accSM_Identifying_no_cont_samples <- 0
+  accTM_Identifying_cont_samples <- 0
+  accTM_Identifying_no_cont_samples <- 0
+  accSaturated_Identifying_cont_samples <- 0
+  accSaturated_Identifying_no_cont_samples <- 0
+
+  
+    
   for(i_step in 1:Nsteps)
   {
-    # predicted class for non contaminated samples for the true model
+    # predicted class for contaminated and non-contaminated samples for the true model
     predTM_nocont_samples <- TrueModel$lpredlabel[[i_step]][ind_nocont_samples]
     predTM_cont_samples <- TrueModel$lpredlabel[[i_step]][ind_cont_samples]
-    
-    # predicted class for non contaminated samples for selected model
+
+    # predicted class for contaminated and non-contaminated samples for selected model
     predSM_nocont_samples <- mod$first20EMclassprediction[[i_step]][ind_nocont_samples]
     predSM_cont_samples <- mod$first20EMclassprediction[[i_step]][ind_cont_samples]
+    
+    # predicted class for contaminated and non-contaminated samples for saturated model
+    predSaturated_nocont_samples <- saturated_mod$predlabel[ind_nocont_samples]
+    predSaturated_cont_samples <- saturated_mod$predlabel[ind_cont_samples]
     
     # Accuracy no-contaminated True Model
     accTM_no_cont_samples[[i_step]] <- (sum(no_cont_samples == predTM_nocont_samples)/length(no_cont_samples))*100
     accTM_cont_samples[[i_step]] <- (sum(cont_samples == predTM_cont_samples)/length(cont_samples))*100
     accSM_no_cont_samples[[i_step]] <- (sum(no_cont_samples == predSM_nocont_samples)/length(no_cont_samples))*100
     accSM_cont_samples[[i_step]] <- (sum(cont_samples == predSM_cont_samples)/length(cont_samples))*100
-    
+    accSaturated_no_cont_samples[i_step] <- (sum(no_cont_samples == predSaturated_nocont_samples)/length(no_cont_samples))*100
+    accSaturated_cont_samples[i_step] <-     (sum(cont_samples == predSaturated_cont_samples)/length(cont_samples))*100
   }
   
   #  accTM_no_cont_samples  
@@ -559,16 +663,56 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
   
   
   
-  return( list(models = mod$models ,
+#  return( list(models = mod$models , 
+#               CM = mod$Selectedmodel, AccuracyCM = mod$Accuracy,
+#               F1CM = mean(MmetricsSaturatedM$F1),
+#               AccuracyCM_Cont = accSM_cont_samples[Nsteps],
+#               AccuracyCM_NoCont = accSM_no_cont_samples[Nsteps],
+#               AccuracyCM_Cont_list = accSM_cont_samples,
+#               AccuracyCM_NoCont_list = accSM_no_cont_samples,
+#               nVarSel = nVarSel,
+#               AccuracyTM = TrueModel$accTestC,
+#               F1TM = mean(MmetricsTM$F1),
+#               F1SM = mean(MmetricsSM$F1),
+#               AccuracyTM_Cont = accTM_cont_samples,
+#               AccuracyTM_NoCont = accTM_no_cont_samples,
+#               Accuracy_saturated = saturated_mod$accTestC,
+#               Accuracy_Saturated_NoCont = accSaturated_no_cont_samples,
+#               Accuracy_Saturated_Cont = accSaturated_cont_samples),
+#               Mmetrics_SaturatedM = MmetricsSaturatedM,
+#               Mmetrics_TM = MmetricsTM,
+#               Mmetrics_SM = MmetricsSM)
+
+  return( list(models = mod$models , 
                CM = mod$Selectedmodel, AccuracyCM = mod$Accuracy,
+               F1CM = mean(MmetricsSM$F1),
                AccuracyCM_Cont = accSM_cont_samples[Nsteps],
                AccuracyCM_NoCont = accSM_no_cont_samples[Nsteps],
                AccuracyCM_Cont_list = accSM_cont_samples,
                AccuracyCM_NoCont_list = accSM_no_cont_samples,
                nVarSel = nVarSel,
                AccuracyTM = TrueModel$accTestC,
+               F1TM = mean(MmetricsTM$F1),
+               F1SaturatedM = mean(MmetricsSaturatedM$F1),
                AccuracyTM_Cont = accTM_cont_samples,
-               AccuracyTM_NoCont = accTM_no_cont_samples) )
+               AccuracyTM_NoCont = accTM_no_cont_samples,
+               Accuracy_saturated = saturated_mod$accTestC,
+               Accuracy_Saturated_NoCont = accSaturated_no_cont_samples,
+               Accuracy_Saturated_Cont = accSaturated_cont_samples,
+               precision_saturated_V = precision_saturated_V,
+               precision_SM_V = precision_SM_V,
+               precision_TM_V = precision_TM_V,
+               recall_saturated_V = recall_saturated_V,
+               recall_SM_V = recall_SM_V,
+               recall_TM_V = recall_TM_V,
+               F1_saturated_V = F1_saturated_V,
+               F1_TM_V = F1_TM_V,
+               F1_SM_V = F1_SM_V,
+               Metrics_SaturatedM = MmetricsSaturatedM,
+               Metrics_SM = MmetricsSM,
+               Metrics_TM = MmetricsTM) )
+  
+  
 }
 
 
@@ -741,8 +885,9 @@ fHLvarSearch3 <- function(X_train, X_test, RW,l_train, l_test, CE,
     ARW <- setdiff(RW,as.vector(CM))
     nARW <- length(ARW)
     
-    if (nARW == 0) stop("The set of non selected variables is empty")
-    
+    if(nARW != 0)
+    {
+      
     j <- 1
     
     
@@ -770,7 +915,7 @@ fHLvarSearch3 <- function(X_train, X_test, RW,l_train, l_test, CE,
       
       j <- j + 1
     } # end while (stop2 == F & j <= nARW)
-    
+    } # end -if
   } # end while
   
   return(list(Selectedmodel = CM, Accuracy = AccCM, posCM = posCM,  models = model))
@@ -835,37 +980,37 @@ fHLvarSearch2 <- function(X_train, X_test, RW,l_train, l_test, CE,
     ARW <- setdiff(RW,as.vector(CM))
     nARW <- length(ARW)
     
-    if (nARW == 0) stop("The set of non selected variables is empty")
-    
-    j <- 1
-    
-    
-    while(stop2 == F & j <= nARW)
+    if (nARW != 0) 
     {
-      PM <- union(CM,ARW[j])
       
-      X_train1 <- X_train %>% dplyr::select(all_of(PM))
-      X_test1 <- X_test %>% dplyr::select(all_of(PM))
-      
-      model[[cont]] <- ModelAccuracy2(X_train1,X_test1,l_train,l_test,"EEI",
-                                      alpharef, tol)
-      model[[cont]]$PM <- PM
-      cat("\n",cont," ,model = ",unlist(PM),"\n")
-      AccPM <- model[[cont]]$accTestC
-      
-      
-      cont <- cont + 1
-      
-      if(AccPM > AccCM)
+     j <- 1
+     
+      while(stop2 == F & j <= nARW)
       {
-        CM <- PM
-        AccCM <- AccPM 
-        posCM <- cont-1
-        nIterToConvergence <- model[[cont-1]]$niterations
-        break
-      } # end if
-      j <- j + 1
-    } # end while (stop2 == F & j <= nARW)
+        PM <- union(CM,ARW[j])
+        
+        X_train1 <- X_train %>% dplyr::select(all_of(PM))
+        X_test1 <- X_test %>% dplyr::select(all_of(PM))
+        
+       model[[cont]] <- ModelAccuracy2(X_train1,X_test1,l_train,l_test,"EEI",
+                                        alpharef, tol)
+        model[[cont]]$PM <- PM
+        cat("\n",cont," ,model = ",unlist(PM),"\n")
+        AccPM <- model[[cont]]$accTestC
+        
+        cont <- cont + 1
+        
+        if(AccPM > AccCM)
+        {
+          CM <- PM
+          AccCM <- AccPM 
+          posCM <- cont-1
+          nIterToConvergence <- model[[cont-1]]$niterations
+          break
+        } # end if
+        j <- j + 1
+     } # end while (stop2 == F & j <= nARW)
+    } # end-f
     
   } # end while
   
@@ -994,15 +1139,17 @@ SimGClasses <- function(mug,sg,pig,nobs,ptraining,alphag,etag)
   if(any(etag < 1))stop("eta has to be greater than 1")  
   aux <- (rmultinom(nobs,1,pig))
   l <- apply(aux,2,which.max)
-  
-  
+  vectorV <- rep(0,nobs)
+
+  for(i in 1:nobs)
+    vectorV[i] <- as.numeric(rbernoulli(1,alphag[l[i]]))
   if(length(dim(sg)) == 2){
     # X[i,] <- unlist(gen(p, mu = 0, sigma = 1))
     l <- sample(1:G,nobs,replace = T, prob = pig)
     mg <- apply(unmap(l),2,sum)
     #     if (any(alphag!=1)){
     for(i in 1:nobs)
-      v[i,l[i]] <- as.numeric(rbernoulli(1,alphag[l[i]]))  
+      v[i,l[i]] <- vectorV[i] 
     #      }
     for (i in 1:nobs)
     {
@@ -1025,7 +1172,7 @@ SimGClasses <- function(mug,sg,pig,nobs,ptraining,alphag,etag)
   {
     
     for (i in 1:nobs)
-      if(v[i,l[i]] == 1)
+      if(vectorV[i] == 1)
       {  
         if(is.matrix(mug))
           X[i,] <- rMVNorm(1,mug[,l[i]],sg[,,l[i]])
@@ -1048,9 +1195,13 @@ SimGClasses <- function(mug,sg,pig,nobs,ptraining,alphag,etag)
   ltest <- l[-ind]
   vtrain <- v[ind,]
   vtest <- v[-ind,]
+  vectorVtrain<-vectorV[ind]
+  vectorVtest<-vectorV[-ind]
   output <- list(X = X,l =l, ind = ind,Xtrain = Xtrain,
                  Xtest = Xtest,ltrain = ltrain,ltest = ltest,
-                 v = v, vtrain = vtrain, vtest = vtest)
+                 v = v, vtrain = vtrain, vtest = vtest,
+                 vectorVtrain = vectorVtrain,
+                 vectorVtest = vectorVtest)
   return(output)
 }
 
@@ -1255,6 +1406,148 @@ ModelAccuracy3 <- function(X_train1,X_test1,l_train,l_test,CE,
 }
 
 
+ModelAccuracy3 <- function(X_train1,X_test1,l_train,l_test,CE,
+                           alpharef=0.98, tol = 0.01)
+{
+  if(!is.matrix(X_train1)) X_train1 <- as.matrix(X_train1)
+  if(!is.matrix(X_test1)) X_test1 <- as.matrix(X_test1)
+  
+  
+  accTest_nc <- 0.0
+  accTest_c <- 0.0
+  laccTest_c <- list()
+  ltest_r <- list()
+  output <- list()
+  lmu <- list()
+  lsigma <- list()
+  lalpha <- list()
+  leta <- list()
+  diflog <- list()
+  par <- list()
+  nvar <- ncol(X_train1)
+  nobs <- nrow(X_train1)
+  G <- length(unique(l_train))
+  if(is.null(alpharef)) alpharef <- rep(0.95,G)
+  if(length(alpharef)>G) stop("alpharef must be of dimension G")
+  if(length(alpharef) == 1) alpharef <- rep(alpharef,G)
+  if(ncol(X_train1)==1) CE <- "E" else CE <- "EII"
+  
+  
+  # Estimated parameters assuming no contaminated set
+  mstep1 <-mstep(data = X_train1,modelName = CE, z = unmap(l_train))
+  estep1 <- estep(data = X_test1, modelName = CE, 
+                  parameters = mstep1$parameters)
+  z <- estep1$z  
+  ltest <- apply(z,1,which.max)
+  accTest_nc <- sum(ltest == l_test)/length(l_test)
+  
+  # Estimated initial parameters
+  par$mu <- mstep1$parameters$mean
+  par$sigma <- mstep1$parameters$variance$sigma
+  par$G <- mstep1$parameters$variance$G
+  par$pig <- apply(unmap(l_train),2,sum)/nrow(X_train1)
+  # give initial values for alpha
+  par$alpha <- alpharef
+  par$eta <- rep(1.011,G)
+  #  cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
+  estep2 <- eCmn(X_train1,par)
+  estep2_test <- eCmn(X_test1,par)
+  vhat <- estep2$v
+  #cat("\n","vij = ", estep2$v, "\n")
+  lhat <-estep2$lhat
+  par$v <- vhat  
+  # Estimate parameters assuming contaminated set
+  iter <- 1
+  vtrain_r <- list()
+  vtest_r <- list()
+  logc <- list()
+  lmu[[iter]] <- par$mu
+  lsigma[[iter]] <- par$sigma
+  leta[[iter]] <- par$eta
+  vtrain_r[[iter]] <- vhat
+  vtest_r[[iter]]<-estep2_test$v
+  ltest_r[[iter]] <- lhat 
+  logc[[iter]] <- loglikCMN(X_train1, l_train,par) 
+  vtrain_r[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
+  diflog[[iter]] <- NA
+  #cat("\n","iter=",iter,";","diflog=",diflog[[iter]])
+  
+  
+  while ( iter < 3  | (iter <21) | (is.na(diflog[[1]]) & iter <=2)  )
+  {
+    mstep2 <- mCmn(X_train1,l_train,par)
+    par$mu <- mstep2$mu
+    par$sigma <- mstep2$sigma
+    par$eta <- mstep2$eta
+    #cat("\n",par$eta,"\n")
+    par$alpha <- sapply(mstep2$alpha,function(i) max(alpharef[i],i) ) 
+    #par$alpha <- mstep2$alpha
+    estep3 <- eCmn(X_train1,mstep2)
+    estep4 <- eCmn(X_test1, mstep2)
+    z <- estep4$z
+    v <- estep4$v
+    ltest_r[[iter]]<-apply(z,1,which.max)
+    vtest_r[[iter]]<-v
+    predv <- apply(v,2,function(x) ifelse(x<0.5,0,1))
+    ltest <- apply(z,1,which.max)
+    laccTest_c[[iter]] <- sum(ltest == l_test)/length(l_test)
+    iter <- iter + 1
+    lmu[[iter]]<-par$mu
+    lsigma[[iter]]<-par$sigma
+    lalpha[[iter]]<-par$alpha
+    leta[[iter]] <- par$eta
+    vtrain_r[[iter]] <- estep3$v
+    par$v <- vtrain_r[[iter]]
+    
+    logc[[iter-1]] <- loglikCMN(X_train1,l_train,par)
+    
+    if(iter > 2) { diflog[[iter]] <- abs(logc[[iter-2]] - logc[[iter - 1]])
+    }else diflog[[iter]] <- NA    
+    
+    #cat("\n","iter=",iter-1,";",logc[[iter-1]],";","diflog=",diflog[[iter]])
+    
+    cat("\n","iter=",iter-1,";","diflog=",diflog[[iter]])
+    
+    #    cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
+    #    cat("\n","Sigma =",par$sigma,"\n")
+    #    cat(estep3$v, "\n")
+    
+    
+  }
+  estep4 <- eCmn(X_test1,mstep2)
+  z <- estep4$z
+  v <- estep4$v
+  # x < 0.5 means x is a contaminated sample
+  # x >= 0.5 means x is a non-contaminated sample
+  predv <- apply(v,2,function(x) ifelse(x<0.5,0,1))
+  
+  ltest <- apply(z,1,which.max)
+  accTest_c <- sum(ltest == l_test)/length(l_test)
+  
+  #laccTest_c: List containing global accuracy with contamination without
+  # dividing it into contaminated and non-contaminated samples for the first
+  # 20 steps of the EM algorithm
+  #
+  # ltest_r: List containing class predictions in the test set
+  # predv: contain prediction whether samples are contaminated or non-contaminated
+  #        in the test set at the last step of the EM-algorithm
+  # lpredv: List containing prediction whether samples are contaminated or non-contaminated
+  #         in the test set for all the steps run of the EM-algorithm
+  
+  output <- list(accTestNc = accTest_nc,accTestC = accTest_c,
+                 niterations = iter, laccTest_c = laccTest_c,
+                 predlabel = ltest, lpredlabel = ltest_r, 
+                 predv = predv,lpredv = vtest_r,
+                 loglikelihood_nc = estep1$loglik,
+                 loglikelihod = logc,
+                 mu = lmu, sigma = lsigma, 
+                 alpha = lalpha, eta = leta,
+                 v = vtrain_r, diflog = diflog)
+  
+  
+  return(output)
+}
+
 
 
 ModelAccuracy2 <- function(X_train1,X_test1,l_train,l_test,CE,
@@ -1265,8 +1558,6 @@ ModelAccuracy2 <- function(X_train1,X_test1,l_train,l_test,CE,
   
   
   accTest_nc <- 0.0
-  
-  
   accTest_c <- 0.0
   laccTest_c <- list()
   ltest_r <- list()
@@ -1875,4 +2166,5 @@ EMContMN <- function(X_train,l_train,CE)
     W[,,1]
     W[,,2]
   }
+  
 }
