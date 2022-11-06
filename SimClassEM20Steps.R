@@ -236,7 +236,6 @@ MultSimPar3 <- function(nruns)
     F1_saturated_V[[i_runs]] <- aux$F1_saturated_V
     F1_SM_V[[i_runs]] <- aux$F1_SM_V
     F1_TM_V[[i_runs]] <- aux$F1_TM_V
-    Metrics_SaturatedM[[i_runs]] <- 
     #25:54
   }
   res1 <- data.frame(SM = SM, AccuracyTM = unlist(AccuracyTM),
