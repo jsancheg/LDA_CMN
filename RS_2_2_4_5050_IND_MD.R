@@ -5,10 +5,11 @@ source("S_2_2_4_5050_IND_MD.R")
 #ruta <- "/home/pgrad1/2201449s/R/CMN" 
 ruta <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN"
 
-for(i_sim in 1:10){
+for(i_sim in 1:1){
 sim.A5 <- mclapply(1:10, function(x) {
     sim.progress <- MultSimPar3(10) 
  }, mc.cores = 1)
+  cat("\nWriting file ",i_sim,"\n")
   filename <- paste0(ruta,"/OutputS_2_2_4_5050_IND_MD/Output.txt")
   cat("done run ", i_sim, file = filename, sep = "\n", append=TRUE)
   save(sim.A5,file = paste0(ruta,

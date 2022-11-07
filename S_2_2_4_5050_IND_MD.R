@@ -579,7 +579,7 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
   t_test <- table(GenData$ltest,mod$models[[pos]]$predlabel)
   acctest <- sum(diag(t_test))/sum(t_test)
   
-  cat("\n", "model", "test set ",mod$Selectedmodel,"-",acctest,"\n")
+  cat("\n", "selected model", "test set ",mod$Selectedmodel,"-",acctest,"\n")
   
   # Filter contaminated vs non-contaminated samples
   lind_nocont_class <- list()
