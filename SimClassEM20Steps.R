@@ -320,7 +320,7 @@ MultSimSetting <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,True
   t_test <- table(GenData$ltest,mod$models[[pos]]$predlabel)
   acctest <- sum(diag(t_test))/sum(t_test)
   
-  cat("\n", "model", "test set ",mod$Selectedmodel,"-",acctest,"\n")
+  cat("\n", "selected model", "test set ",mod$Selectedmodel,"-",acctest,"\n")
   
   
   # Filter contaminated vs non-contaminated samples
@@ -537,7 +537,22 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
                       alpharef =0.99,tol=0.01,epsilon = 0)
   
   pos_True_model <- findPosModel(mod$models,variables_True_Model)  
-  TrueModel <- mod$models[[pos_True_model]]
+
+  if(pos_True_model != 0 & is.numeric(pos_True_model))
+  {
+    TrueModel <- mod$models[[pos_True_model]]
+  }else {
+    Xtrain_TM <- data.frame(GenData$Xtrain) %>% dplyr::select(all_of(variables_True_Model))
+    Xtest_TM <- data.frame(GenData$Xtest) %>% dplyr::select(all_of(variables_True_Model))
+    
+    TrueModel  <- ModelAccuracy2(Xtrain_TM,
+                                 Xtest_TM,
+                                 GenData$ltrain,
+                                 GenData$ltest,"EII",
+                                 alpharef = 0.98, 
+                                 tol = 0.01)
+    
+  } 
   
   pos <- mod$posCM
   nVarSel <- length(mod$Selectedmodel)
@@ -553,7 +568,7 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
   t_test <- table(GenData$ltest,mod$models[[pos]]$predlabel)
   acctest <- sum(diag(t_test))/sum(t_test)
   
-  cat("\n", "model", "test set ",mod$Selectedmodel,"-",acctest,"\n")
+  cat("\n", "selected model", "test set ",mod$Selectedmodel,"-",acctest,"\n")
   
   # Filter contaminated vs non-contaminated samples
   lind_nocont_class <- list()
