@@ -1,0 +1,15 @@
+ruta <- "/home/pgrad2/2201449s/R/CMN"
+setwd(ruta)
+source("Sim_2_2_4_9010_SCBNSV_MD.R")
+ruta <- "/home/pgrad1/2201449s/R/CMN"
+
+for(i_sim in 1:10){
+  sim.A5 <- mclapply(1:10, function(x) {
+    sim.progress <- MultSimPar3(1)
+  }, mc.cores = 10)
+  cat("\nWriting file ",i_sim,"\n")
+  filename <- paste0(ruta,"/OutputS_2_2_4_9010_SCBNSV_MD/Output.txt")
+  cat("done run ", i_sim, file = filename, sep = "\n", append=TRUE)
+  save(sim.A5,file = paste0(ruta,"/OutputS_2_2_4_9010_SCBNSV_MD/S_2_2_4_9010_SCBNSV_MD_",i_sim,".Rdata") )
+  cat(paste0(i_sim*10," of a 100 at ", Sys.time()), file = filename, sep = "\n", append = TRUE)
+}
