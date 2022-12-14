@@ -161,15 +161,12 @@ MultSimPar2 <- function(nruns)
   
 }
 
-
 MultSimPar3 <- function(nruns)
 {
   mu1 <- rep(0,4)
-  mu2 <- c(0,3,0,3)
+  mu2 <- c(0,6,0,6)
   mu <- cbind(mu1,mu2)
   sg <- diag(1,4)
-  sg[1,3] = 0.8
-  sg[3,1] =0.8
   pig<- c(0.9,0.1)
   nobservations = 320
   ptraining = 0.75
@@ -304,6 +301,7 @@ MultSimPar3 <- function(nruns)
   return(output)
   
 }
+
 
 
 
@@ -540,6 +538,7 @@ MultSimSetting2 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
 }
 
 
+
 MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
                             variables_True_Model)
 {
@@ -773,8 +772,6 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
   
   
 }
-
-
 
 
 TrueParameters<-function(Xtrain,ltrain, v)

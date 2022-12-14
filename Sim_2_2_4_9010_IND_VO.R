@@ -165,11 +165,9 @@ MultSimPar2 <- function(nruns)
 MultSimPar3 <- function(nruns)
 {
   mu1 <- rep(0,4)
-  mu2 <- c(0,3,0,3)
+  mu2 <- c(0,1.5,0,1.5)
   mu <- cbind(mu1,mu2)
   sg <- diag(1,4)
-  sg[1,3] = 0.8
-  sg[3,1] =0.8
   pig<- c(0.9,0.1)
   nobservations = 320
   ptraining = 0.75
@@ -218,6 +216,13 @@ MultSimPar3 <- function(nruns)
   Metrics_SaturatedM <- list()
   Metrics_SM <- list()
   Metrics_TM <- list()
+  pred_Saturated_LabelTest <- list() 
+  pred_TM_LabelTest <- list()
+  pred_SM_LabelTest <- list()
+  pred_Saturated_VTest <- list()
+  pred_TM_VTest <- list()
+  pred_SM_VTest <- list()
+  
   GenData <- list()
   variables_True_model <- c("X2","X4")
   
@@ -262,9 +267,49 @@ MultSimPar3 <- function(nruns)
     F1_SM_V[[i_runs]] <- aux$F1_SM_V
     F1_TM_V[[i_runs]] <- aux$F1_TM_V
     GenData[[i_runs]] <- aux$GenData
+    pred_Saturated_LabelTest[[i_runs]] <- aux$pred_Saturated_Test
+    pred_TM_LabelTest[[i_runs]]<-aux$pred_TM_Test
+    pred_SM_LabelTest[[i_runs]]<-aux$pred_SM_Test
+    pred_Saturated_VTest[[i_runs]]<-aux$pred_Saturated_Vtest
+    pred_TM_VTest[[i_runs]]<-aux$pred_TM_Vtest
+    pred_SM_VTest[[i_runs]]<-aux$pred_SM_Vtest
     #25:54
   }
-  res1 <- data.frame(SelectedModel = SM, AccuracyTM = unlist(AccuracyTM),
+  
+ MetricsSM <- data.frame(SelectedVariables = SM,
+                          ModelSizeSM = unlist(ModelSizeSM),
+                          Inclusion_correctness = unlist(Inclusion_correctness),
+                          Exclusion_correctness = unlist(Exclusion_correctness),
+                          Number_var_incorrect_included = 
+                            unlist(Number_var_incorrect_included)
+                          )
+
+ Metrics <- data.frame(Variables = rep(c("Saturated","True","Selected"), 
+                                       each = length(unlist(Accuracy_SaturatedM)) ),
+                       Accuracy_label = c(unlist(Accuracy_SaturatedM), 
+                                          unlist(AccuracyTM),
+                                          unlist(AccuracySM)),
+                       Precision_label = c(unlist(Precision_SaturatedM),
+                                           unlist(Precision_TM),
+                                           unlist(Precision_SM)),
+                       Recall_label =    c(unlist(Recall_SaturatedM),
+                                           unlist(Recall_TM),
+                                           unlist(Recall_SM)),
+                       F1_label =        c(unlist(F1_SaturatedM),
+                                           unlist(F1_TM),
+                                           unlist(F1_SM)),
+                       Precision_V =     c(unlist(precision_saturated_V),
+                                           unlist(precision_TM_V),
+                                           unlist(precision_SM_V)),
+                       Recall_V =        c(unlist(recall_saturated_V),
+                                           unlist(recall_TM_V),
+                                           unlist(recall_SM_V)),
+                       F1_V =            c(unlist(F1_Saturated_V),
+                                           unlist(F1_SM_V),
+                                           unlist(F1_TM_V))
+                       )  
+ 
+  res1 <- data.frame(SelectedVariables = SM, AccuracyTM = unlist(AccuracyTM),
                      AccuracySM = (unlist(AccuracySM)),
                      AccuracySaturatedM = unlist(Accuracy_SaturatedM),
                      ModelSizeSM = (unlist(ModelSizeSM)),
@@ -277,7 +322,6 @@ MultSimPar3 <- function(nruns)
                      Recall_TM = unlist(Recall_TM),
                      Recall_SM = unlist(Recall_SM),
                      Recall_SaturatedM = unlist(Recall_SaturatedM),
-                     Recall_TM = unlist(Recall_TM),
                      F1_TM = unlist(F1_TM),       
                      F1_SM = unlist(F1_SM),
                      F1_SaturatedM = unlist(F1_SaturatedM),                     
@@ -296,11 +340,26 @@ MultSimPar3 <- function(nruns)
                            Accuracy_SM_contaminated = (unlist(Accuracy_SM_contaminated)),
                            Accuracy_SM_no_contaminated = (unlist(Accuracy_SM_no_contaminated)))
   
-  # ruta <- "/home/pgrad1/2201449s/R/CMN/Output/" 
+  res1Prediction <- data.frame(Variables = c(rep("Saturated",length(unlist(pred_Saturated_LabelTest))),
+                             rep("True",length(unlist(pred_TM_LabelTest))),
+                             rep("Selected",length(unlist(pred_SM_LabelTest)))),
+                             Labels = c(unlist(pred_Saturated_LabelTest),
+                                                   unlist(pred_TM_LabelTest),
+                                                   unlist(pred_SM_LabelTest)),
+                             Contamination = c(unlist(pred_Saturated_VTest),
+                                                         unlist(pred_TM_VTest),
+                                                         unlist(pred_SM_VTest)) )
+                                  # Contamination: 1 non-contaminated , 0 contaminated
+  
+    # ruta <- "/home/pgrad1/2201449s/R/CMN/Output/" 
   # saveRDS(salida,paste0(ruta,"Seg_",i_i,"_node_",i_x,"_warping_",i_u,".RDS"))
   
-  output <- list(resumen = res1, details = res1detail,
-                 GenData = GenData)
+  output <- list(MetricsSM = MetricsSM,
+                 Metrics = Metrics,
+                 resumen = res1, 
+                 details = res1detail,
+                 GenData = GenData, 
+                 Prediction = res1Prediction)
   return(output)
   
 }
@@ -769,11 +828,16 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
                F1_SM_V = F1_SM_V,
                Metrics_SaturatedM = MmetricsSaturatedM,
                Metrics_SM = MmetricsSM,
-               Metrics_TM = MmetricsTM) )
-  
+               Metrics_TM = MmetricsTM,
+               GenData = GenData,
+               pred_Saturated_Test = saturated_mod$predlabel,
+               pred_TM_Test = TrueModel$predlabel,
+               pred_SM_Test = mod$models[[pos]]$predlabel,
+               pred_Saturated_Vtest = saturated_Vtest,
+               pred_TM_Vtest = TM_Vtest,
+               pred_SM_Vtest = SM_Vtest) )
   
 }
-
 
 
 

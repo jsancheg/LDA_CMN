@@ -212,6 +212,7 @@ MultSimPar3 <- function(nruns)
   Metrics_SaturatedM <- list()
   Metrics_SM <- list()
   Metrics_TM <- list()
+  GenData <- list()
   variables_True_model <- c("X2","X4")
   
   for (i_runs in 1:nruns)
@@ -247,6 +248,7 @@ MultSimPar3 <- function(nruns)
     F1_Saturated_V[[i_runs]] <- aux$F1_Saturated_V
     F1_SM_V[[i_runs]] <- aux$F1_SM_V
     F1_TM_V[[i_runs]] <- aux$F1_TM_V
+    GenData[[i_runs]] <- aux$GenData
     #25:54
   }
   res1 <- data.frame(SM = SM, AccuracyTM = unlist(AccuracyTM),
@@ -276,7 +278,8 @@ MultSimPar3 <- function(nruns)
   # ruta <- "/home/pgrad1/2201449s/R/CMN/Output/" 
   # saveRDS(salida,paste0(ruta,"Seg_",i_i,"_node_",i_x,"_warping_",i_u,".RDS"))
   
-  output <- list(resumen = res1, details = res1detail)
+  output <- list(resumen = res1, details = res1detail,
+                 GenData = GenData)
   return(output)
   
 }
