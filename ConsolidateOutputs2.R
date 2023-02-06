@@ -415,6 +415,7 @@ boxplot(Accuracy_SM_no_cont ~ EM_Step, data = df_SM_no_cont,
 
 
 
+
 ?pivot_longer
 apply(res$Accuracy_TM_contaminated[,-1],2,mean)
 apply(res$Accuracy_TM_no_contaminated[,-1],2,mean)

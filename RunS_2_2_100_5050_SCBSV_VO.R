@@ -1,6 +1,6 @@
 ruta <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN"
 setwd(ruta)
-source("Sim_2_2_100_5050_IND_VO.R")
+source("Sim_2_2_100_5050_SCBSV_VO.R")
 #ruta <- "/home/pgrad1/2201449s/R/CMN"
 ruta <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Output"
 library(tictoc)
@@ -10,9 +10,9 @@ for(i_sim in 3:10){
     sim.progress <- MultSimPar3(1)
   }, mc.cores = 1)
   cat("\nWriting file ",i_sim,"\n")
-  filename <- paste0(ruta,"/OutputS_2_2_4_5050_IND_VO/Output.txt")
+  filename <- paste0(ruta,"/OutputS_2_2_4_5050_SCBSV_VO/Output.txt")
   #  cat("done run ", i_sim, file = filename, sep = "\n", append=TRUE)
-  save(sim.A5,file = paste0(ruta,"/OutputS_2_2_100_5050_IND_VO/S_2_2_100_5050_IND_VO_",i_sim,".Rdata") )
+  save(sim.A5,file = paste0(ruta,"/OutputS_2_2_100_5050_SCBSV_VO/S_2_2_100_5050_SCBSV_VO_",i_sim,".Rdata") )
   cat(paste0(i_sim*10," of a 100 at ", Sys.time()), file = filename, sep = "\n", append = TRUE)
 }
 toc()
