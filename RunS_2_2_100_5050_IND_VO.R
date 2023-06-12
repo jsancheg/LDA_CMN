@@ -1,11 +1,11 @@
 ruta <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN"
 setwd(ruta)
-source("Sim_2_2_100_5050_IND_VO.R")
+source("S_2_2_100_5050_IND_VO.R")
 #ruta <- "/home/pgrad1/2201449s/R/CMN"
 ruta <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Output"
 library(tictoc)
 tic("One Simulation")
-for(i_sim in 3:10){
+for(i_sim in 15:16){
   sim.A5 <- mclapply(1:10, function(x) {
     sim.progress <- MultSimPar3(1)
   }, mc.cores = 1)

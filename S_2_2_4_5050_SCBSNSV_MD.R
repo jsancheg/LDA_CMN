@@ -567,7 +567,6 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
                                  GenData$ltest,"EII",
                                  alpharef = 0.98, 
                                  tol = 0.01)
-    
   } 
   
   pos <- mod$posCM
@@ -678,12 +677,12 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
     predSaturated_cont_samples <- saturated_mod$predlabel[ind_cont_samples]
     
     # Accuracy no-contaminated True Model
-    accTM_no_cont_samples[[i_step]] <- (sum(no_cont_samples == predTM_nocont_samples)/length(no_cont_samples))*100
-    accTM_cont_samples[[i_step]] <- (sum(cont_samples == predTM_cont_samples)/length(cont_samples))*100
-    accSM_no_cont_samples[[i_step]] <- (sum(no_cont_samples == predSM_nocont_samples)/length(no_cont_samples))*100
-    accSM_cont_samples[[i_step]] <- (sum(cont_samples == predSM_cont_samples)/length(cont_samples))*100
-    accSaturated_no_cont_samples[i_step] <- (sum(no_cont_samples == predSaturated_nocont_samples)/length(no_cont_samples))*100
-    accSaturated_cont_samples[i_step] <-     (sum(cont_samples == predSaturated_cont_samples)/length(cont_samples))*100
+    accTM_no_cont_samples[[i_step]] <- (sum(no_cont_samples == predTM_nocont_samples)/length(no_cont_samples))
+    accTM_cont_samples[[i_step]] <- (sum(cont_samples == predTM_cont_samples)/length(cont_samples))
+    accSM_no_cont_samples[[i_step]] <- (sum(no_cont_samples == predSM_nocont_samples)/length(no_cont_samples))
+    accSM_cont_samples[[i_step]] <- (sum(cont_samples == predSM_cont_samples)/length(cont_samples))
+    accSaturated_no_cont_samples[i_step] <- (sum(no_cont_samples == predSaturated_nocont_samples)/length(no_cont_samples))
+    accSaturated_cont_samples[i_step] <-     (sum(cont_samples == predSaturated_cont_samples)/length(cont_samples))
   }
   
   #  accTM_no_cont_samples  
@@ -692,59 +691,51 @@ MultSimSetting3 <- function(mu, sg, pig, nobservations,ptraining,alphag,etag,
   #  accSM_cont_samples  
   
   
+  output <-  list(models = mod$models , 
+                  CM = mod$Selectedmodel, AccuracyCM = mod$Accuracy,
+                  PrecisionCM = mean(MmetricsSM$Precision),
+                  RecallCM = mean(MmetricsSM$Recall),
+                  F1CM = mean(MmetricsSM$F1),
+                  AccuracyCM_Cont = accSM_cont_samples[Nsteps],
+                  AccuracyCM_NoCont = accSM_no_cont_samples[Nsteps],
+                  AccuracyCM_Cont_list = accSM_cont_samples,
+                  AccuracyCM_NoCont_list = accSM_no_cont_samples,
+                  nVarSel = nVarSel,
+                  AccuracyTM = TrueModel$accTestC,
+                  PrecisionTM = mean(MmetricsTM$Precision),
+                  RecallTM = mean(MmetricsTM$Recall),
+                  F1TM = mean(MmetricsTM$F1),
+                  PrecisionSaturatedM = mean(MmetricsSaturatedM$Precision),
+                  RecallSaturatedM = mean(MmetricsSaturatedM$Recall),
+                  F1SaturatedM = mean(MmetricsSaturatedM$F1),
+                  AccuracyTM_Cont = accTM_cont_samples,
+                  AccuracyTM_NoCont = accTM_no_cont_samples,
+                  Accuracy_SaturatedM = saturated_mod$accTestC,
+                  Accuracy_Saturated_NoCont = accSaturated_no_cont_samples,
+                  Accuracy_Saturated_Cont = accSaturated_cont_samples,
+                  precision_saturated_V = precision_saturated_V,
+                  precision_SM_V = precision_SM_V,
+                  precision_TM_V = precision_TM_V,
+                  recall_saturated_V = recall_saturated_V,
+                  recall_SM_V = recall_SM_V,
+                  recall_TM_V = recall_TM_V,
+                  F1_Saturated_V = F1_Saturated_V,
+                  F1_TM_V = F1_TM_V,
+                  F1_SM_V = F1_SM_V,
+                  Metrics_SaturatedM = MmetricsSaturatedM,
+                  Metrics_SM = MmetricsSM,
+                  Metrics_TM = MmetricsTM,
+                  GenData = GenData,
+                  pred_Saturated_Test = saturated_mod$predlabel,
+                  pred_TM_Test = TrueModel$predlabel,
+                  pred_SM_Test = mod$models[[pos]]$predlabel,
+                  pred_Saturated_Vtest = saturated_Vtest,
+                  pred_TM_Vtest = TM_Vtest,
+                  pred_SM_Vtest = SM_Vtest)  
   
-  #  return( list(models = mod$models , 
-  #               CM = mod$Selectedmodel, AccuracyCM = mod$Accuracy,
-  #               F1CM = mean(MmetricsSaturatedM$F1),
-  #               AccuracyCM_Cont = accSM_cont_samples[Nsteps],
-  #               AccuracyCM_NoCont = accSM_no_cont_samples[Nsteps],
-  #               AccuracyCM_Cont_list = accSM_cont_samples,
-  #               AccuracyCM_NoCont_list = accSM_no_cont_samples,
-  #               nVarSel = nVarSel,
-  #               AccuracyTM = TrueModel$accTestC,
-  #               F1TM = mean(MmetricsTM$F1),
-  #               F1SM = mean(MmetricsSM$F1),
-  #               AccuracyTM_Cont = accTM_cont_samples,
-  #               AccuracyTM_NoCont = accTM_no_cont_samples,
-  #               Accuracy_saturated = saturated_mod$accTestC,
-  #               Accuracy_Saturated_NoCont = accSaturated_no_cont_samples,
-  #               Accuracy_Saturated_Cont = accSaturated_cont_samples),
-  #               Mmetrics_SaturatedM = MmetricsSaturatedM,
-  #               Mmetrics_TM = MmetricsTM,
-  #               Mmetrics_SM = MmetricsSM)
-  
-  return( list(models = mod$models , 
-               CM = mod$Selectedmodel, AccuracyCM = mod$Accuracy,
-               F1CM = mean(MmetricsSM$F1),
-               AccuracyCM_Cont = accSM_cont_samples[Nsteps],
-               AccuracyCM_NoCont = accSM_no_cont_samples[Nsteps],
-               AccuracyCM_Cont_list = accSM_cont_samples,
-               AccuracyCM_NoCont_list = accSM_no_cont_samples,
-               nVarSel = nVarSel,
-               AccuracyTM = TrueModel$accTestC,
-               F1TM = mean(MmetricsTM$F1),
-               F1SaturatedM = mean(MmetricsSaturatedM$F1),
-               AccuracyTM_Cont = accTM_cont_samples,
-               AccuracyTM_NoCont = accTM_no_cont_samples,
-               Accuracy_saturated = saturated_mod$accTestC,
-               Accuracy_Saturated_NoCont = accSaturated_no_cont_samples,
-               Accuracy_Saturated_Cont = accSaturated_cont_samples,
-               precision_saturated_V = precision_saturated_V,
-               precision_SM_V = precision_SM_V,
-               precision_TM_V = precision_TM_V,
-               recall_saturated_V = recall_saturated_V,
-               recall_SM_V = recall_SM_V,
-               recall_TM_V = recall_TM_V,
-               F1_Saturated_V = F1_Saturated_V,
-               F1_TM_V = F1_TM_V,
-               F1_SM_V = F1_SM_V,
-               Metrics_SaturatedM = MmetricsSaturatedM,
-               Metrics_SM = MmetricsSM,
-               Metrics_TM = MmetricsTM) )
-  
+  return( output )
   
 }
-
 
 
 

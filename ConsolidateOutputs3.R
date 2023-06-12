@@ -5,15 +5,17 @@ library(tidyverse)
 library(shadowtext)
 library(ggcharts)
 library(stringr)
-
+library(lme4)
 
 pathPro <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Output/"
 pathImages <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Images/"
-
+pathWd <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
 
 process_collection3<- function(filepath)
 {
   filenames <- paste0(filepath,dir(filepath))
+  ind_rds <- str_detect(filenames,".Rdata")
+  filenames <- filenames[ind_rds]
   ncollection <- length(filenames)
   res1 <- process_file3(filenames[1])
   Accuracy_TM_cont <- res1$Accuracy_TM_cont
@@ -36,7 +38,7 @@ process_collection3<- function(filepath)
   
   if(any(nfilas == 0)) stop("Any kpi's was calculated")
   
-
+  
   for (i_collection in 2:ncollection)
   {
     cat("Processing file = ",filenames[i_collection])
@@ -48,7 +50,7 @@ process_collection3<- function(filepath)
     Accuracy_SM_nocont <- rbind.data.frame(Accuracy_SM_nocont,res$Accuracy_SM_nocont)
     
   }
-
+  
   output <- list(resumen = resumen,
                  Accuracy_TM_contaminated = Accuracy_TM_cont,
                  Accuracy_TM_no_contaminated = Accuracy_TM_nocont,
@@ -62,7 +64,7 @@ process_file3 <- function(filename)
 {
   load(file = filename)
   l <- length(sim.A5)
-
+  
   resumen <- sim.A5[[1]]$resumen
   colnames(resumen)[1]<-"Model"
   colnames(resumen)
@@ -90,27 +92,27 @@ process_file3 <- function(filename)
                                  Accuracy_TM_cont20 = sim.A5[[1]]$details[20,1])
   
   Accuracy_TM_nocont <- data.frame(Sim = 1,
-                                 Accuracy_TM_nocont1 = sim.A5[[1]]$details[1,2],
-                                 Accuracy_TM_nocont2 = sim.A5[[1]]$details[2,2],
-                                 Accuracy_TM_nocont3 = sim.A5[[1]]$details[3,2],
-                                 Accuracy_TM_nocont4 = sim.A5[[1]]$details[4,2],
-                                 Accuracy_TM_nocont5 = sim.A5[[1]]$details[5,2],
-                                 Accuracy_TM_nocont6 = sim.A5[[1]]$details[6,2],
-                                 Accuracy_TM_nocont7 = sim.A5[[1]]$details[7,2],
-                                 Accuracy_TM_nocont8 = sim.A5[[1]]$details[8,2],
-                                 Accuracy_TM_nocont9 = sim.A5[[1]]$details[9,2],
-                                 Accuracy_TM_nocont10 = sim.A5[[1]]$details[10,2],
-                                 Accuracy_TM_nocont11 = sim.A5[[1]]$details[11,2],
-                                 Accuracy_TM_nocont12 = sim.A5[[1]]$details[12,2],
-                                 Accuracy_TM_nocont13 = sim.A5[[1]]$details[13,2],
-                                 Accuracy_TM_nocont14 = sim.A5[[1]]$details[14,2],
-                                 Accuracy_TM_nocont15 = sim.A5[[1]]$details[15,2],
-                                 Accuracy_TM_nocont16 = sim.A5[[1]]$details[16,2],
-                                 Accuracy_TM_nocont17 = sim.A5[[1]]$details[17,2],
-                                 Accuracy_TM_nocont18 = sim.A5[[1]]$details[18,2],
-                                 Accuracy_TM_nocont19 = sim.A5[[1]]$details[19,2],
-                                 Accuracy_TM_nocont20 = sim.A5[[1]]$details[20,2])
-
+                                   Accuracy_TM_nocont1 = sim.A5[[1]]$details[1,2],
+                                   Accuracy_TM_nocont2 = sim.A5[[1]]$details[2,2],
+                                   Accuracy_TM_nocont3 = sim.A5[[1]]$details[3,2],
+                                   Accuracy_TM_nocont4 = sim.A5[[1]]$details[4,2],
+                                   Accuracy_TM_nocont5 = sim.A5[[1]]$details[5,2],
+                                   Accuracy_TM_nocont6 = sim.A5[[1]]$details[6,2],
+                                   Accuracy_TM_nocont7 = sim.A5[[1]]$details[7,2],
+                                   Accuracy_TM_nocont8 = sim.A5[[1]]$details[8,2],
+                                   Accuracy_TM_nocont9 = sim.A5[[1]]$details[9,2],
+                                   Accuracy_TM_nocont10 = sim.A5[[1]]$details[10,2],
+                                   Accuracy_TM_nocont11 = sim.A5[[1]]$details[11,2],
+                                   Accuracy_TM_nocont12 = sim.A5[[1]]$details[12,2],
+                                   Accuracy_TM_nocont13 = sim.A5[[1]]$details[13,2],
+                                   Accuracy_TM_nocont14 = sim.A5[[1]]$details[14,2],
+                                   Accuracy_TM_nocont15 = sim.A5[[1]]$details[15,2],
+                                   Accuracy_TM_nocont16 = sim.A5[[1]]$details[16,2],
+                                   Accuracy_TM_nocont17 = sim.A5[[1]]$details[17,2],
+                                   Accuracy_TM_nocont18 = sim.A5[[1]]$details[18,2],
+                                   Accuracy_TM_nocont19 = sim.A5[[1]]$details[19,2],
+                                   Accuracy_TM_nocont20 = sim.A5[[1]]$details[20,2])
+  
   Accuracy_SM_cont <- data.frame(Sim = 1,
                                  Accuracy_SM_cont1 = sim.A5[[1]]$details[1,3],
                                  Accuracy_SM_cont2 = sim.A5[[1]]$details[2,3],
@@ -160,9 +162,9 @@ process_file3 <- function(filename)
     cat ("\n run =", i_run, "\n")
     if(length(sim.A5[[i_run]])>1)
     {
-        auxdf1<- sim.A5[[i_run]]$resumen
-        colnames(auxdf1)[1] <- "Model"
-
+      auxdf1<- sim.A5[[i_run]]$resumen
+      colnames(auxdf1)[1] <- "Model"
+      
       resumen <- rbind.data.frame(resumen,auxdf1)
       aux_TM_cont <- data.frame(Sim =i_run, 
                                 Accuracy_TM_cont1 = sim.A5[[i_run]]$details[1,1],
@@ -186,26 +188,26 @@ process_file3 <- function(filename)
                                 Accuracy_TM_cont19 = sim.A5[[i_run]]$details[19,1],
                                 Accuracy_TM_cont20 = sim.A5[[i_run]]$details[20,1])
       aux_TM_nocont <- data.frame(Sim =i_run, 
-                                Accuracy_TM_nocont1 = sim.A5[[i_run]]$details[1,2],
-                                Accuracy_TM_nocont2 = sim.A5[[i_run]]$details[2,2],
-                                Accuracy_TM_nocont3 = sim.A5[[i_run]]$details[3,2],
-                                Accuracy_TM_nocont4 = sim.A5[[i_run]]$details[4,2],
-                                Accuracy_TM_nocont5 = sim.A5[[i_run]]$details[5,2],
-                                Accuracy_TM_nocont6 = sim.A5[[i_run]]$details[6,2],
-                                Accuracy_TM_nocont7 = sim.A5[[i_run]]$details[7,2],
-                                Accuracy_TM_nocont8 = sim.A5[[i_run]]$details[8,2],
-                                Accuracy_TM_nocont9 = sim.A5[[i_run]]$details[9,2],
-                                Accuracy_TM_nocont10 = sim.A5[[i_run]]$details[10,2],
-                                Accuracy_TM_nocont11 = sim.A5[[i_run]]$details[11,2],
-                                Accuracy_TM_nocont12 = sim.A5[[i_run]]$details[12,2],
-                                Accuracy_TM_nocont13 = sim.A5[[i_run]]$details[13,2],
-                                Accuracy_TM_nocont14 = sim.A5[[i_run]]$details[14,2],
-                                Accuracy_TM_nocont15 = sim.A5[[i_run]]$details[15,2],
-                                Accuracy_TM_nocont16 = sim.A5[[i_run]]$details[16,2],
-                                Accuracy_TM_nocont17 = sim.A5[[i_run]]$details[17,2],
-                                Accuracy_TM_nocont18 = sim.A5[[i_run]]$details[18,2],
-                                Accuracy_TM_nocont19 = sim.A5[[i_run]]$details[19,2],
-                                Accuracy_TM_nocont20 = sim.A5[[i_run]]$details[20,2])
+                                  Accuracy_TM_nocont1 = sim.A5[[i_run]]$details[1,2],
+                                  Accuracy_TM_nocont2 = sim.A5[[i_run]]$details[2,2],
+                                  Accuracy_TM_nocont3 = sim.A5[[i_run]]$details[3,2],
+                                  Accuracy_TM_nocont4 = sim.A5[[i_run]]$details[4,2],
+                                  Accuracy_TM_nocont5 = sim.A5[[i_run]]$details[5,2],
+                                  Accuracy_TM_nocont6 = sim.A5[[i_run]]$details[6,2],
+                                  Accuracy_TM_nocont7 = sim.A5[[i_run]]$details[7,2],
+                                  Accuracy_TM_nocont8 = sim.A5[[i_run]]$details[8,2],
+                                  Accuracy_TM_nocont9 = sim.A5[[i_run]]$details[9,2],
+                                  Accuracy_TM_nocont10 = sim.A5[[i_run]]$details[10,2],
+                                  Accuracy_TM_nocont11 = sim.A5[[i_run]]$details[11,2],
+                                  Accuracy_TM_nocont12 = sim.A5[[i_run]]$details[12,2],
+                                  Accuracy_TM_nocont13 = sim.A5[[i_run]]$details[13,2],
+                                  Accuracy_TM_nocont14 = sim.A5[[i_run]]$details[14,2],
+                                  Accuracy_TM_nocont15 = sim.A5[[i_run]]$details[15,2],
+                                  Accuracy_TM_nocont16 = sim.A5[[i_run]]$details[16,2],
+                                  Accuracy_TM_nocont17 = sim.A5[[i_run]]$details[17,2],
+                                  Accuracy_TM_nocont18 = sim.A5[[i_run]]$details[18,2],
+                                  Accuracy_TM_nocont19 = sim.A5[[i_run]]$details[19,2],
+                                  Accuracy_TM_nocont20 = sim.A5[[i_run]]$details[20,2])
       aux_SM_cont <- data.frame(Sim =i_run, 
                                 Accuracy_SM_cont1 = sim.A5[[i_run]]$details[1,3],
                                 Accuracy_SM_cont2 = sim.A5[[i_run]]$details[2,3],
@@ -255,12 +257,12 @@ process_file3 <- function(filename)
       
     }
   }
-
-    output <- list(resumen = resumen,
-                   Accuracy_TM_cont = Accuracy_TM_cont, 
-                   Accuracy_TM_nocont = Accuracy_TM_nocont,
-                   Accuracy_SM_cont = Accuracy_SM_cont, 
-                   Accuracy_SM_nocont = Accuracy_SM_nocont)
+  
+  output <- list(resumen = resumen,
+                 Accuracy_TM_cont = Accuracy_TM_cont, 
+                 Accuracy_TM_nocont = Accuracy_TM_nocont,
+                 Accuracy_SM_cont = Accuracy_SM_cont, 
+                 Accuracy_SM_nocont = Accuracy_SM_nocont)
   return(output)
 }
 
@@ -268,7 +270,7 @@ find_unique_labels<-function(labels)
 {  
   filas <- length(labels) 
   rawlabels<-unique(labels)
-  rawlabels <- sort(rawlabels)
+  rawlabels <- sort(rawlabels$V1)
   nrawlabels <- length(rawlabels)
   transformlabels<-rawlabels
   registerchanges <- rep(0,nrawlabels)
@@ -329,7 +331,6 @@ BigDf <- function(simulation, pathOutput,pathImages)
     cat("Processing i",i,"-",simulation[i])
     pathOutput <- paste0(pathPro,simulation[i],"/") 
     filepath <- pathOutput
-    
     cdir <- paste0(c(pathOutput))
     res <- process_collection3(cdir)
     head(res$resumen)
@@ -459,6 +460,13 @@ BigDf <- function(simulation, pathOutput,pathImages)
     df_resumen <- df_resumen %>%
       relocate(Setting, .before = Model1)
     head(df_resumen)
+    
+    # run again the 100 variable cases adding missed columns
+    #    if(ncol(dfBig)<ncol(df_resumen)) 
+    #        df_resumen <- df_resumen[,intersect(colnames(dfBig),colnames(df_resumen))]
+    #    if (ncol(df_resumen)< ncol(dfBig))
+    #      dfBig <- dfBig[,intersect(colnames(dfBig),colnames(df_resumen))]
+    
     
     if(i == 1) dfBig <- df_resumen else dfBig <- rbind.data.frame(df_resumen, dfBig)
     # calculate the mean of metrics for each setting
@@ -622,7 +630,7 @@ CreateResumen <- function(simulation, pathOutput,pathImages)
     df_resumen <- df_resumen %>% relocate(Model, .after = Model1)
     colnames(df_resumen)
     
-  #  df_resumen <- rename(df_resumen,Model1 = Model)
+    #  df_resumen <- rename(df_resumen,Model1 = Model)
     
     
     labels<-df_resumen$Model1
@@ -759,9 +767,9 @@ CreateResumen <- function(simulation, pathOutput,pathImages)
     if( i == nfolders)
     {
       saveRDS(dfmean, file = paste0(pathImages,
-              "/meanMetrics.RDS"))
+                                    "/meanMetrics.RDS"))
       saveRDS(dfsd, file = paste0(pathImages,
-              "/sdMetrics.RDS"))
+                                  "/sdMetrics.RDS"))
       
     }
     
@@ -870,43 +878,49 @@ CreateResumen <- function(simulation, pathOutput,pathImages)
 }
 
 
+source(paste0(pathWd,"FunctionsConsolidate.R"))
+
 dir(pathPro)
 simulation <- dir(pathPro)
-simulation
+simulation <- dir(pathPro)[c(3,9,11)]
+simulation 
 #simulation <- "OutputS_2_2_4_9010_SCBSV_VO"
 #CreateResumen (simulation[-c(1:9)], pathOutput,pathImages)
-BigDf(simulation[-c(1:12,34)],pathOutput,pathImages)
+BigDf(simulation[c(13:20)],pathOutput,pathImages)
+
+BigDf(simulation[-c(1:2,4:15,34)],pathOutput,pathImages)
 BigDf(simulation[-c(1:9,34)],pathOutput,pathImages)
 
 
 MetricsDf <- readRDS(paste0(pathImages,"/Metrics.RDS"))
 MetricsDf <- MetricsDf %>% mutate(Proportion = 
-            ifelse(str_detect(MetricsDf$Setting, "5050"), "BAL","UNBAL") )
+                                    ifelse(str_detect(MetricsDf$Setting, "5050"), "BAL","UNBAL") )
 
 MetricsDf <- MetricsDf %>% mutate(Number_Separating_Variables = 
                                     str_split(MetricsDf$Setting,"_",simplify = TRUE)[,3])
 
 MetricsDf <- MetricsDf %>% mutate(Covariance_Structure = 
-                    str_split(MetricsDf$Setting,"_",simplify = TRUE)[,6])
+                                    str_split(MetricsDf$Setting,"_",simplify = TRUE)[,6])
 
 MetricsDf <- MetricsDf %>% mutate(Group_Mean_Distance = 
-              str_split(MetricsDf$Setting,"_",simplify = TRUE)[,7])
+                                    str_split(MetricsDf$Setting,"_",simplify = TRUE)[,7])
 
 MetricsDf %>% pivot_longer(cols=AccuracyTM:AccuracySaturatedM,
                            names_to = "Variables",
                            values_to = "Accuracy")
 
 
-head(MetricsDf)
-auxDf1 <- MetricsDf %>% dplyr::select(Setting,AccuracyTM,AccuracySM,AccuracySaturatedM,
-                            Accuracy_TM_cont,Accuracy_SM_cont,
-                            Accuracy_TM_nocont,Accuracy_SM_nocont,
-                            Precision_TM,Precision_SM,Precision_SaturatedM,
-                            Recall_TM,Recall_SM,Recall_SaturatedM,
-                            F1_TM,F1_SM,F1_SaturatedM,
-                            precision_saturated_V,precision_SM_V,precision_TM_V,
-                            recall_saturated_V,recall_SM_V,recall_TM_V,
-                            F1_Saturated_V,F1_SM_V,F1_TM_V)
+  head(MetricsDf)
+  MetricsDf$Simulation <- as.numeric(rownames(MetricsDf))
+auxDf1 <- MetricsDf %>% dplyr::select(Simulation,Setting,AccuracyTM,AccuracySM,AccuracySaturatedM,
+                                      Accuracy_TM_cont,Accuracy_SM_cont,
+                                      Accuracy_TM_nocont,Accuracy_SM_nocont,
+                                      Precision_TM,Precision_SM,Precision_SaturatedM,
+                                      Recall_TM,Recall_SM,Recall_SaturatedM,
+                                      F1_TM,F1_SM,F1_SaturatedM,
+                                      precision_saturated_V,precision_SM_V,precision_TM_V,
+                                      recall_saturated_V,recall_SM_V,recall_TM_V,
+                                      F1_Saturated_V,F1_SM_V,F1_TM_V)
 
 colnames(auxDf1)
 # 1: True
@@ -916,31 +930,31 @@ colnames(auxDf1)
 head(MetricsDf)
 
 auxDf1 <- auxDf1 %>% rename("A1" = "AccuracyTM" ,
-                                    "A2"= "AccuracySM" ,
-                                    "A3" = "AccuracySaturatedM" ,
-                                    "C1" = "Accuracy_TM_cont"  ,
-                                    "C2" = "Accuracy_SM_cont"  ,
-                                    "N1" = "Accuracy_TM_nocont",
-                                    "N2" = "Accuracy_SM_nocont",
-                                    "P1" = "Precision_TM"  ,
-                                    "P2" = "Precision_SM" ,
-                                    "P3" = "Precision_SaturatedM" ,
-                                    "R1" = "Recall_TM" ,
-                                    "R2" = "Recall_SM" ,
-                                    "R3" = "Recall_SaturatedM",
-                                    "F1" = "F1_TM",
-                                    "F2" = "F1_SM",
-                                    "F3" = "F1_SaturatedM",
-                                    "V1" = "precision_TM_V" ,
-                                    "V2" = "precision_SM_V" ,
-                                    "V3" = "precision_saturated_V",
-                                    "W1" = "recall_TM_V",
-                                    "W2" = "recall_SM_V",
-                                    "W3" = "recall_saturated_V",
-                                    "Z1" = "F1_TM_V",
-                                    "Z2" = "F1_SM_V",
-                                    "Z3" = "F1_Saturated_V"
-                                    )
+                            "A2"= "AccuracySM" ,
+                            "A3" = "AccuracySaturatedM" ,
+                            "C1" = "Accuracy_TM_cont"  ,
+                            "C2" = "Accuracy_SM_cont"  ,
+                            "N1" = "Accuracy_TM_nocont",
+                            "N2" = "Accuracy_SM_nocont",
+                            "P1" = "Precision_TM"  ,
+                            "P2" = "Precision_SM" ,
+                            "P3" = "Precision_SaturatedM" ,
+                            "R1" = "Recall_TM" ,
+                            "R2" = "Recall_SM" ,
+                            "R3" = "Recall_SaturatedM",
+                            "F1" = "F1_TM",
+                            "F2" = "F1_SM",
+                            "F3" = "F1_SaturatedM",
+                            "V1" = "precision_TM_V" ,
+                            "V2" = "precision_SM_V" ,
+                            "V3" = "precision_saturated_V",
+                            "W1" = "recall_TM_V",
+                            "W2" = "recall_SM_V",
+                            "W3" = "recall_saturated_V",
+                            "Z1" = "F1_TM_V",
+                            "Z2" = "F1_SM_V",
+                            "Z3" = "F1_Saturated_V"
+)
 
 auxDf1 <- auxDf1 %>% 
   pivot_longer(
@@ -952,37 +966,40 @@ auxDf1 <- auxDf1 %>%
 
 
 auxDf1 <- auxDf1 %>% rename("Accuracy_class" = "A" ,
-                                    "Accuracy_Cont" = "C"  ,
-                                    "Accuracy_No_Cont" = "N",
-                                    "Precision_Class" = "P"  ,
-                                    "Recall_Class" = "R" ,
-                                    "F1_Class" = "F",
-                                    "Precicison_Cont" = "V" ,
-                                    "Recall_Cont" = "W",
-                                    "F1_Cont" = "Z")
+                            "Accuracy_Cont" = "C"  ,
+                            "Accuracy_No_Cont" = "N",
+                            "Precision_Class" = "P"  ,
+                            "Recall_Class" = "R" ,
+                            "F1_Class" = "F",
+                            "Precicison_Cont" = "V" ,
+                            "Recall_Cont" = "W",
+                            "F1_Cont" = "Z")
 
 colnames(auxDf1)
+head(auxDf1)
+view(auxDf1)
+
 
 auxDf1 <- auxDf1 %>% mutate(Proportion = 
-                                    ifelse(str_detect(auxDf1$Setting, "5050"), "BAL","UNBAL") )
+                              ifelse(str_detect(auxDf1$Setting, "5050"), "BAL","UNBAL") )
 
 auxDf1 <- auxDf1 %>% mutate(Number_Separating_Variables = 
                               str_split(auxDf1$Setting,"_",simplify = TRUE)[,3])
 
 auxDf1 <- auxDf1 %>% mutate(Covariance_Structure = 
-                                    str_split(auxDf1$Setting,"_",simplify = TRUE)[,6])
+                              str_split(auxDf1$Setting,"_",simplify = TRUE)[,6])
 
 auxDf1 <- auxDf1 %>% mutate(Group_Mean_Distance = 
-                                    str_split(auxDf1$Setting,"_",simplify = TRUE)[,7])
+                              str_split(auxDf1$Setting,"_",simplify = TRUE)[,7])
 
 auxDf1 <- auxDf1 %>% relocate(c(Proportion, Number_Separating_Variables,
-                                Covariance_Structure,Group_Mean_Disance),
+                                Covariance_Structure,Group_Mean_Distance),
                               .after = Setting )
 
 MetricsDf1 <- auxDf1 %>% mutate(Variables = recode(Variables,
-  '1' = "True",
-  '2' = "Selected",
-  '3' = "All"
+                                                   '1' = "True",
+                                                   '2' = "Selected",
+                                                   '3' = "All"
 ))
 
 colnames(MetricsDf1)
@@ -990,8 +1007,8 @@ head(MetricsDf1)
 
 library("writexl")
 
-write_xlsx(MetricsDf1, paste0(pathImages,"MetricsTable.xlsx") )
-
+# write_xlsx(MetricsDf1, paste0(pathImages,"MetricsTable.xlsx") )
+  
 
 colnames(MetricsDf1)
 
@@ -1025,6 +1042,12 @@ ggplot(MetricsDf1, aes(x = Group_Mean_Distance, y = Accuracy_No_Cont, color = Va
 
 
 data.model1 <- lm(Accuracy_class ~ Variables + Group_Mean_Distance, data = MetricsDf1)
+head(MetricsDf1)
+
+
+
+mod1<- lmer(Accuracy_class ~ Variables + Group_Mean_Distance + (1|Simulation), 
+            data = MetricsDf1)
 
 summary(data.model1)
 plot(data.model1)
@@ -1051,9 +1074,9 @@ Acc_CovStr_Long <- Acc_CovStr %>% pivot_longer(c(AccuracyTM,AccuracySM,
                                                values_to = "Accuracy")
 head(Acc_CovStr_Long)
 Acc_CovStr_Long <- Acc_CovStr_Long %>% mutate(Model = recode(Model,
- "AccuracyStaturatedM" = "Complete"  , 
- "AccuracySM" = "Selected", 
- "AccuracyTM" = "True"))
+                                                             "AccuracyStaturatedM" = "Complete"  , 
+                                                             "AccuracySM" = "Selected", 
+                                                             "AccuracyTM" = "True"))
 
 head(Acc_CovStr_Long)
 
@@ -1069,7 +1092,7 @@ Acc_Proportion_Long <- Acc_ProportionClass %>% pivot_longer(c(AccuracyTM,Accurac
 
 
 Acc_Proportion_Long <- Acc_Proportion_Long %>% mutate(Model = recode(Model,
-      AccuracySaturatedM = "All", AccuracySM = "Selected",AccuracyTM = "True"))
+                                                                     AccuracySaturatedM = "All", AccuracySM = "Selected",AccuracyTM = "True"))
 head(Acc_Proportion_Long)
 
 
@@ -1123,10 +1146,10 @@ manova(cbind(AccuracyTM,AccuracySM,AccuracySaturatedM,
        data = MetricsDf)
 
 mod1 <- manova(cbind(AccuracyTM,AccuracySM,AccuracySaturatedM,
-             Inclusion_correctness,Exclusion_correctness,
-             ModelSizeSM,Accuracy_TM_cont,Accuracy_TM_nocont,
-             Accuracy_SM_cont,Accuracy_SM_nocont) ~ Proportion + Covariance_Structure,
-       data = MetricsDf)
+                     Inclusion_correctness,Exclusion_correctness,
+                     ModelSizeSM,Accuracy_TM_cont,Accuracy_TM_nocont,
+                     Accuracy_SM_cont,Accuracy_SM_nocont) ~ Proportion + Covariance_Structure,
+               data = MetricsDf)
 
 
 summary(mod1, test = "Wilks", intercept = TRUE)

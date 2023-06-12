@@ -1,10 +1,15 @@
-MetricsPath <- "/home/jsancheg/Documents/LDA_CMN/"
+MetricsPath <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
+
 library(dplyr)
 library(lme4)
 library(stringr)
 library(tidyr)
 library(ggplot2)
+library(ggpattern)
 library(gridExtra)
+library(cowplot)
+library(patchwork)
+library(ggpubr)
 
 dir(MetricsPath)
 MetricsDf <- readRDS(paste0(MetricsPath,"Metrics.RDS"))
@@ -135,10 +140,16 @@ MetricsDf1 <- auxDf1 %>% mutate(Variables = recode(Variables,
 #                                                   'IND' = 'IND'
 #))
 
+
 colnames(MetricsDf1)
 head(MetricsDf1)
 
+MetricsDf1$Variables <- as.factor(MetricsDf1$Variables)
+MetricsDf1$Variables <- relevel(MetricsDf1$Variables,"True")
+unique(MetricsDf1$Variables)
 
+
+unique(MetricsDf1$Group_Mean_Distance)
 unique(MetricsDf1$Covariance_Structure)
 colnames(MetricsDf)
 MetricsDf %>% select(c(AccuracyTM,AccuracySM,AccuracySaturatedM)) %>%
@@ -161,72 +172,825 @@ ggplot(mean.acc1, aes(x = reorder(Simulation,mean.accuracy ), y = mean.accuracy,
                       color = Group_Mean_Distance)) + geom_point()
 
 
-  
-g1<- ggplot(MetricsDf1, aes(x = Proportion, y = Accuracy_class, color = Variables)) +
-  geom_boxplot() + ylab("Accuracy(Classes)") + xlab("Proportion")
-
-g2 <- ggplot(MetricsDf1, aes(x = Number_of_classes, y = Accuracy_class, 
-                       color = Variables)) + 
-  geom_boxplot() + ylab("Accuracy(Classes)") + xlab("Number of classes")
-
-
-g3 <- ggplot(MetricsDf1, aes(x = Covariance_Structure, y = Accuracy_class, 
-                       color = Variables)) + 
-  geom_boxplot() + ylab("Accuracy(Classes)") + xlab("Covariance structure")
+#g1 <- ggplot(MetricsDf1, aes(x = Proportion, y = Accuracy_class)) +
+#  geom_boxplot_pattern(aes(pattern = Variables, pattern_fill = Variables),
+#                       pattern_density = 0.02, outlier.shape = NA) + 
+#  scale_pattern_manual(values = c("True" = "crosshatch", "All"="stripe",
+#                                  "Selected" = "wave"))+
+#  scale_pattern_fill_manual(values = c("True" = "red", "All" = "green",
+#                                       "Selected" = "blue"))+
+#  ylab("Accuracy(Classes)") + xlab("Proportion")
 
 
-g4 <- ggplot(MetricsDf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
-                       color = Variables)) + 
-  geom_boxplot() + ylab("Accuracy(Classes)") + xlab("Group mean distance")
 
-gr1 <- arrangeGrob(g1,g2, ncol = 1, nrow = 2)
-plot(gr1)
-
-gr2 <- arrangeGrob(g3, g4, ncol = 2, nrow = 2,
-                   layout_matrix =  rbind(c(1,1),c(2,2) ) )
-plot(gr2)
+g1 <- ggplot(MetricsDf1, aes(x = Proportion, y = Accuracy_class,color = Variables)) +
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("Proportion") + ylim(0.4,1) 
 
 
-g5 <- MetricsDf1 %>% ggplot(mapping = aes(sample = Accuracy_class)) +
+
+g2 <- ggplot(MetricsDf1, aes(x = Number_of_classes, y = Accuracy_class, color = Variables)) +
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("Number of classes") + ylim(0.4,1)
+
+g3 <- ggplot(MetricsDf1, aes(x = Covariance_Structure, y = Accuracy_class, color = Variables)) +
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("Covariance strucutre") + ylim(0.4,1)
+
+
+g4 <- ggplot(MetricsDf1, aes(x = Group_Mean_Distance, y = Accuracy_class, color = Variables)) +
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  scale_x_discrete(labels = c("Medium distance","Very distance","Very Overlapping"))+
+  ylab("Accuracy test") + xlab("Group mean distance") + ylim(0.4,1)
+
+#g1<- ggplot(MetricsDf1, aes(x = Proportion, y = Accuracy_class, color = Variables)) +
+#  geom_boxplot() + ylab("Accuracy(Classes)") + xlab("Proportion")
+
+#g2 <- ggplot(MetricsDf1, aes(x = Number_of_classes, y = Accuracy_class, 
+#                       color = Variables)) + 
+#  geom_boxplot() + ylab("Accuracy(Classes)") + xlab("Number of classes")
+
+
+#g3 <- ggplot(MetricsDf1, aes(x = Covariance_Structure, y = Accuracy_class, 
+#                       color = Variables)) + 
+#  geom_boxplot() + ylab("Accuracy(Classes)") + xlab("Covariance structure")
+
+
+#g4 <- ggplot(MetricsDf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+##                       color = Variables)) + 
+#  geom_boxplot() + ylab("Accuracy(Classes)") + xlab("Group mean distance")
+
+# to combine plots we required "patchwork" library
+combine <- g1 + g2 + g3 + g4 & theme(legend.position = "bottom")
+combine + plot_layout(guides = "collect")
+
+
+
+#MetricsDf1 %>% select(c(Accuracy_class,Variables)) %>% data.frame()  %>%
+#  pairwise.t.test(Accuracy_class ~ Variables, paired = TRUE,
+#                  p.adjust.method = "bonferroni")
+
+
+
+
+library(nlme)
+
+unique(MetricsDf1$Group_Mean_Distance)
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO")
+unique(VODf1$Setting)
+
+
+# Subset only very overlapping cases --------------------------------------
+
+
+# "OutputS_2_3_4_BAL_SCBSV_VO"
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_3_4_BAL_SCBSV_VO")
+
+mean2_3_4_BAL_SCBSV <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+mean2_3_4_BAL_SCBSV
+
+
+g2_3_4_BAL_SCBSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+                          color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("SCBSV") + ylim(0.4,1)
+
+
+g2_3_4_BAL_SCBSV
+
+
+mod_VO_1 <- gls(Accuracy_class ~ Variables, data = VODf1, 
+             correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+VODf1 %>% ggplot(mapping = aes(sample = residuals(mod_VO_1))) +
   geom_qq() +
   facet_wrap(facets = ~ Variables, scales = "free") +
   theme_bw()
 
-g6 <- ggplot(MetricsDf1, aes(x = Accuracy_class, y = ..density.., fill = Variables )) +
-  geom_density(alpha = 0.25) + 
-  labs(tittle = "Distribution of Accuracy  for set of variables") + xlab("Accuracy") 
 
-gr3 <- arrangeGrob(g5,g6,ncol=1,nrow = 2)
-plot(gr3)
+# "OutputS_2_3_4_BAL_SCBSNSV_VO" All and Selected similar (0.83) but different from True (0.74)
 
-plot(gr3)
-MetricsDf1 %>% ggplot(mapping = aes(sample = Accuracy_class)) +
-  geom_qq() +
-  facet_wrap(facets = ~ Group_Mean_Distance, scales = "free") +
-  theme_bw()
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_3_4_BAL_SCBSNSV_VO")
+
+mean2_3_4_BAL_SCBSNSV <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+mean2_3_4_BAL_SCBSNSV
+
+
+g2_3_4_BAL_SCBSNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+                                         color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("SCBSNSV") + ylim(0.4,1)
+
+
+g2_3_4_BAL_SCBSNSV
+
+mod_VO_1 <- gls(Accuracy_class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+
+# "OutputS_2_3_4_BAL_SCBNSV_VO"  Selected (0.95) while All and True (0.94)   
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_3_4_BAL_SCBNSV_VO")
+
+mean2_3_4_BAL_SCBNSV <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+mean2_3_4_BAL_SCBNSV
+
+
+g2_3_4_BAL_SCBNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+                                          color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+   ylab("Accuracy test") + xlab("SCBNSV") + ylim(0.4,1) +
+  theme(axis.text.x = element_blank())
+
+
+
+g2_3_4_BAL_SCBNSV
+
+mod_VO_1 <- gls(Accuracy_class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+# "OutputS_2_3_4_BAL_IND_VO"  Selected (0.75) slightly better than All (0.73) and True (0.74)  
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_3_4_BAL_IND_VO")
+
+mean2_3_4_BAL_IND <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+mean2_3_4_BAL_IND
+
+
+g2_3_4_BAL_IND <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+                                          color = Variables)) +
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("IND") + ylim(0.4,1) +
+  theme(axis.text.x = element_blank())
+
+
+g2_3_4_BAL_IND
+
+mod_VO_1 <- gls(Accuracy_class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+# "OutputS_2_2_4_5050_SCBSV_VO"
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_2_4_5050_SCBSV_VO")
+
+mean2_2_4_BAL_SCBSV <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+mean2_2_4_BAL_SCBSV
+
+
+g2_2_4_BAL_SCBSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+                                      color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("SCBSV") + ylim(0.4,1)
+
+
+g2_2_4_BAL_SCBSV
+
+mod_VO_1 <- gls(Accuracy_class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+
+# "OutputS_2_2_4_5050_SCBSNSV_VO"
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_2_4_5050_SCBSNSV_VO")
+
+mean2_2_4_BAL_SCBSNSV <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+mean2_2_4_BAL_SCBSNSV
+
+
+g2_2_4_BAL_SCBSNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+                                        color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("SCBSNSV") + ylim(0.4,1)+
+  theme(axis.text.x = element_blank())
+
+
+g2_2_4_BAL_SCBSNSV
+
+mod_VO_1 <- gls(F1_Class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+
+# "OutputS_2_2_4_5050_SCBNSV_VO"
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_2_4_5050_SCBNSV_VO")
+
+mean2_2_4_BAL_SCBNSV <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+mean2_2_4_BAL_SCBNSV
+
+
+g2_2_4_BAL_SCBNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+                                       color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("SCBNSV") + ylim(0.4,1)+
+  theme(axis.text.x = element_blank())
+
+
+g2_2_4_BAL_SCBNSV
+
+mod_VO_1 <- gls(Accuracy_class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+
+# "OutputS_2_2_4_5050_IND_VO"    All (0.80), Selected (0.82), True (0.81) are similar
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_2_4_5050_IND_VO")
+
+mean2_2_4_BAL_IND <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+mean2_2_4_BAL_IND
+
+
+g2_2_4_BAL_IND <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+                                    color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+   ylab("Accuracy test") + xlab("IND") + ylim(0.4,1) +
+  theme(axis.text.x = element_blank())
+
+
+g2_2_4_BAL_IND
+
+mod_VO_1 <- gls(Accuracy_class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+mean_2_2_4_BAL <- rbind.data.frame(mean2_2_4_BAL_IND,
+                                       mean2_2_4_BAL_SCBNSV,
+                                       mean2_2_4_BAL_SCBSNSV,
+                                       mean2_2_4_BAL_SCBSV) 
+mean_2_2_4_BAL %>% group_by(Variables) %>%   
+  summarise(mean.accuracy  = mean(mean.accuracy))
+
+
+
+
+# Unbalanced data sets
+
+# "OutputS_2_2_4_9010_SCBSV_VO"
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_2_4_9010_SCBSV_VO")
+VODf1 <- na.omit(VODf1)
+nrow(VODf1)
+
+mean2_2_4_UNBAL_SCBSV <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+mean2_2_4_UNBAL_SCBSV
+
+
+g2_2_4_UNBAL_SCBSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+                                        color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("SCBSV") + ylim(0.4,1) 
+
+
+g2_2_4_UNBAL_SCBSV
+
+mod_VO_1 <- gls(Accuracy_class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+
+# "OutputS_2_2_4_9010_SCBSNSV_VO"
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_2_4_9010_SCBSNSV_VO")
+VODf1 <- na.omit(VODf1)
+nrow(VODf1)
+
+mean2_2_4_UNBAL_SCBSNSV <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+mean2_2_4_UNBAL_SCBSNSV
+
+
+g2_2_4_UNBAL_SCBSNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+                                          color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("SCBSNSV") + ylim(0.4,1) +
+  theme(axis.text.x = element_blank())
+
+
+g2_2_4_UNBAL_SCBSNSV
+
+mod_VO_1 <- gls(Accuracy_class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+
+# "OutputS_2_2_4_9010_SCBNSV_VO"
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_2_4_9010_SCBNSV_VO")
+VODf1 <- na.omit(VODf1)
+nrow(VODf1)
+
+mean2_2_4_UNBAL_SCBNSV <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+mean2_2_4_UNBAL_SCBNSV
+
+
+g2_2_4_UNBAL_SCBNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+                                         color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("SCBNSV") + ylim(0.4,1)+
+  theme(axis.text.x = element_blank())
+
+
+g2_2_4_UNBAL_SCBNSV
+
+mod_VO_1 <- gls(Accuracy_class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+# "OutputS_2_2_4_9010_IND_VO"
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_2_4_9010_IND_VO")
+VODf1 <- na.omit(VODf1)
+nrow(VODf1)
+
+mean2_2_4_UNBAL_IND <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+mean2_2_4_UNBAL_IND
+
+
+g2_2_4_UNBAL_IND <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class, 
+                                      color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Accuracy test") + xlab("IND") + ylim(0.4,1)+
+  theme(axis.text.x = element_blank())
+
+
+g2_2_4_UNBAL_IND
+
+mod_VO_1 <- gls(Accuracy_class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+
+mean_2_2_4_UNBAL <- rbind.data.frame(mean2_2_4_UNBAL_IND,
+                                       mean2_2_4_UNBAL_SCBNSV,
+                                       mean2_2_4_UNBAL_SCBSNSV,
+                                       mean2_2_4_UNBAL_SCBSV) 
+mean_2_2_4_UNBAL %>% group_by(Variables) %>%   
+  summarise(mean.accuracy  = mean(mean.accuracy))
+
+
+# F1 score
+# "OutputS_2_2_4_9010_SCBSV_VO"
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_2_4_9010_SCBSV_VO")
+VODf1 <- na.omit(VODf1)
+nrow(VODf1)
+
+F1mean2_2_4_UNBAL_SCBSV <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.F1  = mean(F1_Class))
+F1mean2_2_4_UNBAL_SCBSV
+
+
+F1g2_2_4_UNBAL_SCBSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = F1_Class, 
+                                       color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+   ylab("F1 test") + xlab("SCBSV") + ylim(0.4,1) 
+
+
+F1g2_2_4_UNBAL_SCBSV
+
+mod_VO_1 <- gls(F1_Class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+
+# "OutputS_2_2_4_9010_SCBSNSV_VO"
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_2_4_9010_SCBSNSV_VO")
+VODf1 <- na.omit(VODf1)
+nrow(VODf1)
+
+F1mean2_2_4_UNBAL_SCBSNSV <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.F1  = mean(F1_Class))
+F1mean2_2_4_UNBAL_SCBSNSV
+
+
+F1g2_2_4_UNBAL_SCBSNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = F1_Class, 
+                                         color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+   ylab("F1 test") + xlab("SCBSNSV") + ylim(0.4,1) +
+  theme(axis.text.x = element_blank())
+
+
+F1g2_2_4_UNBAL_SCBSNSV
+
+mod_VO_1 <- gls(F1_Class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+
+# "OutputS_2_2_4_9010_SCBNSV_VO"
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_2_4_9010_SCBNSV_VO")
+VODf1 <- na.omit(VODf1)
+nrow(VODf1)
+
+F1meanS_2_2_4_UNBAL_SCBNSV <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.F1  = mean(F1_Class))
+F1meanS_2_2_4_UNBAL_SCBNSV
+
+
+F1g2_2_4_UNBAL_SCBNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = F1_Class, 
+                                            color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+   ylab("F1 test") + xlab("SCBNSV") + ylim(0.4,1)+
+  theme(axis.text.x = element_blank())
+
+
+F1g2_2_4_UNBAL_SCBNSV
+
+mod_VO_1 <- gls(F1_Class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+# "OutputS_2_2_4_9010_IND_VO"
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_2_4_9010_IND_VO")
+VODf1 <- na.omit(VODf1)
+nrow(VODf1)
+
+F1meanS_2_2_4_UNBAL_IND <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.F1  = mean(F1_Class))
+F1meanS_2_2_4_UNBAL_IND
+
+
+F1g2_2_4_UNBAL_IND <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = F1_Class, 
+                                        color = Variables)) + 
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("F1 test") + xlab("IND") + ylim(0.4,1)+
+  theme(axis.text.x = element_blank())
+
+
+F1g2_2_4_UNBAL_IND
+
+mod_VO_1 <- gls(F1_Class ~ Variables, data = VODf1, 
+                correlation = corSymm(form = ~1|Simulation))
+
+summary(mod_VO_1)
+
+color_variables <- sapply(VODf1$Variables,function(i) {
+  if(i == "Selected") "green"
+  else if(i == "All") "red"
+  else if(i == "True") "blue"
+})
+
+plot(mod_VO_1, col = color_variables )
+
+plot(residuals(mod_VO_1), ylab = "residuals")
+
+
+
+# Panel of plots for VO very overlapping sub-setting -----------------------
+
+
+g2_3_4_BAL_SCBNSV
+g2_3_4_BAL_SCBSNSV
+g2_3_4_BAL_SCBNSV
+g2_3_4_BAL_IND
+g2_2_4_UNBAL_SCBSV
+g2_2_4_UNBAL_SCBSNSV
+g2_2_4_UNBAL_SCBNSV
+g2_2_4_UNBAL_IND
+g2_2_4_BAL_SCBSV
+g2_2_4_BAL_SCBSNSV
+g2_2_4_BAL_SCBNSV
+g2_2_4_BAL_IND
+
+
+# 2 balanced groups 
+gr10 <- ggarrange(  g2_2_4_BAL_IND,
+                    g2_2_4_BAL_SCBNSV,
+                    g2_2_4_BAL_SCBSNSV,
+                    g2_2_4_BAL_SCBSV,
+                    ncol=2,nrow = 2,
+                    common.legend = TRUE,
+                    legend = "bottom")
+
+
+# 3 balanced groups
+gr12 <- ggarrange(g2_3_4_BAL_IND,
+                    g2_3_4_BAL_SCBNSV,
+                    g2_3_4_BAL_SCBSNSV,
+                    g2_3_4_BAL_SCBSV,
+                    ncol = 2, nrow = 2,
+                    common.legend = TRUE,
+                    legend = "bottom")
+
+
+# 2 unbalanced groups
+gr11 <- ggarrange(g2_2_4_UNBAL_IND,
+                    g2_2_4_UNBAL_SCBNSV,
+                    g2_2_4_UNBAL_SCBSNSV,
+                    g2_2_4_UNBAL_SCBSV,
+                    ncol=2,nrow = 2,
+                  common.legend = TRUE,
+                  legend = "bottom")
+
+
+# F1 score for 2 unbalanced groups
+gr13 <- ggarrange(F1g2_2_4_UNBAL_IND,
+                  F1g2_2_4_UNBAL_SCBNSV,
+                  F1g2_2_4_UNBAL_SCBSNSV,
+                  F1g2_2_4_UNBAL_SCBSV,
+                  ncol=2,nrow = 2,
+                  common.legend = TRUE,
+                  legend = "bottom")
+
+plot(gr10) # 2 Balanced groups in 4 Dim
+plot(gr12) # 3 Balanced groups in 4 Dim
+
+
+plot(gr11) # 2 Unbalanced groups in 4 Dim
+plot(gr13) # F1 score 2 Unbalanced groups in 4 Dim
+
+
+VODf1 <- MetricsDf1 %>% filter(Group_Mean_Distance == "VO",
+                               Setting == "OutputS_2_3_4_BAL_SCBSV_VO")
+
+unique(factor(VODf1$Setting))
+
+summary(factor(VODf1$Setting))
+nrow(VODf1)
+
+meanAcc <- VODf1 %>% group_by(Variables) %>%
+  summarise(mean.accuracy  = mean(Accuracy_class))
+meanAcc
+
+
+
+
+mod10 <- gls(Accuracy_class ~ Variables, data = VODf1, 
+             correlation = corSymm(form = ~1|Simulation))
+
+summary(mod10)
 
 MetricsDf1 %>% ggplot(mapping = aes(sample = Accuracy_class)) +
   geom_qq() +
   facet_wrap(facets = ~ Covariance_Structure, scales = "free") +
   theme_bw()
 
+MetricsDf1.new <- groupedData(Accuracy_class ~ Variables |Group_Mean_Distance,
+                              data = MetricsDf1, FUN = mean)
 
-colnames(MetricsDf1)
 
-MetricsDf1 %>% select(c(Accuracy_class,Variables)) %>% data.frame()  %>%
-  pairwise.t.test(Accuracy_class ~ Variables, paired = TRUE,
-                  p.adjust.method = "bonferroni")
-
-library(nlme)
 mod100 <- gls( Accuracy_class ~   Variables + Proportion + Number_of_classes + Covariance_Structure +
                  Group_Mean_Distance, data = MetricsDf1,
-               correlation = corSymm(form = ~1|Simulation),
-               weights = varIdent(form = ~1|Group_Mean_Distance))
+               correlation = corSymm(form = ~1|Simulation))
 
 summary(mod100)
 anova(mod100)
 plot(mod100)
+nrow(MetricsDf1)
 
+
+
+library(lattice)
+
+bwplot(getGroups(MetricsDf1.new) ~ residuals(mod100))
+
+
+mod109 <- gls(Accuracy_class ~ Variables, data = MetricsDf1,
+              correlation = corSym(form = ~1|Simulation))
+
+summary(mod109)
+plot(residuals(mod109))
 
 mod110 <- gls( Accuracy_class ~   Variables + Proportion + Number_of_classes + Covariance_Structure +
                  Group_Mean_Distance + Variables*Proportion + 
@@ -236,8 +1000,14 @@ mod110 <- gls( Accuracy_class ~   Variables + Proportion + Number_of_classes + C
 
 summary(mod110)
 anova(mod110)
+plot(residualas(mod110))
 
-mod120 <- gls(Accuracy_class ~  Variables + Proportion + Number_of_classes + Covariance_Structure +
+mod120 <- gls( Accuracy_class ~   Variables + Proportion + Number_of_classes + Covariance_Structure +
+                 Group_Mean_Distance, data = MetricsDf1,
+               correlation = corSymm(form = ~1|Simulation),
+               weights = varIdent(form = ~1|Group_Mean_Distance))
+
+mod130 <- gls(Accuracy_class ~  Variables + Proportion + Number_of_classes + Covariance_Structure +
                  Group_Mean_Distance + Variables*Proportion + 
                  Variables*Number_of_classes + Variables*Covariance_Structure +
                  Variables * Group_Mean_Distance, 
@@ -246,6 +1016,18 @@ mod120 <- gls(Accuracy_class ~  Variables + Proportion + Number_of_classes + Cov
 
 summary(mod110)
 anova(mod110)
+
+
+mod200 <- gls( F1_Class ~   Variables + Proportion + Number_of_classes + Covariance_Structure +
+                 Group_Mean_Distance, data = na.omit(MetricsDf1),
+               correlation = corSymm(form = ~1|Simulation))
+
+nrow(na.omit(MetricsDf1))
+
+summary(mod200)
+anova(mod200)
+plot(mod200)
+
 
 
 mod1 <- lmer(Accuracy_class ~ Variables + Proportion + Number_of_classes + Covariance_Structure +
@@ -265,3 +1047,4 @@ mod2 <- lmer(log(Accuracy_class) ~ Variables + Proportion + Number_of_classes + 
 
 summary(mod2)
 plot(mod2)
+

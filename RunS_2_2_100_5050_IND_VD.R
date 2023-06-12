@@ -16,3 +16,4 @@ for(i_sim in 1:10){
   cat(paste0(i_sim*10," of a 100 at ", Sys.time()), file = filename, sep = "\n", append = TRUE)
 }
 toc()
+
