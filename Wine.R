@@ -66,7 +66,15 @@ ptrain <- c(0.7,0.7,0.7)
 vpi <- c(0.34,0.33,0.33)
 
 
-sA80E_NEQ_BAL <- contWine (Xwine,y,lab,vpi,alpha,eta,ptrain,ns = 100)
+sA80E_NEQ_BAL <- contDf (Xwine,y,lab,vpi,alpha,eta,ptrain,ns = 100)
+
+
+alpha <- c(0.9,0.85,0.8)
+eta <- c(10,10,10)
+ptrain <- c(0.7,0.7,0.7)
+vpi <- c(0.34,0.33,0.33)
+
+sANEQ_BNEQ_BAL <- contDf (Xwine,y,lab,vpi,alpha,eta,ptrain,ns = 100)
 
 
 
