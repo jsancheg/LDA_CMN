@@ -1977,8 +1977,8 @@ eCmn <- function(Xtrain,par)
         num1[i,g] <- pig[g]*den[i,g]
       }else if(den[i,g] == 0)
       {
-        v[i,g] <- 0 
-        num1[i,g] <- 0
+        v[i,g] <- 1 
+        num1[i,g] <- pig[g]*den[i,g]
         
       }
       
@@ -2033,7 +2033,7 @@ mCmn <- function(Xtrain,ltrain,par)
     for(i in 1:m)
     {
       factor1 <-l[i,g]*(v[i,g] + (1-v[i,g])/eta[g] )
-      cat("\n", factor1, "\n")
+#      cat("\n", factor1, "\n")
       S[g] <- S[g] + factor1
       mu1[,g] <- mu1[,g] + factor1 * Xtrain[i,]      
       alpha1[g] <- alpha1[g]+ (l[i,g]*v[i,g])

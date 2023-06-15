@@ -116,6 +116,7 @@ i<-1
     colnames(BlueCrabsCont)
     head(BlueCrabs)
     head(GenContSamples)
+    colnames(GenContSamples)
     colnames(BlueCrabs)
     colnames(BlueCrabs[c(indMnc,indFnc),-c(1:3,5,11)])
     colnames(GenContSamples[c(indMc,indFc),-c(2,9)])
@@ -125,7 +126,8 @@ i<-1
     
     
     BlueCrabsTrain <- rbind.data.frame(BlueCrabs[c(indMnc,indFnc),]%>% dplyr::select(colnames(GenContSamples)),
-                                       GenContSamples[c(indMc,indFc),-c(2,9)])
+                                       GenContSamples[c(indMc,indFc),])
+    BlueCrabsTrain <- BlueCrabsTrain %>% dplyr::
     
     BlueCrabsTrain <- BlueCrabsTrain[sample(1:nrow(BlueCrabsTrain)),]
     

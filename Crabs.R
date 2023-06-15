@@ -4,7 +4,7 @@ library(tidyverse)
 library(RColorBrewer)
 source("FuncCrabs.R")
 source("FuncWine.R")
-
+source("VSCMN.R")
 pathFile <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Raw Data"
 
 #work_path <- "E:/University of Glasgow/Literature review/R Code/"
@@ -16,7 +16,7 @@ CrabsDf$sex <- as.factor(CrabsDf$sex)
 head(CrabsDf)
 BlueCrabs <- CrabsDf %>% filter(sp == "B")
 XBlueCrabs <- BlueCrabs %>% subset(select = c(index,FL, RW, CL, CW, BD))
-y <- BlueCrabs$sex
+y <- as.numeric(BlueCrabs$sex)
 ind_fem <- y=="F"
 
 meanBlueCrabsF <- XBlueCrabs[ind_fem,-1] %>% apply(2,mean)
@@ -38,20 +38,116 @@ alpha <- c(0.8,0.8)
 eta <- c(eF,eM)
 ptrain <- c(0.8,0.8)
 
-lab <-c("M","F")
-# 1 - M
-# 2 - F
+lab <-c("F","M")
+# 1 - F
+# 2 - M
+BlueCrabs$sex
+as.numeric(BlueCrabs$sex)
 
 sg <- array(0.0, dim = c(p,p,2))
 sg[,,1]= GBlueCrabsM
 sg[,,2]= GBlueCrabsF
 
 
+sA8020 <- contDf (XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 100)
 
-sA8020 <- contWine (XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 100)
+dfA80E20<-sA8020$Metrics_models
+dfA80E20$alpha <- "Equal"
+dfA80E20$eta <- "Equal"
+saveRDS(dfA80E20,"A80E20.RDS")
+
+vpi <- c(0.5,0.5)
+alpha <- c(0.8,0.8)
+eta <- c(20,5)
+ptrain <- c(0.8,0.8)
 
 
-sA80E20<-contCrabs(mug,sg,lab,alpha,eta, ptrain, ns = 100)
+sA80E20_5<-contDf(XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 100)
+
+dfA80E20_5<-sA80E20_5$Metrics_models
+dfA80E20_5$alpha <- "Equal"
+dfA80E20_5$eta <- "Inequal"
+saveRDS(dfA80E20_5,"A80E20_5.RDS")
+
+
+vpi <- c(0.5,0.5)
+alpha <- c(0.9,0.8)
+eta <- c(20,20)
+ptrain <- c(0.8,0.8)
+
+
+sA90_80E20<-contDf(XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 100)
+
+dfA90_80E20 <- sA90_80E20$Metrics_models
+dfA90_80E20$alpha <- "Inequal"
+dfA90_80E20$eta <- "Equal"
+saveRDS(dfA80E20,"A80E20.RDS")
+
+
+
+
+
+
+# Summarise simulations ---------------------------------------------------
+
+dfAll <- rbind.data.frame(dfA80E20,
+                          dfA80E20_5,
+                          dfA90_80E20)
+colnames(dfAll)
+dfAll <- dfAll %>% mutate (DifCCR = CR_SV - CR_SatMC)
+dfAll <- dfAll %>% mutate (DifAccuracy = Accuracy_SVCont- Accuracy_SatCont  )
+
+freqVar <- table(unlist(str_split(dfAll$Model,"-")))
+coul <- brewer.pal(5,"Set2")
+
+barplot(prop.table(freqVar),col = coul)
+
+colnames(dfAll)
+
+
+dfDifLong<- dfAll %>% dplyr::select(alpha,eta,DifCCR,DifAccuracy) %>% 
+  pivot_longer(c(DifCCR,DifAccuracy),
+               names_to = "Variables",
+               values_to = "Dif")
+
+head(dfDifLong)
+dfDifLong <- dfDifLong %>% mutate(Variables = recode(Variables,
+                                                   DifCCR = "CCR",
+                                                   DifAccuracy = "Accuracy"))
+
+
+ggplot(dfDifLong, aes(x = Variables, y = Dif, color = eta)) + geom_boxplot()
+
+
+ggplot(dfDifLong, aes(x = Variables, y = Dif, color = alpha)) + geom_boxplot()
+
+
+dfCRLong<- dfAll %>% dplyr::select(alpha,eta,CR_SatMC,CR_SV) %>% 
+  pivot_longer(c(CR_SatMC,CR_SV),
+               names_to = "Variables",
+               values_to = "CCR")
+head(dfCRLong)
+dfCRLong <- dfCRLong %>% mutate(Variables = recode(Variables,
+                                                   CR_SatMC = "All",
+                                                   CR_SV = "Selected"))
+
+
+ggplot(dfCRLong, aes(x = Variables, y = CCR, color = eta)) + geom_boxplot()
+
+
+dfAccLong<- dfAll %>% dplyr::select(alpha,eta,Accuracy_SatCont,Accuracy_SVCont) %>% 
+  pivot_longer(c(Accuracy_SatCont,Accuracy_SVCont),
+               names_to = "Variables",
+               values_to = "Accuracy")
+
+dfAccLong <- dfAccLong %>% mutate(Variables = recode(Variables,
+                                                     Accuracy_SatCont = "All",
+                                                     Accuracy_SVCont = "Selected"))
+
+ggplot(dfAccLong, aes(x = Variables, y = Accuracy, color = eta)) + geom_boxplot()
+
+
+head(dfA80E20Long)
 
 
 sA80E20$Metrics_res  
@@ -60,7 +156,6 @@ sA80E20$Metrics_models
 dfA80E20 <- sA80E20$Metrics_models
 dfA80E20$alpha <- "Equal"
 dfA80E20$eta <- "Equal"
-
 
 
 ptrain <- c(0.8,0.8)

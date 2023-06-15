@@ -13,17 +13,20 @@ funcSample <- function(X,y,vpi)
   
   # ng  number of observations in each group
   ng <- summary(factor(y))
-  aux <- matrix(0.0,ncol = 3, nrow = 3)
+  aux <- matrix(0.0,ncol = G, nrow = G)
   val <- rep(0,G)
   bolval <- NA
   # mg <- number of samples taken from each group
-  for (g in 1:G)
+  for (g_1 in 1:G)
   {
-      total = round(ng[g]/vpi[1],0)
-      aux[g,1] = floor(total * vpi[1])
-      aux[g,2] = floor(total *vpi[2])
-      aux[g,3] = floor(total * (1-sum(vpi[1:2])))
-      bolval[g] = all(aux[g,]<ng)
+      total = round(ng[g_1]/vpi[1],0)
+      for(g_2 in 1:(G-1))
+      {
+        aux[g_1,g_2] = floor(total * vpi[g_2])
+      }
+      aux[g_1,G] = floor(total * (1-sum(vpi[1:(G-1)])))
+      
+      bolval[g_1] = all(aux[g_1,]<=ng)
   }
 
   
@@ -55,7 +58,7 @@ funcSample <- function(X,y,vpi)
 
 contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
 {
-   # Function that contaminate the wine data set
+  # Function that contaminate the wine data set
   # mug : matrix where each column is the mean of a group
   # sg : matrix or array that contains the variance-covariance matrix for a group
   # X  : matrix or array containing the covariates
@@ -90,12 +93,12 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
   
   
   for (g in 1:G) 
-    {
-      mug[,g] <- X[y==g,] %>% apply(2,mean)
-      sg[,,g] <- X[y == g,] %>% var
-      ng[g] <- length(indsamples[[g]])
-    }
-
+  {
+    mug[,g] <- X[y==g,] %>% apply(2,mean)
+    sg[,,g] <- X[y == g,] %>% var
+    ng[g] <- length(indsamples[[g]])
+  }
+  
   #BlueCrabsCont$sex <- ifelse(BlueCrabsCont$sex == "F",1,2)
   for (g in 1:G)
   {
@@ -107,7 +110,7 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
     
     # number of contaminated samples in the test set
     ncont_test[g] = round(nocont_test[g]/alpha[g],0) - nocont_test[g]
-
+    
     nocont[g] = nocont_train[g] + nocont_test[g]
     
     # number of contaminated observations to be simulated
@@ -115,10 +118,10 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
     
     # train size
     ntrain[g] = nocont_train[g] + ncont_train[g]
-
+    
     # test set for each sex
     ntest[g]= nocont_test[g] + ncont_test[g]
-
+    
   }
   
   indnc <- vector("list",G)
@@ -139,7 +142,7 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
     GenContSamples$Cont <- 1
     colnames(GenContSamples)
     head(GenContSamples)
-  
+    
     # Generate a set with the composition required for each group  
     auxindnc <- funcSample(X,y,vpi)
     winedf <- data.frame(X)
@@ -152,7 +155,7 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
     # Generate contaminated observation with the sane group composition used 
     # in non contaminated set
     auxindc <- funcSample(GenContSamples[,-1], GenContSamples$class, vpi)
-#    indsampleTrain_nc <- vector("list",G)
+    #    indsampleTrain_nc <- vector("list",G)
     GenContSamples$class
     
     for (g in 1:G)
@@ -161,12 +164,12 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
       auxDfg <- winedf %>% filter(class == g)
       subsetg <- auxDfg[auxindnc[[g]],]
       Xgnc_train[[g]] <- subsetg %>% slice_sample(n=nocont_train[g], replace = FALSE)
-
+      
       indsampleTrain_nc <- Xgnc_train[[g]]$index
       indsampleTest_nc <- setdiff(subsetg$index,indsampleTrain_nc)
       
       Xgnc_test[[g]] <-   subsetg %>% filter(index %in% indsampleTest_nc)
-
+      
       
       # contaminated
       auxDfcont <- GenContSamples %>% filter (class == g)
@@ -178,7 +181,7 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
       indsampleTest_c <- setdiff(subsetgcont$index,indsampleTrain_c)
       
       Xgc_test[[g]] <- subsetgcont %>% filter(index %in% indsampleTest_c)
-  
+      
     }
     nrow(winedf)
     
@@ -208,51 +211,51 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
     indc_train <- auxTrain_c$index
     
     auxTrain_c$class
-
-      #  DfTrain <- rbind.data.frame(winedf[indnc_train,]%>% dplyr::select(-index),
-      #                                 GenContSamples[unlist(indc_train),] %>% dplyr::select(-index))
-        
-        
-        # apply(Xgnc_train[[3]],2,function(x) any(is.na(x)))
-        # apply(Xgc_train[[3]],2,function(x) any(is.na(x)))
-        
-        # apply(ldply(Xgnc_train),2,function(x) any(is.na(x)))
-        
-        # apply(ldply(Xgc_train),2,function(x) any(is.na(x)))
-        Xgc_train[[2]]$class  
-        
-        dfTrain <- rbind.data.frame(ldply(Xgnc_train),ldply(Xgc_train))
-
-        apply(dfTrain,2,function(x) any(is.na(x)))
-        dfTrain$class
-        dfTrain$Cont
-        
-        colnames(dfTrain)
-        DfTrain <- dfTrain[sample(1:nrow(dfTrain)),]
-        apply(dfTrain,2,function(x) any(is.na(x)))
-        
-        table(DfTrain$Cont)
-        table(DfTrain$class)
-        DfTrain$class
-        
-        apply(DfTrain,2,function(x) any(is.na(x)))
-
-        dfTest <- rbind.data.frame(ldply(Xgnc_test),ldply(Xgc_test))
-        
-        # DfTest <- rbind.data.frame(winedf[-indnc_train,-2], 
-        #                              GenContSamples[-indc_train,-2])
-        
-         colnames(dfTest)
-         
-        DfTest <- dfTest[sample(1:nrow(dfTest)),]
-        table(DfTest$Cont)
-        table(DfTest$class)    
-        
-        colnames(DfTrain)
-        DfTrainX <- DfTrain %>% dplyr::select(-c(class,index,Cont))
-        DfTrainl <- DfTrain$class
-        DfTestX <- DfTest %>% dplyr::select(-c(class,index,Cont))
-        DfTestl <- DfTest$class
+    
+    #  DfTrain <- rbind.data.frame(winedf[indnc_train,]%>% dplyr::select(-index),
+    #                                 GenContSamples[unlist(indc_train),] %>% dplyr::select(-index))
+    
+    
+    # apply(Xgnc_train[[3]],2,function(x) any(is.na(x)))
+    # apply(Xgc_train[[3]],2,function(x) any(is.na(x)))
+    
+    # apply(ldply(Xgnc_train),2,function(x) any(is.na(x)))
+    
+    # apply(ldply(Xgc_train),2,function(x) any(is.na(x)))
+    Xgc_train[[2]]$class  
+    
+    dfTrain <- rbind.data.frame(ldply(Xgnc_train),ldply(Xgc_train))
+    
+    apply(dfTrain,2,function(x) any(is.na(x)))
+    dfTrain$class
+    dfTrain$Cont
+    
+    colnames(dfTrain)
+    DfTrain <- dfTrain[sample(1:nrow(dfTrain)),]
+    apply(dfTrain,2,function(x) any(is.na(x)))
+    
+    table(DfTrain$Cont)
+    table(DfTrain$class)
+    DfTrain$class
+    
+    apply(DfTrain,2,function(x) any(is.na(x)))
+    
+    dfTest <- rbind.data.frame(ldply(Xgnc_test),ldply(Xgc_test))
+    
+    # DfTest <- rbind.data.frame(winedf[-indnc_train,-2], 
+    #                              GenContSamples[-indc_train,-2])
+    
+    colnames(dfTest)
+    
+    DfTest <- dfTest[sample(1:nrow(dfTest)),]
+    table(DfTest$Cont)
+    table(DfTest$class)    
+    
+    colnames(DfTrain)
+    DfTrainX <- DfTrain %>% dplyr::select(-c(class,index,Cont))
+    DfTrainl <- DfTrain$class
+    DfTestX <- DfTest %>% dplyr::select(-c(class,index,Cont))
+    DfTestl <- DfTest$class
     #  SexTrain <- ifelse(BlueCrabsTrain$sex == 1, "F","M")
     #  SexTrain <- factor(SexTrain)
     ContTrain <- ifelse(DfTrain$Cont == 0, "NC","C")
@@ -313,7 +316,31 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
     
   }
   
+  SVmodel1 <- lapply(SVmodel, function(i) paste(unlist(i),collapse = "-"))
+  SVmodel1 <- ldply(SVmodel1)
+  colnames(SVmodel1) <- "Model"
+  SVmodel1
+  
+  aux_df <- data.frame(CR_SatMNc = AccuracyClassSatM_Nc,
+                       CR_SatMC = AccuracyClassSatM_C,
+                       Accuracy_SatCont = AccuracyContSatM_C,
+                       CR_SV = AccuracyClassSV,
+                       Accuracy_SVCont = AccuracyContSV)
+  
+  metrics_res <- aux_df %>% 
+    summarise(Accuracy_SatMNc = mean(CR_SatMNc),
+              Accuracy_SatMC = mean(CR_SatMC),
+              Accuracy_SatCont = mean(Accuracy_SatCont),
+              Accuracy_SV = mean(CR_SV),
+              Accuracy_SVCont = mean(Accuracy_SVCont))
+  
+  
+  df_resumen <- cbind.data.frame(SVmodel1,aux_df)
+  
+  output <-list ( Metrics_res = metrics_res, 
+                  Metrics_models = df_resumen)
+  
+  return(output)
   
   
 }
-  
