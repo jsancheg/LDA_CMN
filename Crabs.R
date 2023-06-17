@@ -5,6 +5,9 @@ library(RColorBrewer)
 source("FuncCrabs.R")
 source("FuncWine.R")
 source("VSCMN.R")
+pathProcessDf <- "E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
+setwd(pathProcessDf)
+pathProcessDf <- "E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
 pathFile <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Raw Data"
 
 #work_path <- "E:/University of Glasgow/Literature review/R Code/"
@@ -67,6 +70,7 @@ sA80E20_5<-contDf(XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 100)
 dfA80E20_5<-sA80E20_5$Metrics_models
 dfA80E20_5$alpha <- "Equal"
 dfA80E20_5$eta <- "Inequal"
+dfA80E20_5$proportion <- "Balanced"
 saveRDS(dfA80E20_5,"A80E20_5.RDS")
 
 
@@ -76,17 +80,110 @@ eta <- c(20,20)
 ptrain <- c(0.8,0.8)
 
 
-sA90_80E20<-contDf(XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 100)
+sA90_80E20<-contDf(XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 10)
 
 dfA90_80E20 <- sA90_80E20$Metrics_models
 dfA90_80E20$alpha <- "Inequal"
 dfA90_80E20$eta <- "Equal"
-saveRDS(dfA80E20,"A80E20.RDS")
+dfA90_80E20$proportion <-"Balanced"
+saveRDS(dfA90_80E20,"A90_80E20.RDS")
+
+
+vpi <- c(0.7,0.3)
+alpha <- c(0.8,0.8)
+eta <- c(20,20)
+ptrain <- c(0.8,0.8)
+
+
+sA80_E20_UNBAL<-contDf(XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 10)
+
+dfA80_E20_UNBAL <- sA80_E20_UNBAL$Metrics_models
+dfA80_E20_UNBAL$alpha <- "Equal"
+dfA80_E20_UNBAL$eta <- "Equal"
+dfA80_E20_UNBAL$proportion <-"Unbalanced"
+saveRDS(dfA80_E20_UNBAL,"A80_E20_UNBAL.RDS")
+
+
+vpi <- c(0.7,0.3)
+alpha <- c(0.9,0.8)
+eta <- c(20,20)
+ptrain <- c(0.8,0.8)
+
+sANEQ_EEQ_UNBAL<-contDf(XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 10)
+
+dfANEQ_EEQ_UNBAL<- sANEQ_EEQ_UNBAL$Metrics_models
+dfANEQ_EEQ_UNBAL$alpha <- "Inequal"
+dfANEQ_EEQ_UNBAL$eta <- "Equal"
+dfANEQ_EEQ_UNBAL$proportion <- "Unbalanced"
+saveRDS(dfANEQ_EEQ_UNBAL,"ANEQ_EEQ_UNBAL.RDS")
+
+
+vpi <- c(0.7,0.3)
+alpha <- c(0.8,0.8)
+eta <- c(20,5)
+ptrain <- c(0.8,0.8)
+
+sA80_ENEQ_UNBAL<-contDf(XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 10)
+
+dfAEQ_ENEQ_UNBAL<- sA80_ENEQ_UNBAL$Metrics_models
+dfAEQ_ENEQ_UNBAL$alpha <- "Equal"
+dfAEQ_ENEQ_UNBAL$eta <- "Equal"
+dfAEQ_ENEQ_UNBAL$proportion <- "Unbalanced"
+saveRDS(dfAEQ_ENEQ_UNBAL,"AEQ_ENEQ_UNBAL.RDS")
 
 
 
+# Read RDS ----------------------------------------------------------------
+dfAEQ_EEQ <- readRDS(paste0(pathProcessDf,"A80E20.RDS") )
+
+dfAEQ_ENEQ <- readRDS(paste0(pathProcessDf,"A80E20_5.RDS") )
+
+dfANEQ_EEQ <-readRDS(paste0(pathProcessDf,"A90_80E20.RDS"))
+
+dfAEQ_EEQ_UNBAL <-readRDS(paste0(pathProcessDf,"A80_E20_UNBAL.RDS"))
+
+dfANEQ_EEQ_UNBAL <-readRDS(paste0(pathProcessDf,"ANEQ_EEQ_UNBAL.RDS"))
+
+dfAEQ_ENEQ_UNBAL <-readRDS(paste0(pathProcessDf,"AEQ_ENEQ_UNBAL.RDS"))
+
+dfAll <- rbind.data.frame(dfAEQ_EEQ[1:10,],
+                          dfAEQ_ENEQ[1:10,],
+                          dfANEQ_EEQ,
+                          dfAEQ_EEQ_UNBAL,
+                          dfANEQ_EEQ_UNBAL,
+                          dfAEQ_ENEQ_UNBAL)
+
+freqVar <- table(unlist(str_split(dfAll$Model,"-")))
+coul <- brewer.pal(5,"Set2")
+
+barplot(prop.table(freqVar),col = coul)
+
+colnames(dfAll)
+dfAll <- dfAll %>% mutate (DifCCR = CR_SV - CR_SatMC)
+dfAll <- dfAll %>% mutate (DifAccuracy = Accuracy_SVCont- Accuracy_SatCont  )
 
 
+dfDifLong<- dfAll %>% dplyr::select(alpha,eta,proportion,DifCCR,DifAccuracy) %>% 
+  pivot_longer(c(DifCCR,DifAccuracy),
+               names_to = "Variables",
+               values_to = "Dif")
+
+head(dfDifLong)
+dfDifLong <- dfDifLong %>% mutate(Variables = recode(Variables,
+                                                     DifCCR = "CCR",
+                                                     DifAccuracy = "Accuracy"))
+
+
+ggplot(dfDifLong, aes(x = Variables, y = Dif, color = eta)) + 
+  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-0.1,0.2) + geom_boxplot()
+
+
+ggplot(dfDifLong, aes(x = Variables, y = Dif, color = alpha)) + 
+  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-0.1,0.2) + geom_boxplot()
+
+
+ggplot(dfDifLong, aes(x = Variables, y = Dif, color = proportion)) + 
+  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-0.1,0.2) + geom_boxplot()
 
 # Summarise simulations ---------------------------------------------------
 

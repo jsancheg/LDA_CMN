@@ -1112,6 +1112,7 @@ contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
   i<-1    
   for (i in 1:ns)
   {
+    cat("\n simulation = ", i, "\n")
     GenContSamples <- SimCont(mug,sg,unique(y),ncont,eta)
     GenContSamples$index <- (nrow(X)+1):(nrow(X) +nrow(GenContSamples) )
     GenContSamples <- GenContSamples %>% dplyr::select(index, everything())
@@ -1471,8 +1472,8 @@ loglikCMN<-function(X,l, par)
         } else if(ncol(X)==1)
         {
           mu <- as.vector(mu)
-          term2 <- v[i,g] * log(alpha[g]*dnorm(X[i,],mu[g],sg[g] ) )
-          term3<-(1-v[i,g]) * log( (1-alpha[g]) * dnorm(X[i,],mu[g],eta[g]*sg[g] ) )
+          term2 <- v[i,g] * log(alpha[g]) + dnorm(X[i,],mu[g],sg[g] , log = TRUE) 
+          term3<-(1-v[i,g]) * log( (1-alpha[g])) + dnorm(X[i,],mu[g],eta[g]*sg[g], log = TRUE ) 
         }
       }
       
@@ -2050,15 +2051,23 @@ eCmn <- function(Xtrain,par)
             den[i,g] <- num[i,g] + (1-alpha[g])*dnorm(Xtrain[i,],mu[g],eta[g]*sigma[,,g])
             
           }
-          
-          if(den[i,g] == 0) den[i,g] <- 0.001
-          
+              
         }
         
       } #End-f
       
-      v[i,g] <- num[i,g]/den[i,g] 
-      num1[i,g] <- pig[g]*den[i,g]
+      # avoid division by zero
+      if (den[i,g]!= 0)
+      {
+        v[i,g] <- num[i,g]/den[i,g] 
+        num1[i,g] <- pig[g]*den[i,g]
+      }else if(den[i,g] == 0)
+      {
+        v[i,g] <- 1 
+        num1[i,g] <- pig[g]*den[i,g]
+        
+      }
+      
       
     }#End-for
     
