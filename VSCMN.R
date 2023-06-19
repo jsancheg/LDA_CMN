@@ -1050,6 +1050,9 @@ contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
   # ns:    number of data set simulated
   
   SVmodel <- list() 
+  Train_subset <- list()
+  Test_subset <- list()
+    
   AccuracyClassSV <- rep(0,ns)
   AccuracyContSV <-rep(0,ns)
   AccuracyClassSatM_C <- rep(0,ns)
@@ -1236,6 +1239,8 @@ contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
     DfTrainl <- DfTrain$class
     DfTestX <- DfTest %>% dplyr::select(-c(class,index,Cont))
     DfTestl <- DfTest$class
+    Train_subset[[i]] <-DfTrain
+    Test_subset[[i]] <- DfTest
     #  SexTrain <- ifelse(BlueCrabsTrain$sex == 1, "F","M")
     #  SexTrain <- factor(SexTrain)
     ContTrain <- ifelse(DfTrain$Cont == 0, "NC","C")
@@ -1318,7 +1323,9 @@ contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
   df_resumen <- cbind.data.frame(SVmodel1,aux_df)
   
   output <-list ( Metrics_res = metrics_res, 
-                  Metrics_models = df_resumen)
+                  Metrics_models = df_resumen,
+                  Train = Train_subset,
+                  Test = Test_subset)
   
   return(output)
   

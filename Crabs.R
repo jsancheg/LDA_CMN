@@ -2,12 +2,14 @@ library(dplyr)
 library(tidyr)
 library(tidyverse)
 library(RColorBrewer)
+pathProcessDf <- "E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
+
 source("FuncCrabs.R")
 source("FuncWine.R")
 source("VSCMN.R")
+
 pathProcessDf <- "E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
 setwd(pathProcessDf)
-pathProcessDf <- "E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
 pathFile <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Raw Data"
 
 #work_path <- "E:/University of Glasgow/Literature review/R Code/"
@@ -53,6 +55,7 @@ sg[,,2]= GBlueCrabsF
 
 
 sA8020 <- contDf (XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 100)
+save(sA8020,"sA80_E20_BAL.RData")
 
 dfA80E20<-sA8020$Metrics_models
 dfA80E20$alpha <- "Equal"
@@ -75,6 +78,21 @@ saveRDS(dfA80E20_5,"A80E20_5.RDS")
 
 
 vpi <- c(0.5,0.5)
+alpha <- c(0.8,0.8)
+eta <- c(5,20)
+ptrain <- c(0.8,0.8)
+
+
+sA80E5_20<-contDf(XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 100)
+
+dfA80E5_20<-sA80E5_20$Metrics_models
+dfA80E5_20$alpha <- "Equal"
+dfA80E5_20$eta <- "Inequal"
+dfA80E5_20$proportion <- "Balanced"
+saveRDS(dfA80E5_20,"A80E5_20.RDS")
+
+
+vpi <- c(0.5,0.5)
 alpha <- c(0.9,0.8)
 eta <- c(20,20)
 ptrain <- c(0.8,0.8)
@@ -87,6 +105,21 @@ dfA90_80E20$alpha <- "Inequal"
 dfA90_80E20$eta <- "Equal"
 dfA90_80E20$proportion <-"Balanced"
 saveRDS(dfA90_80E20,"A90_80E20.RDS")
+
+
+vpi <- c(0.5,0.5)
+alpha <- c(0.8,0.9)
+eta <- c(20,20)
+ptrain <- c(0.8,0.8)
+
+
+sA80_90E20<-contDf(XBlueCrabs[,-1],y,lab,vpi,alpha,eta,ptrain,ns = 10)
+
+dfA80_90E20 <- sA90_80E20$Metrics_models
+dfA80_90E20$alpha <- "Inequal"
+dfA80_90E20$eta <- "Equal"
+dfA80_90E20$proportion <-"Balanced"
+saveRDS(dfA80_90E20,"A90_80E20.RDS")
 
 
 vpi <- c(0.7,0.3)

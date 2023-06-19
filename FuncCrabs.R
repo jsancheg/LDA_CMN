@@ -127,7 +127,7 @@ i<-1
     
     BlueCrabsTrain <- rbind.data.frame(BlueCrabs[c(indMnc,indFnc),]%>% dplyr::select(colnames(GenContSamples)),
                                        GenContSamples[c(indMc,indFc),])
-    BlueCrabsTrain <- BlueCrabsTrain %>% dplyr::
+  #  BlueCrabsTrain <- BlueCrabsTrain %>% dplyr::
     
     BlueCrabsTrain <- BlueCrabsTrain[sample(1:nrow(BlueCrabsTrain)),]
     
