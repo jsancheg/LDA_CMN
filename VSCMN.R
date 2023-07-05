@@ -677,7 +677,7 @@ fHLvarSearch3 <- function(X_train, X_test, RW,l_train, l_test, CE,
 
 
 fHLvarSearch2 <- function(X_train, X_test, RW,l_train, l_test, CE, 
-                          alpharef =0.99,tol=0.01,epsilon = 0)
+                          alpharef =0.99,tol=0.01,epsilon = 0, iterations = 20)
   # forward Headlong  variable selection
 {
   stop2 = F
@@ -712,7 +712,7 @@ fHLvarSearch2 <- function(X_train, X_test, RW,l_train, l_test, CE,
     cat("\n Model ",unlist(PM))
     
     model[[cont]] <- ModelAccuracy2(X_train1,X_test1,l_train,l_test,"E",
-                                    alpharef, tol)
+                                    alpharef, tol, iterations )
     model[[cont]]$PM <- PM
     AccPM <-model[[cont]]$accTestC
     if(AccPM > AccCM)
@@ -746,7 +746,7 @@ fHLvarSearch2 <- function(X_train, X_test, RW,l_train, l_test, CE,
         X_test1 <- X_test %>% dplyr::select(all_of(PM))
         
         model[[cont]] <- ModelAccuracy2(X_train1,X_test1,l_train,l_test,"EEI",
-                                        alpharef, tol)
+                                        alpharef, tol, iterations)
         model[[cont]]$PM <- PM
         cat("\n",cont," ,model = ",unlist(PM),"\n")
         AccPM <- model[[cont]]$accTestC
@@ -996,9 +996,11 @@ funcSample <- function(X,y,vpi)
   val <- rep(0,G)
   bolval <- NA
   # mg <- number of samples taken from each group
+  total = round(min(ng/vpi))
+  
   for (g_1 in 1:G)
   {
-    total = round(ng[g_1]/vpi[1],0)
+#    total = round(ng[g_1]/vpi[1],0)
     for(g_2 in 1:(G-1))
     {
       aux[g_1,g_2] = floor(total * vpi[g_2])
@@ -1017,8 +1019,10 @@ funcSample <- function(X,y,vpi)
   val <- apply(aux,1,sum)
   
   maximo <- max(val[bolval])
-  
-  indmax <- which(val == maximo)
+    
+    indmax <- which(val == maximo)
+    if(length(indmax)>1)
+        indmax <- indmax[1]
   
   mg <- aux[indmax,]
   
@@ -1035,7 +1039,7 @@ funcSample <- function(X,y,vpi)
 }
 
 
-contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
+contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100, iterations = 20)
 {
   # Function that contaminate the wine data set
   # mug : matrix where each column is the mean of a group
@@ -1052,12 +1056,16 @@ contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
   SVmodel <- list() 
   Train_subset <- list()
   Test_subset <- list()
-    
+  
   AccuracyClassSV <- rep(0,ns)
   AccuracyContSV <-rep(0,ns)
   AccuracyClassSatM_C <- rep(0,ns)
   AccuracyContSatM_C <- rep(0,ns)
   AccuracyClassSatM_Nc <- rep(0,ns)
+  sensitivity_SatM <- rep(0,ns)
+  specificity_SatM <- rep(0,ns)
+  sensitivity_SelM <- rep(0,ns)
+  specificity_SelM <- rep(0,ns)
   G <- length(unique(y))
   ncont <- rep (0,G)
   nocont <- rep(0,G)
@@ -1116,7 +1124,7 @@ contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
   for (i in 1:ns)
   {
     cat("\n simulation = ", i, "\n")
-    GenContSamples <- SimCont(mug,sg,unique(y),ncont,eta)
+    GenContSamples <- SimCont(mug,sg,1:G,ncont,eta)
     GenContSamples$index <- (nrow(X)+1):(nrow(X) +nrow(GenContSamples) )
     GenContSamples <- GenContSamples %>% dplyr::select(index, everything())
     colnames(GenContSamples)
@@ -1263,7 +1271,7 @@ contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
                                      as.numeric(DfTrainl),
                                      as.numeric(DfTestl),"EII",
                                      alpharef = 0.98, 
-                                     tol = 0.01)
+                                     tol = 0.01, iterations = iterations)
     
     saturated_mod
     AccuracyClassSatM_Nc[i] <- saturated_mod$accTestNc
@@ -1271,32 +1279,84 @@ contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
     
     saturated_mod$accTestNc
     
-    auxTestCont <- rep(0,length(DfTestl))
+#    auxTestCont <- rep(0,length(DfTestl))
+    # 1 : means contaminated sample
+    # 0 : means non contaminated sample
     
-    for (j in 1:length(auxTestCont))
-    {
-      auxTestCont[j] <- 1-saturated_mod$predv[j,DfTestl[j]]
-    }
+    # need to substract saturated_mod$predv  prediction of v from 1 to change
+    # 0 : means no contaminated sample
+    # 1 : means contaminated sample
+    pred_cont_Sat_M <- 1-sapply(1:length(DfTestl),function(j) { saturated_mod$predv[j,DfTestl[j]] })
+
+#    for (j in 1:length(auxTestCont))
+#    {
+#      auxTestCont[j] <- 1-saturated_mod$predv[j,DfTestl[j]]
+#    }
     
-    AccuracyContSatM_C[i] <-sum(auxTestCont == DfTest$Cont)/length(DfTest$Cont)
+    AccuracyContSatM_C[i] <-sum(pred_cont_Sat_M == DfTest$Cont)/length(DfTest$Cont)
     
     # model including selected variables
     modSV <-fHLvarSearch2(DfTrainX
                           ,DfTestX,RW,
                           as.numeric(DfTrainl),
                           as.numeric(DfTestl),"E",
-                          alpharef =0.99,tol=0.01,epsilon = 0)
+                          alpharef =0.99,tol=0.01,epsilon = 0,
+                          iterations = iterations)
     
     SVmodel[[i]] <- modSV$Selectedmodel
     AccuracyClassSV[i] <-  modSV$Accuracy
     
     modSV$posCM
-    TestContSV <- rep(0,length(DfTestl))
-    for (j in 1:length(TestContSV))
+#    TestContSV <- rep(0,length(DfTestl))
+    
+    pred_cont_Sel_M <- 1-sapply(1:length(DfTestl),function(j) { modSV$models[[modSV$posCM]]$predv[j,DfTestl[j]] })
+    
+#    for (j in 1:length(TestContSV))
+#    {
+#       TestContSV[j] <- 1- modSV$models[[modSV$posCM]]$predv[j,DfTestl[j]]
+#    }
+    AccuracyContSV[i] <- sum(pred_cont_Sel_M == DfTest$Cont)/ length(DfTest$Cont)
+    
+    sat_mod_cfm <- matrix(0,ncol = 2, nrow = 2)
+    sel_mod_cfm <- matrix(0,ncol = 2, nrow = 2)
+    
+    if (all(pred_cont_Sat_M == 1))
     {
-      TestContSV[j] <- 1- modSV$models[[modSV$posCM]]$predv[j,DfTestl[j]]
+      specificity_SatM[i] <- 0
+      Sensitivity_SatM[i] <- sum(DfTest$Cont==1)/sum(pred_cont_Sat_M==1)
+      
+    }else if(all(pred_cont_Sat_M == 0))
+    {
+      specificity_SatM[i] <- sum(DfTest$Cont==0)/sum(pred_cont_Sat_M==0)
+      sensitivity_SatM[i] <- 0
+      
+    }else {
+      sat_mod_cfm <- table(DfTest$Cont,pred_cont_Sat_M)
+      sensitivity_SatM[i] <- sensitivity(sat_mod_cfm)
+      specificity_SatM[i] <- specificity(sat_mod_cfm)
+      
     }
-    AccuracyContSV[i] <- sum(TestContSV == DfTest$Cont)/ length(DfTest$Cont)
+    
+    if (all(pred_cont_Sel_M == 1))
+    {
+      specificity_SelM[i] <- 0
+      Sensitivity_SelM[i] <- sum(DfTest$Cont==1)/sum(pred_cont_Sel_M==1)
+      
+    }else if(all(pred_cont_Sel_M == 0))
+    {
+      
+      specificity_SelM[i] <- sum(DfTest$Cont==0)/sum(pred_cont_Sel_M==0)
+      sensitivity_SelM[i] <- 0
+      
+    }else {
+      sel_mod_cfm <- table(DfTest$Cont,pred_cont_Sel_M)
+      
+      
+      sensitivity_SelM[i] <- sensitivity(sel_mod_cfm)
+      specificity_SelM[i] <- specificity(sel_mod_cfm)
+      
+    }
+    
     
     
   }
@@ -1310,14 +1370,22 @@ contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
                        CR_SatMC = AccuracyClassSatM_C,
                        Accuracy_SatCont = AccuracyContSatM_C,
                        CR_SV = AccuracyClassSV,
-                       Accuracy_SVCont = AccuracyContSV)
+                       Accuracy_SVCont = AccuracyContSV,
+                       Sensitivity_SatM = sensitivity_SatM,
+                       Specificity_SatM = specificity_SatM,
+                       Sensitivity_SelM = sensitivity_SelM,
+                       Specificity_SelM = specificity_SelM)
   
   metrics_res <- aux_df %>% 
     summarise(Accuracy_SatMNc = mean(CR_SatMNc),
               Accuracy_SatMC = mean(CR_SatMC),
               Accuracy_SatCont = mean(Accuracy_SatCont),
               Accuracy_SV = mean(CR_SV),
-              Accuracy_SVCont = mean(Accuracy_SVCont))
+              Accuracy_SVCont = mean(Accuracy_SVCont),
+              Sensitivity_SatM = mean(Sensitivity_SatM),
+              Specificity_SatM = mean(Specificity_SatM),
+              Sensitivity_SelM = mean(Sensitivity_SelM),
+              Specificity_SelM = mean(Specificity_SelM))
   
   
   df_resumen <- cbind.data.frame(SVmodel1,aux_df)
@@ -1331,6 +1399,369 @@ contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
   
   
 }
+
+contDfV <- function(X,y,lab,vpi,alpha,eta_m,ptrain,ns = 100, iterations = 20)
+{
+  # Function that contaminate the wine data set
+  # mug : matrix where each column is the mean of a group
+  # sg : matrix or array that contains the variance-covariance matrix for a group
+  # X  : matrix or array containing the covariates
+  # y  : vector containing the response (group information)
+  # lab: vector containing label for the corresponding groups
+  # vpi: vector containing the proportion of the sample for each group
+  # alpha: vector containing the percentage of non contaminated observations for each group
+  # eta:   vector containing the inflation factor for each group
+  # ptrain: vector containing the percentage of samples included in the training set for groups
+  # ns:    number of data set simulated
+  
+  SVmodel <- list() 
+  Train_subset <- list()
+  Test_subset <- list()
+  
+  AccuracyClassSV <- rep(0,ns)
+  AccuracyContSV <-rep(0,ns)
+  AccuracyClassSatM_C <- rep(0,ns)
+  AccuracyContSatM_C <- rep(0,ns)
+  AccuracyClassSatM_Nc <- rep(0,ns)
+  sensitivity_SatM <- rep(0,ns)
+  specificity_SatM <- rep(0,ns)
+  sensitivity_SelM <- rep(0,ns)
+  specificity_SelM <- rep(0,ns)
+  G <- length(unique(y))
+  ncont <- rep (0,G)
+  nocont <- rep(0,G)
+  nocont_train <- rep(0,G)
+  nocont_test <- rep(0,G)
+  ncont_train <- rep(0,G)
+  ncont_test <- rep(0,G)
+  ntrain <- rep(0,G)
+  ntest <- rep(0,G)
+  ng <- rep(0,G)
+  indsamples <- funcSample(X,y,vpi)
+  p <- ncol(X)
+  mug <- matrix(0.0,nrow = p, ncol = G)
+  sg <- array(0.0, dim = c(p,p,G))
+  
+  
+  for (g in 1:G) 
+  {
+    mug[,g] <- X[y==g,] %>% apply(2,mean)
+    sg[,,g] <- X[y == g,] %>% var
+    ng[g] <- length(indsamples[[g]])
+  }
+  
+  #BlueCrabsCont$sex <- ifelse(BlueCrabsCont$sex == "F",1,2)
+  for (g in 1:G)
+  {
+    nocont_train[g] = round(ng[g] * ptrain[g],0) 
+    nocont_test[g] = ng[g] - nocont_train[g]
+    
+    # number of contaminated samples in the train set
+    ncont_train[g] = round(nocont_train[g]/alpha[g],0) - nocont_train[g]
+    
+    # number of contaminated samples in the test set
+    ncont_test[g] = round(nocont_test[g]/alpha[g],0) - nocont_test[g]
+    
+    nocont[g] = nocont_train[g] + nocont_test[g]
+    
+    # number of contaminated observations to be simulated
+    ncont[g] = ncont_train[g] + ncont_test[g]
+    
+    # train size
+    ntrain[g] = nocont_train[g] + ncont_train[g]
+    
+    # test set for each sex
+    ntest[g]= nocont_test[g] + ncont_test[g]
+    
+  }
+  
+  indnc <- vector("list",G)
+  indc <- vector("list",G)
+  Xgnc_train <- vector("list",G)
+  Xgnc_test <- vector("list",G)
+  Xgc_train <- vector("list",G)
+  Xgc_test <- vector("list",G)
+  i<-1    
+  for (i in 1:ns)
+  {
+    cat("\n simulation = ", i, "\n")
+    GenContSamples <- SimCont(mug,sg,1:G,ncont,eta)
+    GenContSamples$index <- (nrow(X)+1):(nrow(X) +nrow(GenContSamples) )
+    GenContSamples <- GenContSamples %>% dplyr::select(index, everything())
+    colnames(GenContSamples)
+    ncolumns <- ncol(GenContSamples)
+    colnames(GenContSamples)[3:ncolumns] <-  colnames(X)
+    GenContSamples$Cont <- 1
+    colnames(GenContSamples)
+    head(GenContSamples)
+    
+    # Generate a set with the composition required for each group  
+    auxindnc <- funcSample(X,y,vpi)
+    winedf <- data.frame(X)
+    winedf$Cont <- 0
+    winedf$class <- y
+    winedf$index <- 1:nrow(X)
+    winedf <- winedf %>% dplyr::select(index,class, everything())
+    colnames(winedf)
+    
+    # Generate contaminated observation with the sane group composition used 
+    # in non contaminated set
+    auxindc <- funcSample(GenContSamples[,-1], GenContSamples$class, vpi)
+    #    indsampleTrain_nc <- vector("list",G)
+    GenContSamples$class
+    
+    for (g in 1:G)
+    {
+      # non contaminated set
+      auxDfg <- winedf %>% filter(class == g)
+      subsetg <- auxDfg[auxindnc[[g]],]
+      Xgnc_train[[g]] <- subsetg %>% slice_sample(n=nocont_train[g], replace = FALSE)
+      
+      indsampleTrain_nc <- Xgnc_train[[g]]$index
+      indsampleTest_nc <- setdiff(subsetg$index,indsampleTrain_nc)
+      
+      Xgnc_test[[g]] <-   subsetg %>% filter(index %in% indsampleTest_nc)
+      
+      
+      # contaminated
+      auxDfcont <- GenContSamples %>% filter (class == g)
+      subsetgcont <- auxDfcont[auxindc[[g]],]
+      
+      Xgc_train[[g]] <- subsetgcont %>% slice_sample(n = ncont_train[g], replace = FALSE)
+      
+      indsampleTrain_c <- Xgc_train[[g]]$index
+      indsampleTest_c <- setdiff(subsetgcont$index,indsampleTrain_c)
+      
+      Xgc_test[[g]] <- subsetgcont %>% filter(index %in% indsampleTest_c)
+      
+    }
+    nrow(winedf)
+    
+    colnames(GenContSamples)
+    table(GenContSamples$Cont)
+    table(winedf$Cont)
+    
+    table(GenContSamples$class)
+    table(winedf$class)
+    
+    # getting rid off index column    
+    WineCont <- rbind.data.frame(winedf %>% dplyr::select(-index),
+                                 GenContSamples %>% dplyr::select(-index)
+    )
+    colnames(WineCont)
+    nrow(WineCont)
+    
+    auxTrain_nc <- ldply(Xgnc_train)
+    auxTest_nc <- ldply(Xgnc_test)
+    indnc_train <- auxTrain_nc$index
+    
+    table(auxTrain_nc$class)
+    table(auxTest_nc$class)
+    
+    auxTrain_c <- ldply(Xgc_train)
+    auxTest_c <- ldply(Xgc_test)
+    indc_train <- auxTrain_c$index
+    
+    auxTrain_c$class
+    
+    #  DfTrain <- rbind.data.frame(winedf[indnc_train,]%>% dplyr::select(-index),
+    #                                 GenContSamples[unlist(indc_train),] %>% dplyr::select(-index))
+    
+    
+    # apply(Xgnc_train[[3]],2,function(x) any(is.na(x)))
+    # apply(Xgc_train[[3]],2,function(x) any(is.na(x)))
+    
+    # apply(ldply(Xgnc_train),2,function(x) any(is.na(x)))
+    
+    # apply(ldply(Xgc_train),2,function(x) any(is.na(x)))
+    Xgc_train[[2]]$class  
+    
+    dfTrain <- rbind.data.frame(ldply(Xgnc_train),ldply(Xgc_train))
+    
+    apply(dfTrain,2,function(x) any(is.na(x)))
+    dfTrain$class
+    dfTrain$Cont
+    
+    colnames(dfTrain)
+    DfTrain <- dfTrain[sample(1:nrow(dfTrain)),]
+    apply(dfTrain,2,function(x) any(is.na(x)))
+    
+    table(DfTrain$Cont)
+    table(DfTrain$class)
+    DfTrain$class
+    
+    apply(DfTrain,2,function(x) any(is.na(x)))
+    
+    dfTest <- rbind.data.frame(ldply(Xgnc_test),ldply(Xgc_test))
+    
+    # DfTest <- rbind.data.frame(winedf[-indnc_train,-2], 
+    #                              GenContSamples[-indc_train,-2])
+    
+    colnames(dfTest)
+    
+    DfTest <- dfTest[sample(1:nrow(dfTest)),]
+    table(DfTest$Cont)
+    table(DfTest$class)    
+    
+    colnames(DfTrain)
+    DfTrainX <- DfTrain %>% dplyr::select(-c(class,index,Cont))
+    DfTrainl <- DfTrain$class
+    DfTestX <- DfTest %>% dplyr::select(-c(class,index,Cont))
+    DfTestl <- DfTest$class
+    Train_subset[[i]] <-DfTrain
+    Test_subset[[i]] <- DfTest
+    #  SexTrain <- ifelse(BlueCrabsTrain$sex == 1, "F","M")
+    #  SexTrain <- factor(SexTrain)
+    ContTrain <- ifelse(DfTrain$Cont == 0, "NC","C")
+    ContTrain <- factor(ContTrain)
+    
+    #SexTest <- ifelse(BlueCrabsTest$sex == 1, "F", "M")
+    ContTest <- ifelse(DfTest$Cont == 0, "NC","C")
+    
+    
+    colnames(DfTrain)
+    colnames(DfTrainX)
+    
+    dfRW <- getOW(DfTrainX,DfTrainl)
+    RW <- dfRW$Var
+    variables_saturated_model <- RW
+    
+    # model including all variables
+    saturated_mod  <- ModelAccuracy2(DfTrainX,
+                                     DfTestX,
+                                     as.numeric(DfTrainl),
+                                     as.numeric(DfTestl),"EII",
+                                     alpharef = 0.98, 
+                                     tol = 0.01, iterations = iterations)
+    
+    saturated_mod
+    AccuracyClassSatM_Nc[i] <- saturated_mod$accTestNc
+    AccuracyClassSatM_C[i] <- saturated_mod$accTestC
+    
+    saturated_mod$accTestNc
+    
+    #    auxTestCont <- rep(0,length(DfTestl))
+    # 1 : means contaminated sample
+    # 0 : means non contaminated sample
+    
+    # need to substract saturated_mod$predv  prediction of v from 1 to change
+    # 0 : means no contaminated sample
+    # 1 : means contaminated sample
+    pred_cont_Sat_M <- 1-sapply(1:length(DfTestl),function(j) { saturated_mod$predv[j,DfTestl[j]] })
+    
+    #    for (j in 1:length(auxTestCont))
+    #    {
+    #      auxTestCont[j] <- 1-saturated_mod$predv[j,DfTestl[j]]
+    #    }
+    
+    AccuracyContSatM_C[i] <-sum(pred_cont_Sat_M == DfTest$Cont)/length(DfTest$Cont)
+    
+    # model including selected variables
+    modSV <-fHLvarSearch2(DfTrainX
+                          ,DfTestX,RW,
+                          as.numeric(DfTrainl),
+                          as.numeric(DfTestl),"E",
+                          alpharef =0.99,tol=0.01,epsilon = 0,
+                          iterations = iterations)
+    
+    SVmodel[[i]] <- modSV$Selectedmodel
+    AccuracyClassSV[i] <-  modSV$Accuracy
+    
+    modSV$posCM
+    #    TestContSV <- rep(0,length(DfTestl))
+    
+    pred_cont_Sel_M <- 1-sapply(1:length(DfTestl),function(j) { modSV$models[[modSV$posCM]]$predv[j,DfTestl[j]] })
+    
+    #    for (j in 1:length(TestContSV))
+    #    {
+    #       TestContSV[j] <- 1- modSV$models[[modSV$posCM]]$predv[j,DfTestl[j]]
+    #    }
+    AccuracyContSV[i] <- sum(pred_cont_Sel_M == DfTest$Cont)/ length(DfTest$Cont)
+    
+    sat_mod_cfm <- matrix(0,ncol = 2, nrow = 2)
+    sel_mod_cfm <- matrix(0,ncol = 2, nrow = 2)
+    
+    if (all(pred_cont_Sat_M == 1))
+    {
+      specificity_SatM[i] <- 0
+      Sensitivity_SatM[i] <- sum(DfTest$Cont==1)/sum(pred_cont_Sat_M==1)
+      
+    }else if(all(pred_cont_Sat_M == 0))
+    {
+      specificity_SatM[i] <- sum(DfTest$Cont==0)/sum(pred_cont_Sat_M==0)
+      sensitivity_SatM[i] <- 0
+      
+    }else {
+      sat_mod_cfm <- table(DfTest$Cont,pred_cont_Sat_M)
+      sensitivity_SatM[i] <- sensitivity(sat_mod_cfm)
+      specificity_SatM[i] <- specificity(sat_mod_cfm)
+      
+    }
+    
+    if (all(pred_cont_Sel_M == 1))
+    {
+      specificity_SelM[i] <- 0
+      Sensitivity_SelM[i] <- sum(DfTest$Cont==1)/sum(pred_cont_Sel_M==1)
+      
+    }else if(all(pred_cont_Sel_M == 0))
+    {
+      
+      specificity_SelM[i] <- sum(DfTest$Cont==0)/sum(pred_cont_Sel_M==0)
+      sensitivity_SelM[i] <- 0
+      
+    }else {
+      sel_mod_cfm <- table(DfTest$Cont,pred_cont_Sel_M)
+      
+      
+      sensitivity_SelM[i] <- sensitivity(sel_mod_cfm)
+      specificity_SelM[i] <- specificity(sel_mod_cfm)
+      
+    }
+    
+    
+    
+  }
+  
+  SVmodel1 <- lapply(SVmodel, function(i) paste(unlist(i),collapse = "-"))
+  SVmodel1 <- ldply(SVmodel1)
+  colnames(SVmodel1) <- "Model"
+  SVmodel1
+  
+  aux_df <- data.frame(CR_SatMNc = AccuracyClassSatM_Nc,
+                       CR_SatMC = AccuracyClassSatM_C,
+                       Accuracy_SatCont = AccuracyContSatM_C,
+                       CR_SV = AccuracyClassSV,
+                       Accuracy_SVCont = AccuracyContSV,
+                       Sensitivity_SatM = sensitivity_SatM,
+                       Specificity_SatM = specificity_SatM,
+                       Sensitivity_SelM = sensitivity_SelM,
+                       Specificity_SelM = specificity_SelM)
+  
+  metrics_res <- aux_df %>% 
+    summarise(Accuracy_SatMNc = mean(CR_SatMNc),
+              Accuracy_SatMC = mean(CR_SatMC),
+              Accuracy_SatCont = mean(Accuracy_SatCont),
+              Accuracy_SV = mean(CR_SV),
+              Accuracy_SVCont = mean(Accuracy_SVCont),
+              Sensitivity_SatM = mean(Sensitivity_SatM),
+              Specificity_SatM = mean(Specificity_SatM),
+              Sensitivity_SelM = mean(Sensitivity_SelM),
+              Specificity_SelM = mean(Specificity_SelM))
+  
+  
+  df_resumen <- cbind.data.frame(SVmodel1,aux_df)
+  
+  output <-list ( Metrics_res = metrics_res, 
+                  Metrics_models = df_resumen,
+                  Train = Train_subset,
+                  Test = Test_subset)
+  
+  return(output)
+  
+  
+}
+
+
 
 
 SimGClasses <- function(mug,sg,pig,nobs,ptraining,alphag,etag)
@@ -1619,7 +2050,7 @@ ModelAccuracy3 <- function(X_train1,X_test1,l_train,l_test,CE,
 
 
 ModelAccuracy2 <- function(X_train1,X_test1,l_train,l_test,CE,
-                           alpharef=0.98, tol = 0.01)
+                           alpharef=0.98, tol = 0.01, iterations = 20)
 {
   if(!is.matrix(X_train1)) X_train1 <- as.matrix(X_train1)
   if(!is.matrix(X_test1)) X_test1 <- as.matrix(X_test1)
@@ -1685,7 +2116,7 @@ ModelAccuracy2 <- function(X_train1,X_test1,l_train,l_test,CE,
   #cat("\n","iter=",iter,";","diflog=",diflog[[iter]])
   
   
-  while ( iter < 3  | (iter <21) | (is.na(diflog[[1]]) & iter <=2)  )
+  while ( iter < 3  | (iter < (iterations+1)) | (is.na(diflog[[1]]) & iter <=2)  )
   {
     mstep2 <- mCmn(X_train1,l_train,par)
     par$mu <- mstep2$mu
@@ -2084,7 +2515,12 @@ eCmn <- function(Xtrain,par)
   
   for (i in 1:m)
   {
-    z[i,] <- num1[i,]/sum(num1[i,])
+    if(sum(num1[i,]) == 0){
+      z[i,] <- 0
+    }
+    else {
+      z[i,] <- num1[i,]/sum(num1[i,])
+    }  
   }
   lhat<-apply(z,1,which.max)
   

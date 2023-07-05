@@ -71,6 +71,9 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
   # ns:    number of data set simulated
   
   SVmodel <- list() 
+  Train_subset <- list()
+  Test_subset <- list()
+  
   AccuracyClassSV <- rep(0,ns)
   AccuracyContSV <-rep(0,ns)
   AccuracyClassSatM_C <- rep(0,ns)
@@ -133,6 +136,7 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
   i<-1    
   for (i in 1:ns)
   {
+    cat("\n simulation = ", i, "\n")
     GenContSamples <- SimCont(mug,sg,unique(y),ncont,eta)
     GenContSamples$index <- (nrow(X)+1):(nrow(X) +nrow(GenContSamples) )
     GenContSamples <- GenContSamples %>% dplyr::select(index, everything())
@@ -256,6 +260,8 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
     DfTrainl <- DfTrain$class
     DfTestX <- DfTest %>% dplyr::select(-c(class,index,Cont))
     DfTestl <- DfTest$class
+    Train_subset[[i]] <-DfTrain
+    Test_subset[[i]] <- DfTest
     #  SexTrain <- ifelse(BlueCrabsTrain$sex == 1, "F","M")
     #  SexTrain <- factor(SexTrain)
     ContTrain <- ifelse(DfTrain$Cont == 0, "NC","C")
@@ -286,12 +292,19 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
     
     saturated_mod$accTestNc
     
-    auxTestCont <- rep(0,length(DfTestl))
+    #    auxTestCont <- rep(0,length(DfTestl))
+    # 1 : means contaminated sample
+    # 0 : means non contaminated sample
     
-    for (j in 1:length(auxTestCont))
-    {
-      auxTestCont[j] <- 1-saturated_mod$predv[j,DfTestl[j]]
-    }
+    # need to substract saturated_mod$predv  prediction of v from 1 to change
+    # 0 : means no contaminated sample
+    # 1 : means contaminated sample
+    auxTestCont <- 1-sapply(1:length(DfTestl),function(j) { saturated_mod$predv[j,DfTestl[j]] })
+    
+    #    for (j in 1:length(auxTestCont))
+    #    {
+    #      auxTestCont[j] <- 1-saturated_mod$predv[j,DfTestl[j]]
+    #    }
     
     AccuracyContSatM_C[i] <-sum(auxTestCont == DfTest$Cont)/length(DfTest$Cont)
     
@@ -306,11 +319,14 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
     AccuracyClassSV[i] <-  modSV$Accuracy
     
     modSV$posCM
-    TestContSV <- rep(0,length(DfTestl))
-    for (j in 1:length(TestContSV))
-    {
-      TestContSV[j] <- 1- modSV$models[[modSV$posCM]]$predv[j,DfTestl[j]]
-    }
+    #    TestContSV <- rep(0,length(DfTestl))
+    
+    TestContSV <- 1-sapply(1:length(DfTestl),function(j) { modSV$models[[modSV$posCM]]$predv[j,DfTestl[j]] })
+    
+    #    for (j in 1:length(TestContSV))
+    #    {
+    #       TestContSV[j] <- 1- modSV$models[[modSV$posCM]]$predv[j,DfTestl[j]]
+    #    }
     AccuracyContSV[i] <- sum(TestContSV == DfTest$Cont)/ length(DfTest$Cont)
     
     
@@ -338,9 +354,12 @@ contWine <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100)
   df_resumen <- cbind.data.frame(SVmodel1,aux_df)
   
   output <-list ( Metrics_res = metrics_res, 
-                  Metrics_models = df_resumen)
+                  Metrics_models = df_resumen,
+                  Train = Train_subset,
+                  Test = Test_subset)
   
   return(output)
+  
   
   
 }
