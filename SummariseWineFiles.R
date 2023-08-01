@@ -34,13 +34,14 @@ alphaM <-as.matrix(expand.grid(alpha_values,alpha_values,alpha_values))
 name_file<-list()
 ind_file <- list()
 cont <- 1
+files_in_directory <- dir(pathWd)
 for(i_a in 1:nrow(alphaM))
   for(i_eta in 1:nrow(etaM))
   {
     name_eta <- paste(etaM[i_eta,],collapse="_")
     name_alpha <- paste(alphaM[i_a,],collapse = "_")
     name_file[[cont]] <- paste0("A",str_replace_all(name_alpha,"\\.",""),"_E",name_eta,"_Wine.Rdata")
-    cond <- which(str_detect(dir(pathWd),name_file[[cont]])==TRUE)
+    cond <- which(str_detect(files_in_directory,name_file[[cont]])==TRUE)
     if(!is_empty(cond))
       {
       ind_file[[cont]] <- cond
@@ -48,7 +49,7 @@ for(i_a in 1:nrow(alphaM))
     }    
   }
 
-name_files <- unlist(name_file)
+name_files <- unlist(name_file)[-240]
 name_files
 ind_files <- unlist(ind_file)
 i_files <- length(name_files)
@@ -59,15 +60,16 @@ Metrics_Models <- list()
 length(name_files)
 
 aux <- list()
-for (i_file in ind_files)
+for (i_file in name_files)
 {  
-    load(name_files[i_file])
+    cat("\n  loading ",i_file,"\n")
+    load(i_file)
     auxSim$Metrics_res
     auxSim$Metrics_models
     class(auxSim$Metrics_models)
 
     auxDf <- auxSim$Metrics_models
-    auxDf$file <- name_files[i_file]
+    auxDf$file <- i_file
     auxDf <- auxDf %>% dplyr::select(file,everything())
     parameters <- str_split(str_replace_all(auxDf$file,"[(A-Z)|(a-z)|\\.]",""),"_",simplify = TRUE)[,1:6]
     auxDf$parameters <- parameters
@@ -187,6 +189,24 @@ barplot(prop.table(freqVar),col = coul, ylim = c(0,0.4))
 
 par(mfrow = c(1,1))
 
+df_freqSV <- data.frame(frequency = as.vector(freqVar),
+                        Variables = rownames(freqVar))
+
+
+ggp <- ggplot(df_freqSV, 
+              aes(x = reorder(Variables,+frequency), y = frequency)) +
+  geom_bar(stat = "identity", fill = "lightblue") +
+  coord_flip()+
+  ylab("Variables") + xlab("Frequency") +
+  geom_text(aes(x = Variables, y = frequency + 0.3, 
+                label = frequency),check_overlap = TRUE)
+ggp
+
+head(df_models)
+ggp %>% ggplotly
+
+
+
 colnames(dfAll)
 #dfAll <- dfAll %>% filter(CR_SV >0 ) %>% mutate (DifCCR = CR_SV - CR_SatMC)
 
@@ -216,14 +236,17 @@ dfDifLong <- dfDifLong %>% mutate(Variables = recode(Variables,
 
 g1<- ggplot(dfDifLong %>% filter(Variables %in% c("CCR","Accuracy")), 
             aes(x = Variables, y = Dif, color = Alpha)) + 
-  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-0.2,0.3) + geom_boxplot()
+  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-0.2,0.3) + geom_boxplot() +
+  geom_hline(yintercept = 0)
 
 g1
 
 
 g3 <- ggplot(dfDifLong %>% filter(Variables %in% c("Sensitivity","Specificity")), 
              aes(x = Variables, y = Dif, color = Alpha)) + 
-  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-1,1) + geom_boxplot()
+  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-1,1) + geom_boxplot() +
+  geom_hline(yintercept = 0)
+
 
 
 g3
@@ -231,13 +254,17 @@ g3
 
 g4 <- ggplot(dfDifLong %>% filter(Variables %in% c("CCR","Accuracy")), 
              aes(x = Variables, y = Dif, color = Eta)) + 
-  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-0.2,0.3) + geom_boxplot()
+  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-0.2,0.3) + geom_boxplot() +
+  geom_hline(yintercept = 0)
+
 
 g4 
 
 g6 <- ggplot(dfDifLong %>% filter(Variables %in% c("Sensitivity","Specificity")), 
              aes(x = Variables, y = Dif, color = Eta)) + 
-  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-1,1) + geom_boxplot()
+  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-1,1) + geom_boxplot() +
+  geom_hline(yintercept = 0)
+
 
 g6
 
@@ -248,3 +275,4 @@ plot(g2)
 plot(g3)
 
 plot(g4)
+

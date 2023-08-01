@@ -5,12 +5,13 @@ library(gclus)
 library(RColorBrewer)
 library(corrplot)
 
+
 pathFile <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Raw Data/"
 pathWd <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
 setwd(pathWd)
 source("VSCMN.R")
 source("FuncWine.R")
-
+source("https://www.sthda.com/upload/rquery_cormat.r")
 data("wine")
 
 colnames(wine)
@@ -23,7 +24,7 @@ Winedf$y <- as.numeric(wine$Type)
 colnames(Winedf)
 
 Xwine %>% as.matrix %>% cor %>% corrplot::corrplot(method = "circle")
-
+rquery.cormat(Xwine)
 
 y <- as.numeric(wine$Type)
 G <- length(unique(y))

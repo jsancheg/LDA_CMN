@@ -57,15 +57,15 @@ head(MetricsDf)
 
 
 
-auxDf1 <- auxDf1 %>% rename("A1" = "AccuracyTM" ,
+auxDf1 <- auxDf1 %>% dplyr::rename("A1" = "AccuracyTM" ,
                             "A2"= "AccuracySM" ,
                             "A3" = "AccuracySaturatedM" ,
-                            "N1" = "Accuracy_TM_no_contaminated",
-                            "N2" = "Accuracy_SM_no_contaminated",
-                            "N3" = "Accuracy_Saturated_Cont",
                             "C1" = "Accuracy_TM_contaminated"  ,
                             "C2" = "Accuracy_SM_contaminated"  ,
-                            "C3" = "Accuracy_Saturated_NoCont" ,
+                            "C3" = "Accuracy_Saturated_Cont",
+                            "N1" = "Accuracy_TM_no_contaminated",
+                            "N2" = "Accuracy_SM_no_contaminated",
+                            "N3" = "Accuracy_Saturated_NoCont" ,
                             "P1" = "Precision_TM"  ,
                             "P2" = "Precision_SM" ,
                             "P3" = "Precision_SaturatedM" ,
@@ -97,7 +97,7 @@ auxDf1 <- auxDf1 %>%
 colnames(auxDf1)
 head(auxDf1)
 
-auxDf1 <- auxDf1 %>% rename("Accuracy_class" = "A" ,
+auxDf1 <- auxDf1 %>% dplyr::rename("Accuracy_class" = "A" ,
                             "Accuracy_Cont" = "C"  ,
                             "Accuracy_No_Cont" = "N",
                             "Precision_Class" = "P"  ,
@@ -165,7 +165,7 @@ var.acc3 <- MetricsDf1 %>% group_by(Covariance_Structure) %>%
   summarise(mean.accuracy = var(Accuracy_class))
 
 
-mean.acc1 <- MetricsDf1 %>% group_by(Group_Mean_Distance,Simulation) %>%
+mean.acc1 <- MetricsDf1 %>% dplyr::group_by(Group_Mean_Distance,Simulation) %>%
   summarise(mean.accuracy  = mean(Accuracy_class))
   
 ggplot(mean.acc1, aes(x = reorder(Simulation,mean.accuracy ), y = mean.accuracy, 
@@ -237,6 +237,7 @@ combine + plot_layout(guides = "collect")
 #MetricsDf1 %>% select(c(Accuracy_class,Variables)) %>% data.frame()  %>%
 #  pairwise.t.test(Accuracy_class ~ Variables, paired = TRUE,
 #                  p.adjust.method = "bonferroni")
+
 
 
 

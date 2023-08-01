@@ -11,6 +11,8 @@ pathFile <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA
 setwd(ruta)
 
 
+
+
 contCrabs <- function(mug,sg,lab,alpha,eta, ptrain, ns = 100)
 {
   # Function that contaminated the data set blue crabs for both sex

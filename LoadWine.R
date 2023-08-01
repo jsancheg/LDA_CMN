@@ -1,0 +1,6 @@
+
+data("wine")
+colnames(wine)
+
+
+

@@ -874,6 +874,122 @@ modelAccuracy <- function(X_train,X_test,l_train,l_test,CE)
   return(accTest)
 }
 
+SimContV <- function(mu, s, lab, ncont, eta_m)
+{
+  # mu   : matrix where each rows are the mean of the classes
+  # s    : array with the variance covariance matrix of each class
+  # ncont: vector that contains the number of contaminated samples to be return for each group g
+  # eta  : matrix of inflation factor where 
+  
+  # validate parameters
+  G = length(unique(lab))
+  
+  ncontg = rep(0,G)
+  contSamples <- vector("list",length = G)
+  # check parameter ncont
+  if (class(ncont) == "numeric")
+  {
+    if(G == 1 & length(ncont) == 1) {
+      ncontg[1] <- ncont 
+    }else if (G>1 & length(ncont) == 1) {
+      ncontg <- rep(ncont,G)
+    } else if(G>1 & length(ncont) == G){
+      ncontg <- ncont
+    } else if (G > 1 & length(ncont )!= G & length(ncont) > 1){
+      stop("Error vector with the number of contaminated samples has different dimension to the number of groups")
+    }
+  }
+  
+  #  check parameter mu
+  if(all(class(mu) == "numeric")) 
+  {
+    if (G == 1)
+    {
+      mug = as.matrix(mu)
+    }
+    if(G > 1)
+    {
+      p = length(mu)
+      mug = matrix(0.0, ncol = G, nrow = p )
+      for (g in 1:G)
+      {
+        mug[,g] = mu
+      }
+    }
+    
+  }else if(length(dim(mu))==2)
+  {
+    mug = mu
+    p = nrow(mu)
+  }
+  
+  XC <- array(0.0,dim = c(nrow = sum(ncontg), ncol = p))
+  sg = array(0.0, dim = c(p,p,G))
+  # check parameter Sigma
+  if (class(s) == "matrix" & length(dim(s)) == 2 & G == 1 )
+  {
+    sg[,,1] = s
+  }else if(class(s) == "matrix" & length(dim(s)) == 2 & G > 1)
+  {
+    for (g in 1:G) sg[,,g]= s
+    
+  }else if(class(s) == "array" & length(dim(s)) == 3 & G == 1 & G == dim(s)[3])
+  {
+    sg[,,1] = s
+  }else if(class(s) == "array" & length(dim(s)) == 3 & G > 1 & G == dim(s)[3])
+  {
+    sg = s
+  }else if(class(s) == "array" & length(dim(s)) == 3 & G > 1 & G != dim(s)[3])
+    stop("Error in dimeision of variance covariance matrix")
+  
+  #  check parameter mu
+  if(class(eta_m) == "numeric") 
+  {
+    if (G == 1)
+    { 
+      if(length(eta_m) == 1)
+        {
+          etag = rep(eta_m,p)
+        }else if (length(eta_m) == p)
+        {
+          etag = eta_m
+        }else
+        {
+          stop("eta has to be a matrix of dimension p rows x g columns")
+        } 
+          
+    }
+    
+    if(G > 1)
+    {
+      stop("eta has to be a matrix of dimension p rows x g columns")
+    }
+    
+  }else if(class(eta_m) == "matrix" | class(eta_m) == "array")
+  {
+    if(G >1 & length(eta_m) == p)
+    
+        for( g in 1:G)
+    {
+          # rewrite this part to allow multiply the vector eta_m by sg
+      contSamples[[g]] =  rMVNorm(ncontg[g],mug[,g],etag[,g]*sg[,,g])
+      
+      
+    }
+    # rewrite this part to allow multiply the vector eta_m by sg
+    
+  }else if(G == 1) contSamples[[1]] =rMVNorm(ncontg,mug,etag*sg)
+  
+  XC <- ldply(contSamples)
+  vlab <- rep(1:G,c(ncontg))
+  if(length(1:G) == length(ncontg)){
+    XC <- XC %>% mutate(class = vlab)%>% dplyr::select(class, everything())
+    #  XC$class <- rep(lab,ncontg)
+  } else stop("Error length of vector of contaminated samples differ with the number of groups")
+  return(XC)
+}
+
+
 
 SimCont <- function(mu, s, lab, ncont, eta)
 {
@@ -1037,6 +1153,115 @@ funcSample <- function(X,y,vpi)
   
   return(mg_samples)
 }
+
+ContSimulations <- function(pathOutput,nameDf,X,y,lab,vpi,alphaM,etaM,ptrain,ns = 10)
+{
+  # Function that create simulated data set with their respectively metrics
+  # pathOutput : Output path where generated files would be saved
+  # nameDf: Name of the data set
+  # X: covariates
+  # y: categorical variable
+  # lab: 
+  # vpi: vector of proportion for classes
+  # alphaM: Matrix of possible combinations of values for alpha 
+  # etaM:  Matrix of possible combination of values for eta
+  # ptrain: vector of proportion of observations used to train the model
+  # ns: number of simulations
+  
+  
+
+  list_processed_files <- dir(pathOutput)
+  tic("simulation")
+  for(i_a in 1:nrow(alphaM))
+    for(i_eta in 1:nrow(etaM))
+    {
+      name_alpha <- paste(alphaM[i_a,],collapse = "_")
+      name_eta <- paste(etaM[i_eta,],collapse="_")
+      name_file <- paste0(pathOutput,"A",str_replace_all(name_alpha,"\\.",""),"_E",name_eta,"_",nameDf,".Rdata")
+      flag_existing_file <- str_detect(list_processed_files,paste0("A",str_replace_all(name_alpha,"\\.",""),"_E",name_eta,"_Crabs.Rdata"))
+      cat("\n File: ",name_file, " processed status ", any(flag_existing_file == TRUE), "\n" )
+      if (all(flag_existing_file == FALSE))
+      {
+        auxSim <- contDf (X,y,lab,vpi,alphaM[i_a,],etaM[i_eta,],ptrain,ns = 10)
+        save(auxSim,file = name_file)
+        cat("\n -- saving ", name_file,"---\n")
+      }  
+    }
+  toc()
+}  
+
+
+
+
+Summarise_Files <- function(pathOutput, nameDf, pattern, alphaM,etaM)
+{
+  name_file <- list()
+  cont <- 1
+  nparameters <- ncol(alphaM) + ncol(etaM)
+  #  compAlpha <- rep(0,nrow(alphaM))
+  #  compEta <- rep(0,nrow(etaM))
+  
+  for(i_a in 1:nrow(alphaM))
+    for(i_eta in 1:nrow(etaM))
+    {
+      name_alpha <- paste(alphaM[i_a,],collapse = "_")
+      name_eta <- paste(etaM[i_eta,],collapse="_")
+      name_file[[cont]] <- paste0(pathOutput,"A",str_replace_all(name_alpha,"\\.",""),"_E",name_eta,"_",nameDf,".Rdata")
+      cont <- cont + 1
+    }  
+  
+  
+  existing_files <- dir(pathOutput)[!is.na(str_match(dir(pathOutput),pattern))]
+  aux <- list()
+  for(i_file in existing_files)
+  {
+    cat("\n  Loading file: ",i_file,  "\n" )
+    
+    load(paste0(pathOutput,i_file))
+    auxSim$Metrics_res
+    auxSim$Metrics_models
+    
+    auxDf <- auxSim$Metrics_models
+    auxDf$file <- i_file
+    auxDf <- auxDf %>% dplyr::select(file,everything())
+    parameters <- str_split(str_replace_all(auxDf$file,"[(A-Z)|(a-z)|\\.]",""),"_",simplify = TRUE)[,1:nparameters]
+    auxDf$parameters <- parameters
+    
+    compAlpha <- sapply(1:nrow(parameters),function(fil) {  
+      parameters[fil,1:ncol(alphaM)] == parameters[fil,1]
+    }   )
+    
+    compEta <- sapply(1:nrow(parameters),function(fil) {  
+      parameters[fil,(ncol(etaM)+1):nparameters] == parameters[fil,(ncol(etaM)+1)]
+    } )
+    
+    auxDf$Alpha <- ifelse(all(compAlpha == TRUE),"Equal","Inequal")
+    auxDf$Eta <- ifelse(all(compEta == TRUE),"Equal","Inequal")
+    
+    aux[[cont]] <- auxDf
+    cont <- cont + 1
+    
+  }  
+  
+  Output <- ldply(aux)
+  Output$Alpha <- factor(Output$Alpha)
+  Output$Eta <- factor(Output$Eta)
+  
+  colnames(Output)
+  nrow(Output)
+  
+  
+  
+  dfAll <- Output %>% dplyr::select(-file)
+  dfAll <- dfAll  %>% mutate (DifCCR = CR_SV - CR_SatMC)
+  dfAll <- dfAll %>% mutate (DifAccuracy = Accuracy_SVCont - Accuracy_SatCont  )
+  dfAll <- dfAll %>% mutate (DifSensitivity = Sensitivity_SelM - Sensitivity_SatM  )
+  dfAll <- dfAll %>% mutate (DifSpecificity = Specificity_SelM - Specificity_SatM  )
+  
+  saveRDS(dfAll, paste0(pathOutput,"MetricsContDf.RDS"))
+  
+  return(dfAll)  
+} 
 
 
 contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100, iterations = 20)
@@ -1400,7 +1625,7 @@ contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100, iterations = 20)
   
 }
 
-contDfV <- function(X,y,lab,vpi,alpha,eta_m,ptrain,ns = 100, iterations = 20)
+contEtaVDf <- function(X,y,lab,vpi,alpha,eta_m,ptrain,ns = 100, iterations = 20)
 {
   # Function that contaminate the wine data set
   # mug : matrix where each column is the mean of a group
@@ -1701,7 +1926,7 @@ contDfV <- function(X,y,lab,vpi,alpha,eta_m,ptrain,ns = 100, iterations = 20)
     if (all(pred_cont_Sel_M == 1))
     {
       specificity_SelM[i] <- 0
-      Sensitivity_SelM[i] <- sum(DfTest$Cont==1)/sum(pred_cont_Sel_M==1)
+      sensitivity_SelM[i] <- sum(DfTest$Cont==1)/sum(pred_cont_Sel_M==1)
       
     }else if(all(pred_cont_Sel_M == 0))
     {

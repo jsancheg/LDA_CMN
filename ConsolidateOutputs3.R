@@ -38,7 +38,7 @@ process_collection3<- function(filepath)
   
   if(any(nfilas == 0)) stop("Any kpi's was calculated")
   
-  
+  if(ncollection > 1)
   for (i_collection in 2:ncollection)
   {
     cat("Processing file = ",filenames[i_collection])
@@ -882,10 +882,13 @@ source(paste0(pathWd,"FunctionsConsolidate.R"))
 
 dir(pathPro)
 simulation <- dir(pathPro)
+simulation <- dir(pathPro)[-c([52:53)]
 simulation <- dir(pathPro)[c(3,9,11)]
 simulation 
 #simulation <- "OutputS_2_2_4_9010_SCBSV_VO"
 #CreateResumen (simulation[-c(1:9)], pathOutput,pathImages)
+
+BigDf(simulation,pathOutput,pathImages)
 BigDf(simulation[c(13:20)],pathOutput,pathImages)
 
 BigDf(simulation[-c(1:2,4:15,34)],pathOutput,pathImages)
