@@ -874,17 +874,19 @@ modelAccuracy <- function(X_train,X_test,l_train,l_test,CE)
   return(accTest)
 }
 
-SimContV <- function(mu, s, lab, ncont, eta_m)
+SimCont1Var <- function(mu, s, lab, ncont, eta, cont_vars)
 {
   # mu   : matrix where each rows are the mean of the classes
   # s    : array with the variance covariance matrix of each class
   # ncont: vector that contains the number of contaminated samples to be return for each group g
-  # eta  : matrix of inflation factor where 
+  # eta  : vector of inflation factor 
+  # cont_vars: vector of contaminated variables if it is 0 it is not contaminated ; 1 it is contaminated
   
   # validate parameters
   G = length(unique(lab))
   
   ncontg = rep(0,G)
+  NonContSamples <- vector("list", length = G)
   contSamples <- vector("list",length = G)
   # check parameter ncont
   if (class(ncont) == "numeric")
@@ -922,7 +924,9 @@ SimContV <- function(mu, s, lab, ncont, eta_m)
     mug = mu
     p = nrow(mu)
   }
-  
+
+  if(length(cont_vars) != p ) stop("The vector of contaminated variables should be the length of the number of columns of mu")
+    
   XC <- array(0.0,dim = c(nrow = sum(ncontg), ncol = p))
   sg = array(0.0, dim = c(p,p,G))
   # check parameter Sigma
@@ -941,44 +945,50 @@ SimContV <- function(mu, s, lab, ncont, eta_m)
     sg = s
   }else if(class(s) == "array" & length(dim(s)) == 3 & G > 1 & G != dim(s)[3])
     stop("Error in dimeision of variance covariance matrix")
+
   
-  #  check parameter mu
-  if(class(eta_m) == "numeric") 
+  
+  #  check parameter eta
+  if(class(eta) == "numeric") 
   {
     if (G == 1)
-    { 
-      if(length(eta_m) == 1)
-        {
-          etag = rep(eta_m,p)
-        }else if (length(eta_m) == p)
-        {
-          etag = eta_m
-        }else
-        {
-          stop("eta has to be a matrix of dimension p rows x g columns")
-        } 
-          
+    {
+      etag = eta
     }
-    
     if(G > 1)
     {
-      stop("eta has to be a matrix of dimension p rows x g columns")
+      etag = rep(eta, G)
     }
     
-  }else if(class(eta_m) == "matrix" | class(eta_m) == "array")
+  }else stop("eta has to be a vector of dimension g where g is the number of groups")
+  
+  
+  if(G >1)
   {
-    if(G >1 & length(eta_m) == p)
-    
-        for( g in 1:G)
+    for( g in 1:G)
     {
-          # rewrite this part to allow multiply the vector eta_m by sg
-      contSamples[[g]] =  rMVNorm(ncontg[g],mug[,g],etag[,g]*sg[,,g])
+      
+      
+      NonContSamples[[g]] = rMVNorm(ncontg[g], mug[,g],sg[,,g])    
+      # rewrite this part to allow multiply the vector eta_m by sg
+      contSamples[[g]] =  rMVNorm(ncontg[g],mug[,g],etag[g]*sg[,,g])
+      for(i_var in 1:p)
+      {
+        if (cont_vars[i_var] == 0) contSamples[[g]][,i_var] = NonContSamples[[g]][,i_var]
+      }
       
       
     }
-    # rewrite this part to allow multiply the vector eta_m by sg
     
-  }else if(G == 1) contSamples[[1]] =rMVNorm(ncontg,mug,etag*sg)
+  }else if(G == 1) 
+    {
+      contSamples[[1]] =rMVNorm(ncontg,mug,etag*sg)
+      NonContSamples[[1]] = rMVNorm(ncontg,mug,sg)
+    for(i_var in 1:p)
+      {
+        if (cont_vars[i_var] == 0) contSamples[[1]][,i_var] = NonContSamples[[1]][,i_var]
+      }
+    }
   
   XC <- ldply(contSamples)
   vlab <- rep(1:G,c(ncontg))
@@ -1093,6 +1103,62 @@ SimCont <- function(mu, s, lab, ncont, eta)
   return(XC)
 }
 
+fun_CalNcont <- function(G,ng,ptrain, alpha)
+{
+  # function that calculate the number of contaminated and non-contaminated 
+  # for training and test sets
+  # G : Number of groups
+  # ng : Number of totals 
+  # ptrain: vector of length G that contains the percentage of training for groups
+  # alpha:  vector that contains the different choices of contamination
+  # var_cont: vector of length p that contains whether the variable should be contaminated or not
+  
+  nocont_train <- rep(0,G)
+  nocont_test <- rep(0,G)
+  ncont_train <- rep(0,G)
+  ncont_test <- rep(0,G)
+  nocont <- rep(0,G)
+  ncont <- rep(0,G)
+  ntrain <- rep(0,G)
+  ntest <- rep(0,G)
+  
+  #check is alpha is a matrix
+  if(!is.vector(alpha)) stop("alpha should be a vector")
+
+  for(g in 1:G)
+  {
+    nocont_train[g] = round(ng[g]* ptrain[g],0)
+    nocont_test[g] = ng[g] - nocont_train[g]
+    
+    # number of contaminated samples in the train set
+    ncont_train[g] = round(nocont_train[g]/alpha[g],0) - nocont_train[g]
+    
+    # number of contaminated samples in the test set
+    ncont_test[g] = round(nocont_test[g]/alpha[g],0) - nocont_test[g]
+
+    # number of non-contaminated observations to be simulated
+    nocont[g] = nocont_train[g] + nocont_test[g]
+    
+    # number of contaminated observations to be simulated
+    ncont[g] = ncont_train[g] + ncont_test[g]
+    
+    # train size
+    ntrain[g] = nocont_train[g] + ncont_train[g]
+    
+    # test set for each sex
+    ntest[g] = nocont_test[g] + ncont_test[g]
+    
+  }
+  
+  output <- list(nocont_train = nocont_train, nocont_test = nocont_test, 
+                 ncont_train = ncont_train, ncont_test = ncont_test,
+                 nocont = nocont,ncont = ncont,
+                 ntrain = ntrain,
+                 ntest = ntest)
+  
+  return(output)
+  
+}
 
 funcSample <- function(X,y,vpi)
 {
@@ -1183,6 +1249,47 @@ ContSimulations <- function(pathOutput,nameDf,X,y,lab,vpi,alphaM,etaM,ptrain,ns 
       if (all(flag_existing_file == FALSE))
       {
         auxSim <- contDf (X,y,lab,vpi,alphaM[i_a,],etaM[i_eta,],ptrain,ns = 10)
+        save(auxSim,file = name_file)
+        cat("\n -- saving ", name_file,"---\n")
+      }  
+    }
+  toc()
+}  
+
+
+ContSimulationsVars <- function(pathOutput,nameDf,X,y,lab,vpi,alphaM,etaM,ptrain,cont_vars,ns = 10)
+{
+  # Function that create contaminated simulated data set with their respectively metrics 
+  # where it is possible to choose with variables
+  # are contaminated and what nor and  
+
+  # pathOutput : Output path where generated files would be saved
+  # nameDf: Name of the data set
+  # X: covariates
+  # y: categorical variable
+  # lab: 
+  # vpi: vector of proportion for classes
+  # alphaM: Matrix of possible combinations of values for alpha 
+  # etaM:  Matrix of possible combination of values for eta
+  # ptrain: vector of proportion of observations used to train the model
+  # cont_vars: vector with the name of variables to be contaminated
+  # ns: number of simulations
+  
+  
+  
+  list_processed_files <- dir(pathOutput)
+  tic("simulation")
+  for(i_a in 1:nrow(alphaM))
+    for(i_eta in 1:nrow(etaM))
+    {
+      name_alpha <- paste(alphaM[i_a,],collapse = "_")
+      name_eta <- paste(etaM[i_eta,],collapse="_")
+      name_file <- paste0(pathOutput,"A",str_replace_all(name_alpha,"\\.",""),"_E",name_eta,"_",nameDf,".Rdata")
+      flag_existing_file <- str_detect(list_processed_files,paste0("A",str_replace_all(name_alpha,"\\.",""),"_E",name_eta,"_Crabs.Rdata"))
+      cat("\n File: ",name_file, " processed status ", any(flag_existing_file == TRUE), "\n" )
+      if (all(flag_existing_file == FALSE))
+      {
+        auxSim <- contDf_Var (X,y,lab,vpi,alphaM[i_a,],etaM[i_eta,],ptrain,cont_vars,ns = 10, iterations = 10)
         save(auxSim,file = name_file)
         cat("\n -- saving ", name_file,"---\n")
       }  
@@ -1625,7 +1732,7 @@ contDf <- function(X,y,lab,vpi,alpha,eta,ptrain,ns = 100, iterations = 20)
   
 }
 
-contEtaVDf <- function(X,y,lab,vpi,alpha,eta_m,ptrain,ns = 100, iterations = 20)
+contDf_Var <- function(X,y,lab,vpi,alpha,eta,ptrain,cont_vars,ns = 100, iterations = 20)
 {
   # Function that contaminate the wine data set
   # mug : matrix where each column is the mean of a group
@@ -1637,12 +1744,12 @@ contEtaVDf <- function(X,y,lab,vpi,alpha,eta_m,ptrain,ns = 100, iterations = 20)
   # alpha: vector containing the percentage of non contaminated observations for each group
   # eta:   vector containing the inflation factor for each group
   # ptrain: vector containing the percentage of samples included in the training set for groups
+  # cont_vars: vector with the name of the variables that are going to be contaminated
   # ns:    number of data set simulated
   
   SVmodel <- list() 
   Train_subset <- list()
   Test_subset <- list()
-  
   AccuracyClassSV <- rep(0,ns)
   AccuracyContSV <-rep(0,ns)
   AccuracyClassSatM_C <- rep(0,ns)
@@ -1664,9 +1771,16 @@ contEtaVDf <- function(X,y,lab,vpi,alpha,eta_m,ptrain,ns = 100, iterations = 20)
   ng <- rep(0,G)
   indsamples <- funcSample(X,y,vpi)
   p <- ncol(X)
+  ncont_vars <- length(cont_vars)
+  bool_cont_vars <- rep(0,p)
+  
   mug <- matrix(0.0,nrow = p, ncol = G)
   sg <- array(0.0, dim = c(p,p,G))
   
+  for(i_contvar in 1:ncont_vars)
+  {
+      bool_cont_vars = bool_cont_vars + str_detect(colnames(X),cont_vars[i_contvar])
+  }
   
   for (g in 1:G) 
   {
@@ -1710,7 +1824,7 @@ contEtaVDf <- function(X,y,lab,vpi,alpha,eta_m,ptrain,ns = 100, iterations = 20)
   for (i in 1:ns)
   {
     cat("\n simulation = ", i, "\n")
-    GenContSamples <- SimCont(mug,sg,1:G,ncont,eta)
+    GenContSamples <- SimCont1Var(mug,sg,1:G,ncont,eta,bool_cont_vars)
     GenContSamples$index <- (nrow(X)+1):(nrow(X) +nrow(GenContSamples) )
     GenContSamples <- GenContSamples %>% dplyr::select(index, everything())
     colnames(GenContSamples)

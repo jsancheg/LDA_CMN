@@ -8,7 +8,7 @@ library(gridExtra)
 library(cowplot)
 library(ggpubr)
 library(caret)
-
+library(gclus)
 
 pathWd <- "E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
 setwd(pathWd)
@@ -20,7 +20,8 @@ source(paste0(pathWd,"FunctionsConsolidate.R"))
 
 pathOutput <-"E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Proc_WineNew/"
 
-
+data(wine)
+colnames(wine)
 Xwine <- wine %>% subset(select = -c(Type))
 colnames(Xwine)
 y <- as.numeric(wine$Type)
@@ -39,8 +40,12 @@ nameDf <- "Wine"
 
 pattern <- "A[\\d]+_[\\d]+_[\\d]+_E[\\d]+_[\\d]+_[\\d]+_Wine"
 
+
+
+
+
 # Run simulations of contaminated samples
-ContSimulations(pathOutput,nameDf,Xwine,y,lab,vpi,alphaM,etaM,ptrain,ns = 10)
+ContSimulations(pathOutput,nameDf,Xwine,y,lab,vpi,alphaM,etaM,ptrain,c("Color"),ns = 10)
 
 
 dfAll<- Summarise_Files(pathOutput, nameDf, pattern, alphaM, etaM)

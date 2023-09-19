@@ -14,7 +14,7 @@ sg[4,2] <- 0.8
 pig<- c(0.5,0.5)
 nobservations = 320
 ptraining = 0.75
-alphag <-c(0.9,0.8)
+alphag <-c(0.8,0.9)
 etag <- c(20,30)
 
 GenData <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)

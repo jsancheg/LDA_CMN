@@ -19,7 +19,6 @@ p <- ncol(Xwdbc)
 G <- length(unique(y))
 
 
-
 lab <- 1:G
 alpha_values <- c(0.75,0.8,0.85)
 eta_values <- c(5,10,15)
@@ -37,3 +36,5 @@ ContSimulations(pathOutput,nameDf,Xwine,y,lab,vpi,alphaM,etaM,ptrain,ns = 10)
 
 dfAll<- Summarise_Files(pathOutput, nameDf, pattern, alphaM, etaM)
 ncol(alphaM)
+
+

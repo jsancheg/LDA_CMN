@@ -1,9 +1,12 @@
 library(ggplot2)
-library(plotly)
 library(RColorBrewer)
+library(tictoc)
+library(corrplot)
+library(plotly)
 
 pathWd <- "E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
 pathOutput <-"E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Proc_CrabsNew/"
+source("http://www.sthda.com/upload/rquery_cormat.r")
 
 setwd(pathWd)
 dir(pathOutput)
@@ -97,6 +100,8 @@ dfDifLong <- dfDifLong %>% mutate(Variables = recode(Variables,
 
 
 
+
+
 # Calculate frequency of model size ---------------------------------------
 
 sum(tab1)
@@ -135,12 +140,20 @@ df_freqSV <- data.frame(frequency = as.vector(freqVar),
 
 
 
+
 colnames(dfAll)
 #dfAll <- dfAll %>% filter(CR_SV >0 ) %>% mutate (DifCCR = CR_SV - CR_SatMC)
 
 
 
 
+
+
+# Plot correlation matrix of original data Crabs --------------------------
+data(crabs)
+colnames(crabs)
+XCrabs <- crabs %>% subset(select = -c(index,sp,sex))
+rquery.cormat(XCrabs)
 
 
 # Plot of the frequency of the models
@@ -169,6 +182,48 @@ g_freqSV <- ggplot(df_freqSV,
   geom_text(aes(x = Variables, y = frequency + 0.3, 
                 label = frequency),check_overlap = TRUE)
 g_freqSV %>% ggplotly
+
+
+# Plot crab female and male groups for blue species -----------------------
+colnames(crabs)
+unique(crabs$sp)
+XBlueCrabs <- crabs %>% filter(sp == "B")
+
+XBlueCrabs_mean <- XBlueCrabs %>% group_by(sex) %>%
+summarise(FL_mean = mean(FL),
+          RW_mean = mean(RW),
+          CL_mean = mean(CL),
+          CW_mean = mean(CW),
+          BD_mean = mean(BD) )
+          
+XBlueCrabs_mean
+meanClass_dist <- sqrt(sum( (XBlueCrabs_mean[1,-1] - XBlueCrabs_mean[2,-1])^2 ))
+meanClass_dist
+
+mycols <- c("blue","green")
+pairs(XBlueCrabs %>% dplyr::select(FL,RW,CL,CW,BD), oma = c(3,3,6,3),
+      col = mycols[as.numeric(XBlueCrabs$sex)],
+      gap = 0, lower.panel = NULL)
+legend("top", col = mycols, legend = levels(XBlueCrabs$sex),pch = 20,
+       xpd = NA, ncol = 3, bty = "n", inset = 0.01, pt.cex = 1.5)
+
+
+# Calculate the  F statistics------------------------------------------------
+
+y <- as.numeric(XBlueCrabs$sex)
+dfRW <- getOW(XBlueCrabs%>% dplyr::select(FL,RW,CL,CW,BD),as.numeric(y))
+head(dfRW,6)
+
+dfRWsort <- dfRW[order(-dfRW$Ftest),]
+
+
+options(repr.plot.width=8, repr.plot.height=3)
+gFtest <- ggplot(dfRWsort, aes(x = reorder(Var, +Ftest),y = Ftest) ) +
+  geom_bar(stat = "identity",fill = "lightblue") +
+  coord_flip() + 
+  ylab("Variables") +  xlab("F score") +
+  geom_text(aes(x=Var, y = Ftest + 0.14, label = round(Ftest,0) ) ,check_overlap = TRUE)
+gFtest %>% ggplotly
 
 
 

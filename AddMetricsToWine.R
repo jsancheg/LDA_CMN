@@ -121,7 +121,7 @@ name_files1[50]
 for (i in ind_files[-1])
 {  
   load(name_files[i])
-  load("A08_08_075_E5_5_5_Wine.Rdata")
+  #load("A08_08_075_E5_5_5_Wine.Rdata")
   # for to read all the train and test data
   j_Sim <- length(auxSim$Train)
   specificity_SatM <- rep(0,j_Sim)

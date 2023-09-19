@@ -183,6 +183,9 @@ ggplot(mean.acc1, aes(x = reorder(Simulation,mean.accuracy ), y = mean.accuracy,
 
 
 
+# Plots for conference ACSTA with Test Accuracy ---------------------------
+
+
 g1 <- ggplot(MetricsDf1, aes(x = Proportion, y = Accuracy_class,color = Variables)) +
   geom_boxplot_pattern(pattern_color = "white",
                        pattern_fill = "black",
@@ -231,6 +234,47 @@ g4 <- ggplot(MetricsDf1, aes(x = Group_Mean_Distance, y = Accuracy_class, color 
 # to combine plots we required "patchwork" library
 combine <- g1 + g2 + g3 + g4 & theme(legend.position = "bottom")
 combine + plot_layout(guides = "collect")
+
+
+
+# Plots for chapter 3 Thesis where the CCR is for classification a --------
+
+# Plots for conference ACSTA with Test Accuracy ---------------------------
+
+
+g5 <- ggplot(MetricsDf1, aes(x = Proportion, y = Accuracy_class,color = Variables)) +
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Test CCR") + xlab("Proportion") + ylim(0.1,1) 
+
+
+
+g6 <- ggplot(MetricsDf1, aes(x = Number_of_classes, y = Accuracy_class, color = Variables)) +
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Test CCR") + xlab("Number of classes") + ylim(0.1,1)
+
+g7 <- ggplot(MetricsDf1, aes(x = Covariance_Structure, y = Accuracy_class, color = Variables)) +
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  ylab("Test CCR") + xlab("Covariance strucutre") + ylim(0.1,1)
+
+
+g8 <- ggplot(MetricsDf1, aes(x = Group_Mean_Distance, y = Accuracy_class, color = Variables)) +
+  geom_boxplot_pattern(pattern_color = "white",
+                       pattern_fill = "black",
+                       aes(pattern= Variables))+
+  scale_x_discrete(labels = c("Medium distance","Very distance","Very Overlapping"))+
+  ylab("Test CCR") + xlab("Group mean distance") + ylim(0.1,1)
+
+
+# to combine plots we required "patchwork" library
+combine <- g5 + g6 + g7 + g8 & theme(legend.position = "bottom")
+combine + plot_layout(guides = "collect")
+
 
 
 
@@ -311,7 +355,7 @@ g2_3_4_BAL_SCBSNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_cl
   geom_boxplot_pattern(pattern_color = "white",
                        pattern_fill = "black",
                        aes(pattern= Variables))+
-  ylab("Test accuracy") + xlab("SCBSNSV") + ylim(0.4,1)
+  ylab("Test CCR") + xlab("SCBSNSV") + ylim(0.4,1)
 
 
 g2_3_4_BAL_SCBSNSV
@@ -347,7 +391,7 @@ g2_3_4_BAL_SCBNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_cla
   geom_boxplot_pattern(pattern_color = "white",
                        pattern_fill = "black",
                        aes(pattern= Variables))+
-   ylab("Test accuracy") + xlab("SCBNSV") + ylim(0.4,1) +
+   ylab("Test CCR") + xlab("SCBNSV") + ylim(0.4,1) +
   theme(axis.text.x = element_blank())
 
 
@@ -384,7 +428,7 @@ g2_3_4_BAL_IND <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class,
   geom_boxplot_pattern(pattern_color = "white",
                        pattern_fill = "black",
                        aes(pattern= Variables))+
-  ylab("Test accuracy") + xlab("IND") + ylim(0.4,1) +
+  ylab("Test CCR") + xlab("IND") + ylim(0.4,1) +
   theme(axis.text.x = element_blank())
 
 
@@ -420,7 +464,7 @@ g2_2_4_BAL_SCBSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_clas
   geom_boxplot_pattern(pattern_color = "white",
                        pattern_fill = "black",
                        aes(pattern= Variables))+
-  ylab("Test accuracy") + xlab("SCBSV") + ylim(0.3,1)
+  ylab("Test CCR") + xlab("SCBSV") + ylim(0.3,1)
 
 
 g2_2_4_BAL_SCBSV
@@ -456,7 +500,7 @@ g2_2_4_BAL_SCBSNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_cl
   geom_boxplot_pattern(pattern_color = "white",
                        pattern_fill = "black",
                        aes(pattern= Variables))+
-  ylab("Test accuracy") + xlab("SCBSNSV") + ylim(0.3,1)+
+  ylab("Test CCR") + xlab("SCBSNSV") + ylim(0.3,1)+
   theme(axis.text.x = element_blank())
 
 
@@ -493,7 +537,7 @@ g2_2_4_BAL_SCBNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_cla
   geom_boxplot_pattern(pattern_color = "white",
                        pattern_fill = "black",
                        aes(pattern= Variables))+
-  ylab("Test accuracy") + xlab("SCBNSV") + ylim(0.3,1)+
+  ylab("Test CCR") + xlab("SCBNSV") + ylim(0.3,1)+
   theme(axis.text.x = element_blank())
 
 
@@ -530,7 +574,7 @@ g2_2_4_BAL_IND <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_class,
   geom_boxplot_pattern(pattern_color = "white",
                        pattern_fill = "black",
                        aes(pattern= Variables))+
-   ylab("Test accuracy") + xlab("IND") + ylim(0.3,1) +
+   ylab("Test CCR") + xlab("IND") + ylim(0.3,1) +
   theme(axis.text.x = element_blank())
 
 
@@ -580,7 +624,7 @@ g2_2_4_UNBAL_SCBSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_cl
   geom_boxplot_pattern(pattern_color = "white",
                        pattern_fill = "black",
                        aes(pattern= Variables))+
-  ylab("Test accuracy") + xlab("SCBSV") + ylim(0.3,1) 
+  ylab("Test CCR") + xlab("SCBSV") + ylim(0.3,1) 
 
 
 g2_2_4_UNBAL_SCBSV
@@ -618,7 +662,7 @@ g2_2_4_UNBAL_SCBSNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_
   geom_boxplot_pattern(pattern_color = "white",
                        pattern_fill = "black",
                        aes(pattern= Variables))+
-  ylab("Test accuracy") + xlab("SCBSNSV") + ylim(0.3,1) +
+  ylab("Test CCR") + xlab("SCBSNSV") + ylim(0.3,1) +
   theme(axis.text.x = element_blank())
 
 
@@ -657,7 +701,7 @@ g2_2_4_UNBAL_SCBNSV <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_c
   geom_boxplot_pattern(pattern_color = "white",
                        pattern_fill = "black",
                        aes(pattern= Variables))+
-  ylab("Test accuracy") + xlab("SCBNSV") + ylim(0.3,1)+
+  ylab("Test CCR") + xlab("SCBNSV") + ylim(0.3,1)+
   theme(axis.text.x = element_blank())
 
 
@@ -695,7 +739,7 @@ g2_2_4_UNBAL_IND <- ggplot(VODf1, aes(x = Group_Mean_Distance, y = Accuracy_clas
   geom_boxplot_pattern(pattern_color = "white",
                        pattern_fill = "black",
                        aes(pattern= Variables))+
-  ylab("Test accuracy") + xlab("IND") + ylim(0.3,1)+
+  ylab("Test CCR") + xlab("IND") + ylim(0.3,1)+
   theme(axis.text.x = element_blank())
 
 

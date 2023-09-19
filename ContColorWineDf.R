@@ -8,40 +8,63 @@ library(gridExtra)
 library(cowplot)
 library(ggpubr)
 library(caret)
+library(gclus)
 
 pathWd <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
 setwd(pathWd)
+source("LoadWine.R")
 source("VSCMN.R")
 pathWd <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
+
+
 source(paste0(pathWd,"FunctionsConsolidate.R"))
 
 pathOutput <-"E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Proc_WineContColor/"
 
-data("wine")
+data(wine)
 colnames(wine)
-table(wine$Type)
 
-Xwine <- wine %>% subset(select = -c(Type))
+Xwine <- wine %>% subset(select = -c(Class))
 colnames(Xwine)
-y <- as.numeric(wine$Type)
+y <- as.numeric(wine$Class)
 p <- ncol(Xwine)
 G <- length(unique(y))
+
+ng <- table(y)
 
 lab <- 1:G
 alpha_values <- c(0.75,0.8,0.85)
 eta_values <- c(5,10,15)
 ptrain <- c(0.7,0.7,0.7)
-vpi <-  as.vector(as.vector(table(wine$Type)/length(wine$Type)))
+
+
+vpi <-  as.vector(as.vector(table(wine$Class)/length(wine$Class)))
+
 
 alphaM <-as.matrix(expand.grid(alpha_values,alpha_values,alpha_values))
 etaM <- as.matrix(expand.grid(eta_values,eta_values,eta_values))
 nameDf <- "WineContColor"
 
+alphaM
+etaM
+
+size_sets <- fun_CalNcont(G,ng,ptrain,alphaM[1,])
+
+
+
 pattern <- "A[\\d]+_[\\d]+_[\\d]+_E[\\d]+_[\\d]+_[\\d]+_Wine"
 
 
+# call function that run simulations only contaminating one variable in this case 
+# the variable Colour
+
+
+
+cont_vars <- "Color"
+
 # Run simulations of contaminated samples
-ContSimulations(pathOutput,nameDf,Xwine,y,lab,vpi,alphaM,etaM,ptrain,ns = 10)
+ContSimulationsVars(pathOutput,nameDf,Xwine,y,lab,vpi,alphaM,etaM,ptrain,cont_vars ,ns = 10)
+
 
 
 summary(factor(wine$Class))/nrow(wine)

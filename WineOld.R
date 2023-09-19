@@ -26,6 +26,7 @@ ind_1 <- y == 1
 ind_2 <- y == 2
 ind_3 <- y == 3
 
+ng <- table(y)
 meanWine_1 <- Xwine[ind_1,] %>% apply(2,mean)
 meanWine_2 <- Xwine[ind_2,] %>% apply(2,mean)
 meanWine_3 <- Xwine[ind_3,] %>% apply(2,mean)
@@ -87,6 +88,9 @@ etaM <- as.matrix(expand.grid(eta_values,eta_values,eta_values))
 alphaM <-as.matrix(expand.grid(alpha_values,alpha_values,alpha_values))
 
 
+ncont <- fun_CalNcont(G,ng,ptrain,alphaM[1,])
+
+
 
 paste(eta, collapse = "_")
 
@@ -100,7 +104,7 @@ for(i_a in 1:nrow(alphaM))
    file_names[[cont]]<- paste0("A",str_replace_all(name_alpha,"\\.",""),"_E",name_eta,"_Wine.Rdata")
 #    file_names[[cont]]<- paste0("A",name_alpha,"_E",name_eta,"_Wine.Rdata")
     
-    cont <- cont + 1
+    cont <- cont + 1    
   }
 
 str_detect(unlist(file_names), "A0.8_0.75_0.75_E10_15_10_Wine.Rdata")

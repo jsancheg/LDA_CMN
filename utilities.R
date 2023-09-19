@@ -7,9 +7,7 @@ library(fda)
 library(chemometrics)
 library(scatterplot3d)
 library(RandPro)
-library(class)
 library(VGAM)
-library(nnet)
 library(scales)
 library(pls) # partial least square
 #library(mixOmics) # partial least square - discriminant analysis
@@ -26,7 +24,6 @@ library(gridExtra) # combine plots
 library(ggthemes)
 library(ggfortify)
 library(tidyverse) # rbernoulli function
-library(pls)
 library(fastDummies)
 library(factoextra) # PCA , Factor analysis
 library(mdatools) # SIMCA

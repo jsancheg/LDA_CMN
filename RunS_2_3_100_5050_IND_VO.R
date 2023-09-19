@@ -5,7 +5,7 @@ source("S_2_3_100_BAL_IND_VO.R")
 ruta <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Output"
 library(tictoc)
 tic("One Simulation")
-for(i_sim in 3:10){
+for(i_sim in 7:10){
   sim.A5 <- mclapply(1:10, function(x) {
     sim.progress <- MultSimPar3(1)
   }, mc.cores = 1)

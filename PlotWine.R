@@ -1,9 +1,13 @@
 library(ggplot2)
-library(plotly)
 library(RColorBrewer)
+library(tictoc)
+library(corrplot)
+library(plotly)
+library(psych)
 
 pathWd <- "E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
 pathOutput <-"E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Proc_WineNew/"
+source("http://www.sthda.com/upload/rquery_cormat.r")
 
 setwd(pathWd)
 dir(pathOutput)
@@ -142,8 +146,80 @@ colnames(dfAll)
 #dfAll <- dfAll %>% filter(CR_SV >0 ) %>% mutate (DifCCR = CR_SV - CR_SatMC)
 
 
+# Plot wine type of wine non-contaminated data set -----------------------
+colnames(wine)
+unique(wine$Type)
+XWine <- wine %>% select(-c(Type))
+
+colnames(XWine)
+
+XWine_mean <- wine %>% group_by(Type) %>%
+  summarise(Alcohol_mean = mean(Alcohol),
+            Malic_mean = mean(Malic),
+            Ash_mean = mean(Ash),
+            Alcalinity_mean = mean(Alcalinity),
+            Magnesium_mean = mean(Magnesium),
+            Phenols_mean = mean(Phenols),
+            Flavanovids_mean = mean(Flavanoids),
+            Nonflavanoid_mean = mean(Nonflavanoid),
+            Proanthocyanins_mean = mean(Proanthocyanins),
+            Color_mean = mean(Color),
+            Hue_mean = mean(Hue),
+            Dilution_mean = mean(Dilution),
+            Proline_mean = mean(Proline)
+            )
+
+XWine_mean
+
+#meanClass_dist <- sqrt(sum( (XWine_mean[1,-1] - XWine_mean[2,-1])^2 ))
+#meanClass_dist
+
+mycols <- c("blue","green","red")
+pairs(XWine %>% dplyr::select(Color,Hue,Dilution,Alcohol,Malic,Flavanoids) , 
+      oma = c(3,3,6,3),
+      col = mycols[as.numeric(wine$Type)],
+      gap = 0, lower.panel = NULL)
+legend("top", col = mycols, legend = levels(wine$Type),pch = 20,
+       xpd = NA, ncol = 3, bty = "n", inset = 0.01, pt.cex = 1.5)
 
 
+
+# Calculate the  F statistics------------------------------------------------
+
+y <- as.numeric(wine$Type)
+dfRW <- getOW(XWine,as.numeric(y))
+head(dfRW,6)
+
+dfRWsort <- dfRW[order(-dfRW$Ftest),]
+
+
+options(repr.plot.width=8, repr.plot.height=3)
+gFtest <- ggplot(dfRWsort, aes(x = reorder(Var, +Ftest),y = Ftest) ) +
+  geom_bar(stat = "identity",fill = "lightblue") +
+  coord_flip() + 
+  ylab("Variables") +  xlab("F score") +
+  geom_text(aes(x=Var, y = Ftest + 0.14, label = round(Ftest,0) ) ,check_overlap = TRUE)
+gFtest %>% ggplotly
+
+
+
+# Plot correlations of Wine data set --------------------------------------
+
+data(wine)
+
+colnames(wine)
+XWine <- wine %>% subset(select = -c(Type))
+rquery.cormat(XWine)
+corrplot::corrplot(cor(XWine),
+         method = "circle",
+         type = 'l',
+         diag = FALSE,
+         tl.col = "black",
+         bg = "white",
+         title = "",
+         col = rev(colorRampPalette(c("#67001F", "#B2182B", "#D6604D", 
+                                  "#F4A582", "#FDDBC7", "#FFFFFF", "#D1E5F0", "#92C5DE", 
+                                  "#4393C3", "#2166AC", "#053061"))(200)))
 
 
 # Plot of the frequency of the models

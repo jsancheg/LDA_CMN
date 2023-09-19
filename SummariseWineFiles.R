@@ -276,3 +276,5 @@ plot(g3)
 
 plot(g4)
 
+nrow(Xwine)
+nrow(dfAll)
