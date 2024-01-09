@@ -51,7 +51,8 @@ library(mclust)
 library(MLmetrics) # calculate metrrics accuracy, precision, recall, F1 score
 rm(list = ls())
 
-WorkPath <- getwd()
+work_path <- getwd()
+setwd(work_path)
 source("functions.R")
-source("load_datasets.r")
+#source("load_datasets.r") # Load coffee dataset and meat
 
