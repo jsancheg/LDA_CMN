@@ -45,7 +45,7 @@ pattern <- "A[\\d]+_[\\d]+_[\\d]+_E[\\d]+_[\\d]+_[\\d]+_Wine"
 
 
 # Run simulations of contaminated samples
-ContSimulations(pathOutput,nameDf,Xwine,y,lab,vpi,alphaM,etaM,ptrain,c("Color"),ns = 10)
+ContSimulations(pathOutput,nameDf,Xwine,y,lab,vpi,alphaM,etaM,ptrain,ns = 10)
 
 
 dfAll<- Summarise_Files(pathOutput, nameDf, pattern, alphaM, etaM)
