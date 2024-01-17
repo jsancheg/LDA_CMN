@@ -90,3 +90,9 @@ if (!all(dim(mu)==c(p,G), dim(invSigma)==c(p,p,G),length(prior)==c(G))) stop("Er
 
 length(fitCMN$models[[1]]$model)
                                           
+
+library("googledrive")
+
+googledrive::drive_auth(path = "/home/jsancheg/git_environment/LDA_CMN/GoogleDriveCredentials/client_jsancheg.json")
+
+drive_auth_configure(path = "/home/jsancheg/git_environment/LDA_CMN/GoogleDriveCredentials/client_jsancheg.json")

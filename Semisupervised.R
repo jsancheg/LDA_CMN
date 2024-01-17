@@ -445,10 +445,10 @@ SemiSupervised_HLS <- function(file_name,CE,variables_True_Model,
       
       
       saturated_mod <-  SemiSupervisedFitting(Xtrain,Xtest,ltrain,ltest,
-                                              vtest, "EII",pnolabeled) 
+                                              vtest, "VVV",pnolabeled) 
       
       selectedVar_mod <- HeadLongSearch(Xtrain,Xtest,RW,ltrain,ltest,vtest,
-                                        CE = "EII", pnolabeled = 0.5, iterations = niterations,
+                                        CE = "VVV", pnolabeled = 0.5, iterations = niterations,
                                         alpharef = 0.75, tol = 0.01, epsilon = 0)
       
       
@@ -463,11 +463,11 @@ SemiSupervised_HLS <- function(file_name,CE,variables_True_Model,
         
         TrueModel  <- SemiSupervisedFitting(Xtrain_TM,
                                             Xtest_TM,ltrain,ltest,
-                                            vtest,"EII",pnolabeled,
+                                            vtest,"VVV",pnolabeled,
                                             iterations = niterations,
                                             alpharef = 0.75, 
                                             tol = 0.01)
-      } 
+  } 
       
       # pos: position model obtained by variable selection
       pos <- selectedVar_mod$posCM
@@ -617,7 +617,7 @@ SemiSupervised_HLS <- function(file_name,CE,variables_True_Model,
       estimates[[i_sim]]$vTestHat_SM <- SM_vtest
       estimates[[i_sim]]$vTestHat_TM <- TM_vtest
       estimates[[i_sim]]$vTestHat_SaturatedM <- saturated_vtest
-      }
+      } # end-for i_sim
      
               output <-  list(Metrics = Metrics , 
                      # Matrix of metrics
