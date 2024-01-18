@@ -1,4 +1,4 @@
-setwd("/home/jsancheg/git_environment/LDA_CMN/")
+# setwd("/home/jsancheg/git_environment/LDA_CMN/")
 source("CMNFunctionsV2.R")
 
 E_StepCMN <- function(X,l,par)

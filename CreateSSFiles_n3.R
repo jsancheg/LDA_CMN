@@ -1,7 +1,5 @@
 # 
 
-pathCode <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
-setwd(pathCode)
 
 source("Semisupervised.R")
 source("ListScenariosFiles.R")
