@@ -367,7 +367,7 @@ HeadLongSearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
 
 
 
-SemiSupervised_HLS <- function(file_name,CE,variables_True_Model, 
+SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model, 
                                pnolabeled = 0.5, niterations = 10,
                                alpharef = 0.99, tol = 0.01, epsilon = 0)
 # Semisupervised_HLS: function for semi-supervised fitting with head long search algorithm
@@ -376,7 +376,7 @@ SemiSupervised_HLS <- function(file_name,CE,variables_True_Model,
 #    fileRDS<- readRDS(paste0(pathOutput,"S_2_2_100_3000_75_BAL_SCBSV_VD_A8080_E2020_10.RDS"))
 #    fileRDS<- readRDS(paste0(pathOutput,"S_2_2_5_3000_75_BAL_SCBSV_VD_A8080_E2020_10.RDS"))
     
-    fileRDS <- readRDS(file_name)  
+    fileRDS <- readRDS(paste0(file_name,pathScenarios))  
     nsimulations <- length(fileRDS$GenData)
     if(!is.numeric(nsimulations) | nsimulations == 0) stop("The file doesn't contain any simulation")
     MmetricsSaturatedM <- vector("list",nsimulations)

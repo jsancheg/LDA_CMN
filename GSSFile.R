@@ -13,12 +13,12 @@ GenerateSSFile <- function(file_name,pathScenarios, pathOutput)
 {
   fileScenario <- readRDS(paste0(pathScenarios,file_name))  
   
-  Number_Variables <-str_split_1(file_name, "_")[[3]]
+  Number_Separating_Variables <-str_split_1(file_name, "_")[[3]]
   
-  if(Number_Variables == 2)
+  if(Number_Separating_Variables == 2)
   {
     variables_TrueModel <- c("X2","X4")
-  }else if(Number_Variables == 3)
+  }else if(Number_Separating_Variables == 3)
   {
     variables_TrueModel <- c("X2","X4","X5")
   }

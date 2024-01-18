@@ -1872,18 +1872,18 @@ CreateSimFilesMultCore <- function(pathOutput,nruns)
 # nruns: Number of runs for each datasets
 {
   
-  F1 <- c("VD","MD","VO")
-  F2 <- c(2,3)
+  F1 <- c("VD","MD","VO") # Mean distance
+  F2 <- c(2,3) # Number of classes
   #  F3 <- list(matrix(c(0.5,0.5,0.9,0.1),nrow = 2, ncol = 2, byrow = TRUE),
   #             matrix(c(0.33,0.33,0.33,0.70,0.15,0.15), nrow = 2, ncol = 3, byrow = TRUE ))
-  F3 <- c("BAL","INB")
-  F4 <- c(3000,4000)
-  F5 <- c(5,100)
-  F6 <- c(0.75,0.85)
-  F7 <- c("SCBSV","SCBNSV","SCBSNSV","IND")
-  F8 <- c(0.8,0.9)
-  F9 <- c(20,30)
-  F10 <- c(2,3)
+  F3 <- c("BAL","INB") #class proportion matrix with the number of columns equals to F2
+  F4 <- c(3000,4000) # Number of observations
+  F5 <- c(5,100) # Number of variables
+  F6 <- c(0.75,0.85) # Percentage of samples used as training
+  F7 <- c("SCBSV","SCBNSV","SCBSNSV","IND") # Correlation structure
+  F8 <- c(0.8,0.9) # Percentage of non contaminated samples (alpha)
+  F9 <- c(20,30) # Variance inflation factor
+  F10 <- c(2,3) # number of separating variables
   # posibilities
   # possibilities for 2 classes
   Sets2 <- as.matrix(expand.grid(2,F10,F5,F4,F3,F1,F7,F6,F8,F8,0,F9,F9,0))

@@ -25,23 +25,61 @@ GenerateSSFiles <- function(pathScenarios,pathSSFiles)
   
   if(nSSFilesProcessed == 0 )
   {
-    SSFilesToProcess <- paste0(pathScenarios,ScenariosFiles)
-    FileNameToProcess <- ScenariosFiles
+    SSFilesToProcess <- ScenariosFiles
     nSSFilesToProcess <- nFiles
     
   }else {
     nssFilesToProcess <- nFiles - nSSFilesProcessed
-    SSFilesToProcess <- paste0(pathScenarios,setdiff(ScenariosFiles,SSFilesProcessed))
-    FileNameToProcess <- setdiff(ScenariosFiles,SSFilesProcessed)
+    SSFilesToProcess <- setdiff(ScenariosFiles,str_replace(SSFilesProcessed,"SSV_","S_"))
   }
   
+  # index for data files having 2 separating variables
+  ind2 <- str_split(SSFilesToProcess,"_",simplify = TRUE)[,3] == 2
+  # index for data files having 3 separating variables
+  ind3 <- str_split(SSFilesToProcess,"_",simplify = TRUE)[,3] == 3
+  
+  Number_separating_variables <-   str_split(SSFilesProcessed,"_",simplify = TRUE)[,3]
+  Number_separating_variables
   
   CE <- "VVV"
   
-  
-  
-  variables_True_Model <- c("X2","X4")
+  if(any(ind2 == TRUE))
+  {
+    variables_True_Model <- c("X2","X4")
+    simFiles <- mclapply(SSFilesToProcess[ind2], function(x) {
+      Output <- SemiSupervised_HLS(x, pathScenarios,CE,variables_True_Model ,
+                                   pnolabeled = 0.5, niterations = 10,
+                                   alpharef = 0.99, tol = 0.01, epsilon = 0)
+      SSfile_name <- str_replace(x,"S_","SSV_")
+      saveRDS(Output, paste0(pathSSFiles,SSfile_name))
+    }, mc.cores = 2)
+  }
 
+  if(any(ind2 == TRUE))
+  {
+    variables_True_Model <- c("X2","X4")
+    simFiles <- mclapply(SSFilesToProcess[ind2], function(x) {
+      Output <- SemiSupervised_HLS(x, pathScenarios,CE,variables_True_Model ,
+                                   pnolabeled = 0.5, niterations = 10,
+                                   alpharef = 0.99, tol = 0.01, epsilon = 0)
+      SSfile_name <- str_replace(x,"S_","SSV_")
+      saveRDS(Output, paste0(pathSSFiles,SSfile_name))
+    }, mc.cores = 2)
+  }
+  
+  if(any(ind3 == TRUE))
+  {
+    variables_True_Model <- c("X2","X4","X5")
+    simFiles <- mclapply(SSFilesToProcess[ind2], function(x) {
+      Output <- SemiSupervised_HLS(x, pathScenarios,CE,variables_True_Model ,
+                                   pnolabeled = 0.5, niterations = 10,
+                                   alpharef = 0.99, tol = 0.01, epsilon = 0)
+      SSfile_name <- str_replace(x,"S_","SSV_")
+      saveRDS(Output, paste0(pathSSFiles,SSfile_name))
+    }, mc.cores = 2)
+  }
+  
+  
   file_name <- str_split_1(SSFilesToProcess[[1]],"/")[6]
   str_split_1(file_name,"_")[3]
   aux <- str_split_1(FileNameToProcess[[1]],"_")
