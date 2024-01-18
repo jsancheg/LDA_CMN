@@ -10,7 +10,7 @@
 work_path <- "/home/jsancheg/git_environment/LDA_CMN"
 
 dir(work_path)
-setwd(work_path)
+#setwd(work_path)
 source("utilities.R")
 pathOutput <- "/home/jsancheg/git_environment/LDA_CMN/Scenarios/"
 dir(pathOutput)
