@@ -24,7 +24,7 @@ GenerateSSFile <- function(file_name,pathScenarios, pathOutput)
   }
   
   CE <- "VVV"
-  Output <- SemiSupervised_HLS(paste0(pathScenarios,file_name),CE,variables_TrueModel,
+  Output <- SemiSupervised_HLS(file_name,pathScenarios,CE,variables_TrueModel,
                            pnolabeled = 0.5, niterations = 10,
                            alpharef = 0.99, tol = 0.01, epsilon = 0)
     

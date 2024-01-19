@@ -57,7 +57,7 @@ Scenarios <- sapply(1:n,function(i) {
            Sets[i,5],"_",Sets[i,7],"_",
            Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
            as.numeric(Sets[i,10])*100,"_E",
-           as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),".RDS")
+           as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),"_10.RDS")
     
   }else if (as.numeric(Sets[i,1]) == 3)
   {
@@ -68,7 +68,7 @@ Scenarios <- sapply(1:n,function(i) {
                      Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
                      as.numeric(Sets[i,10])*100,as.numeric(Sets[i,11])*100,
                      "_E",as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),
-                     as.numeric(Sets[i,14]),".RDS")
+                     as.numeric(Sets[i,14]),"_10.RDS")
   }
   
 })

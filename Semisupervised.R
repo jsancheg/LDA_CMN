@@ -376,7 +376,7 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
 #    fileRDS<- readRDS(paste0(pathOutput,"S_2_2_100_3000_75_BAL_SCBSV_VD_A8080_E2020_10.RDS"))
 #    fileRDS<- readRDS(paste0(pathOutput,"S_2_2_5_3000_75_BAL_SCBSV_VD_A8080_E2020_10.RDS"))
     
-    fileRDS <- readRDS(paste0(file_name,pathScenarios))  
+    fileRDS <- readRDS(paste0(pathScenarios,file_name))  
     nsimulations <- length(fileRDS$GenData)
     if(!is.numeric(nsimulations) | nsimulations == 0) stop("The file doesn't contain any simulation")
     MmetricsSaturatedM <- vector("list",nsimulations)

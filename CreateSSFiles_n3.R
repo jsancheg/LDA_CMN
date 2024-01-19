@@ -17,9 +17,13 @@ library(googledrive)
 library(gargle)
 library(readr)
 
-pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
-pathFiles <- "/home/jsancheg/Documents/SSFiles/"
+# Ubunto paths
+# pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
+# pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
+# Windows path
+pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
 
 # Function to authenticate with google drive using service account json
 authenticate_service_account <- function(json_key_path){
@@ -52,13 +56,14 @@ dir(pathScenarios)
 ini <- n5.2 + 1
 fin <- n5.3
 
+FilesProcessed <- dir(pathSSFiles)
 
-Scenarios5[n5.2:(n5.2+3)]
+
 mclapply(Scenarios5[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
   if(is_empty(intersect(FilesProcessed,SSFilename))) GenerateSSFile(x,pathScenarios,pathSSFiles) else cat("\n The file ",SSFilename, " already exists in the directory. \n")
   
-}, mc.cores = 2)
+}, mc.cores = 1)
 
