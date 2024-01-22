@@ -5,7 +5,7 @@
 #source("Semisupervised.R")
 #pathScenarios <- "/home/jsancheg/git_environment/LDA_CMN/Scenarios/"
 #pathSSFiles <- "/home/jsancheg/git_environment/LDA_CMN/SSFiles/"
-
+library(stringr)
 
 #file_name <- dir(pathScenarios)[[1]]
                                                                                                                        

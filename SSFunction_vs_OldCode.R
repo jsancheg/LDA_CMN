@@ -81,9 +81,9 @@ lind_cont_class <- list()
 for (i_g in 1:G)
 {
   # non contaminated samples in classes
-  lind_nocont_class[[i_g]] <- which(GenData$vtest == 1 & GenData$l == i_g)
+  lind_nocont_class[[i_g]] <- which(GenData$vtest == 1 & GenData$ltest == i_g)
   # contaminated samples in classes
-  lind_cont_class[[i_g]] <- which(GenData$vtest==0 & GenData$l == i_g)
+  lind_cont_class[[i_g]] <- which(GenData$vtest==0 & GenData$ltest == i_g)
   MmetricsSaturatedM[i_g,2] <- Precision(GenData$ltest,saturated_mod$predlabel,positive = i_g)
   MmetricsTM[i_g,2] <- Precision(GenData$ltest,TrueModel$predlabel,positive = i_g)
   MmetricsSM[i_g,2] <-Precision(GenData$ltest,mod$models[[pos]]$predlabel,positive = i_g)
@@ -112,7 +112,8 @@ accSaturated_cont_samples <- rep(0,Nsteps)
 
 
 # Calculating precision, recall, and F1 metrics
-Vtest <- GenData$vectorVtest
+Vtest <- GenData$vtest
+
 saturated_Vtest <- apply(saturated_mod$predv,1,max)
 TM_Vtest <- apply(TrueModel$predv,1,max) # check why all predicted V are 1
 SM_Vtest <- apply(mod$models[[pos]]$predv,1,max)
@@ -126,13 +127,21 @@ accSM_V_test <- 100*sum(Vtest==SM_Vtest)/length(Vtest)
 library("MLmetrics")
 table(saturated_Vtest,GenData$vtest)
 
-precision_saturated_V <- Precision(GenData$vtest,saturated_Vtest,positive = 0)
-precision_TM_V <- Precision(GenData$vtest,TM_Vtest,positive = 0)
-precision_SM_V <- Precision(GenData$vtest,SM_Vtest,positive = 0)
+precision_saturated_V <- ifelse(!is.na(Precision(GenData$vtest,saturated_Vtest,positive = 0)), 
+                                Precision(GenData$vtest,saturated_Vtest,positive = 0),0)
 
-recall_saturated_V <- Recall(GenData$vtest,saturated_Vtest,positive = 0)
-recall_TM_V <- Recall(GenData$vtest,TM_Vtest,positive = 0)
-recall_SM_V <- Recall(GenData$vtest,SM_Vtest,positive = 0)
+precision_TM_V <- ifelse(!is.na(Precision(GenData$vtest,TM_Vtest,positive = 0)),
+                         Precision(GenData$vtest,TM_Vtest,positive = 0),0 )
+
+precision_SM_V <- ifelse(!is.na(Precision(GenData$vtest,SM_Vtest,positive = 0)),
+                         Precision(GenData$vtest,SM_Vtest,positive = 0),0 )
+
+recall_saturated_V <- ifelse( !is.na(Recall(GenData$vtest,saturated_Vtest,positive = 0)) 
+                             ,Recall(GenData$vtest,saturated_Vtest,positive = 0),0)
+recall_TM_V <- ifelse( !is.na( Recall(GenData$vtest,TM_Vtest,positive = 0) ) 
+                              ,Recall(GenData$vtest,TM_Vtest,positive = 0),0)
+recall_SM_V <- ifelse ( is.na(Recall(GenData$vtest,SM_Vtest,positive = 0))
+                              ,Recall(GenData$vtest,SM_Vtest,positive = 0),0)
 
 F1_Saturated_V <- 2*(precision_saturated_V * recall_saturated_V)/(precision_saturated_V+recall_saturated_V)
 F1_TM_V <- 2*(precision_TM_V * recall_TM_V)/(precision_TM_V + recall_TM_V)
