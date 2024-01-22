@@ -150,6 +150,99 @@ Sim_DIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   
 }
 
+loglikCMN_DIF<-function(X,l, par)
+{
+  
+  mu <- as.matrix(par$mu)
+  if(is.matrix(X) & ncol(X)==1) 
+  { # cases when X contains only 1 variable
+    if(length(dim(par$sigma))>2) # if sigma is passed as a vector 
+    {
+      # sg variance covariance of non-contaminated samples
+      sg <- as.vector(par$sigma)
+      # sg1 variance covariance of contaminated samples
+      sg1 <- as.vector(par$eta * par$sigma) 
+    }else if(!is.matrix(par$sigma)) # if the covariance is a vector
+    {
+      sg <- rep(par$sigma,par$G)
+      sg1 <- rep(par$eta * par$sigma,par$G)
+    }
+  }else if(ncol(X)>1) # more than 1 variable contains in X
+  {
+    sg <- par$sigma
+    if(length(dim(par$sigma))>2 & G > 1) # each group has its covariance matrix
+    {
+      sg1 <- array(0.0 , dim= dim(sg)) # sg is an array
+      for(i_g in 1:G)
+        if(is.matrix(par$eta))
+        {
+          sg1[,,i_g] <- t(diag(par$eta[,i_g],p))*par$sigma[,,i_g]*diag(par$eta[,i_g],p)
+          
+        } else sg1[,,i_g] <- t(diag(par$eta[i_g],p))*par$sigma[,,i_g]*diag(par$eta[i_g],p)
+
+    }else if(length(dim(par$sigma))==2 & G > 1) # same covariance matrix for all groups
+    {   sg1 <- matrix(0.0 , nrow = nrow(sg), ncol=ncol(sg) )
+        for (i_g in 1: G)
+           if(is.matrix(par$eta))
+          {
+              sg1 <- t(diag(par$eta[,i_g],p))*par$sigma*diag(par$eta[,i_g],p)      
+          }else sg1 <- t(diag(par$eta,p))*par$sigma*diag(par$eta,p)
+    }
+  }
+  G <- par$G
+  pig <- par$pig
+  alpha <- par$alpha
+  eta <- par$eta
+  v <- par$v
+  
+  m <- nrow(X)
+  p <- ncol(X)
+  
+  l <- unmap(l)
+  M <- matrix(0.0, nrow = m, ncol = G)
+  
+  
+  
+  for (g in 1:G)
+  {
+    for(i in 1:m)
+    {
+      term1 <- log(pig[g])
+      if(length(dim(sg)) > 2)
+      {
+        term2 <- v[i,g] * (log(alpha[g]) + dMVNorm(X[i,],mu[,g],sg[,,g],log = TRUE) )
+        term3<-(1-v[i,g]) * (log(1-alpha[g]) + dMVNorm(X[i,],mu[,g],eta[g]*sg1[,,g], log = TRUE) )
+        
+      }else if(length(dim(sg))<=2)
+      {
+        if(ncol(X)>1)
+        {
+          s <- matrix(sg, ncol = p, nrow = p)
+          term2 <- v[i,g] * ( log(alpha[g])+ dMVNorm(X[i,],mu[,g],data.matrix(s),log = TRUE ) )
+          term3 <-(1-v[i,g]) * ( log (1-alpha[g]) + dMVNorm(X[i,],mu[,g],eta[g]*s,log = TRUE ) )
+        } else if(ncol(X)==1)
+        {
+          mu <- as.vector(mu)
+          term2 <- v[i,g] * log(alpha[g]) + dnorm(X[i,],mu[g],sg[g] , log = TRUE) 
+          term3<-(1-v[i,g]) * log( (1-alpha[g])) + dnorm(X[i,],mu[g],sg1[g], log = TRUE ) 
+        }
+      }
+      
+      if(ncol(l)> 1)
+        M[i,g] <- l[i,g]*(term1 + term2 + term3)   
+      else  M[i,g] <- l[i]*(term1 + term2 + term3)   
+      
+      
+    }
+  }
+  
+  loglik <- sum(M)
+  
+  return(loglik)
+}
+
+
+
 eCmn_DIF<-function(X,l,par)
 {
   # eCmn_difIF E-step for contaminated mixture model with 
@@ -366,7 +459,7 @@ CNmixt_DifIF <- function(Xtrain,Xtest,ltrain,ltest,CE = "VVV",
   ltest_r[[iter]] <- lhat 
   
   # Create the function loglikCMN for different variables inflation factors within group
-  logc[[iter]] <- loglikCMN(X_train1, l_train,par) 
+  logc[[iter]] <- loglikCMN_DIF(Xtrain, ltrain,par) 
   vtrain_r[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
   diflog[[iter]] <- NA
   #cat("\n","iter=",iter,";","diflog=",diflog[[iter]])
@@ -485,7 +578,8 @@ SSFit_DifIF<- function(Xtrain, Xtest, ltrain, ltest,
   CCRTest_Nc <- sum((ltest_hat_nc == ltest)) / length(ltest)
   CCRTest_Nc
   
-  ExpectedValues_C <- E_StepCMN(Xtest,ltest,parameters_C)
+  ExpectedValues_C <- eCmn_DIF(Xtest,ltest,parameters_C)
+  
   if (length(ExpectedValues_C$lhat)==length(ltest)){
     CCRTest_C <- sum((ExpectedValues_C$lhat == ltest)) / length(ltest)
   }  else CCRTest_C = -1 
