@@ -1,6 +1,6 @@
-SimDfDifIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
+Sim_DIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
 {
-  # Function: SimDfDifIF.
+  # Function: Sim_DIF.
   # Description: This function generates datasets that allow.
   # different variable inflation factors within classes.
   # Parameters
@@ -32,44 +32,88 @@ SimDfDifIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   if(any(ptraining<0) | any(ptraining>1)) stop("ptraining is not a probability")
   if(any(alphag<0) | any(alphag>1)) stop("alpha takes values in the interval (0,1)")
   if(any(etag < 1))stop("eta has to be greater than 1")  
+  
   aux <- (rmultinom(nobs,1,pig))
   l <- apply(aux,2,which.max)
   v <- rep(0,nobs)
-  sg <- array(0,dim = dim(sigmag))
+
+    if(ncol(X) == 1 & is.vector(sigmag) & length(sigmag)==1)
+  {
+    sg <- 0
+  } else if(is.array(sigmag))
+  {
+    sg <- array(0,dim = dim(sigmag))
+  }
+  
   for(g in 1:G) 
     {
-      if(length(dim(sigmag)) == 2){
-           sg <- t(diag(sqrt(eta),p)) %*% sigmag %*% diag(sqrt(eta),p)
+      if(ncol(X) == 1 & is.vector(sigmag) ) # only 1 column in X but different groups
+      {
+          sg <- etag * sigmag # sg could be a vector of length 1 if there is only one group 
+                              # of dimension G if there are G groups
+      }else if(length(dim(sigmag)) == 2){
+           sg <- t(diag(sqrt(etag),p)) %*% sigmag %*% diag(sqrt(etag),p)
       } else if(length(dim(sigmag)) == 3) {
       sg[,,g] <- t(diag(sqrt(etag[,g]),p))  %*% sigmag[,,g] %*% diag(sqrt(etag[,g]),p)
       } else if(length(dim(sigmag)) > 3) stop("Sigma is an array of dimension 4")
-  }
+    } # end-for g
   
-
+  mg <- apply(unmap(l),2,sum)
+  
   for(i in 1:nobs)
     v[i] <- as.numeric(rbinom(1,1,alphag[l[i]]))
-  if(length(dim(sigmag)) == 2){
-    # X[i,] <- unlist(gen(p, mu = 0, sigma = 1))
-    l <- sample(1:G,nobs,replace = T, prob = pig)
-    mg <- apply(unmap(l),2,sum)
-    #     if (any(alphag!=1)){
-    #      }
+
+  # initialize l
+  if(ncol(X) == 1 & is.vector(sigmag) ) 
+  {
+    # same variance for all groups when X is composed by only 1 variable
     for (i in 1:nobs)
     {
-      if(v[i] == 1)
+      if(v[i] == 1) 
+        # non-contaminated sample
       {  
-        if(is.matrix(mug))
-          X[i,] <- rMVNorm(1,mug[,l[i]],sigmag)
-        else  X[i,] <- rMVNorm(1,mug,sigmag)
-        
+        if(G > 1) # if there is more than 1 group 
+          {
+            # groups with different mean and equal variance
+            X[i,] <- rmnorm(1,mug[l[i]],sigmag) 
+          } else if(G > 1 & length(mug)== 1)  # more than 1 group with same mean
+          { # groups with same mean and different variance
+            X[i,] <- rmnorm(1,mug,sigmag[l[i]])
+          } else if(G == 1) X[i,] <- rmnorm(1,mug,sigmag) # 1 group    
       }else if(v[i]==0)
-      {  
-        if(is.matrix(mug))
-          X[i,] <- rMVNorm(1,mug[,l[i]],sg)
-        else  X[i,] <- rMVNorm(1,mug,sg)
-      }  
+        # contaminated sample
+          {  
+          if(is.matrix(mug) & G > 1 ) # if there is more than 1 group
+          {
+            # groups with different mean and equal contaminated variance
+            X[i,] <- rmnorm(1,mug[,l[i]],sg)
+          }else if (G>1 & length(mug)== 1) # more than 1 group with same mean
+          { # groups with same mean and different variance
+            X[i,] <- rnorm(1,mug,sg[l[i]])
+          }else if (G==1) X[i,] <- rmnorm(1,mug,sg) # 1 group
+          } # end if-else v  
       
-    }
+    } # end for
+  } # end if 
+  
+   if(length(dim(sigmag)) == 2){
+#      Same covariance matrix for all groups
+     for (i in 1:nobs)
+      {
+        if(v[i] == 1)
+        {  
+          if(is.matrix(mug))
+            X[i,] <- rMVNorm(1,mug[,l[i]],sigmag)
+         else  X[i,] <- rMVNorm(1,mug,sigmag)
+        
+        }else if(v[i]==0)
+        {  
+          if(is.matrix(mug))
+            X[i,] <- rMVNorm(1,mug[,l[i]],sg)
+          else  X[i,] <- rMVNorm(1,mug,sg)
+        } # end if-else v  
+      
+      } # end for
     
   }else if(length(dim(sg)) > 2)
   {
@@ -106,10 +150,236 @@ SimDfDifIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   
 }
 
+eCmn_DIF<-function(X,l,par)
+{
+  # eCmn_difIF E-step for contaminated mixture model with 
+  #            different variable inflation factors within groups
+  # X : matrix with the training data
+  # l:  group information of the observations in training set
+  # par:      parameters of the mixture of contaminated normal distribution with
+  #           different variables inflation factor within groups
+  
+  m <- nrow(X)
+  p <- ncol(X)
+  alpha <- par$alpha
+  mu <- par$mu
+  sigma <- par$sigma
+  G <- par$G
+  pig <- par$pig
+  eta <- par$eta #  eta contains a matrix of dimension p x G, where each column corresponds
+                 #  the elements of the diagonal corresponding to variable inflation factor  
+                 #  for the group g
+  
+  v <- matrix(0.0, ncol = G, nrow = m)
+  z <- matrix(0.0, ncol = G, nrow = m)
+  lhat <- rep(0,m)
+  vhat <- rep(0,m)
+  
+  fxig <- matrix(0.0, ncol = G, nrow = m)
+  thetaig <- matrix(0.0, ncol = G, nrow = m)
+  
+  
+  numz <- matrix(0.0, ncol = G, nrow = m) # numerator for calculating zhat
+  numv <- matrix(0.0, ncol = G, nrow = m) # numerator for calculating vhat
+  denz <- rep(0,m)                        # denominator for calculating z hat
+  denv <- matrix(0.0, ncol = G, nrow = m) # denominator for calculating v hat
+  
+  output <- list()
+  
+  if(ncol(X) == 1 & is.vector(sigma) & length(sigma)==1)
+  {
+    sg <- sigma
+  } else if(is.array(sigma))
+  {
+    sg <- array(0,dim = dim(sigma))
+  }
+  
+  for(g in 1:G) 
+  {
+    # different groups separated by only 1 variable with same variance or different variance
+    if(ncol(X)==1 & is.vector(sigma) & length(sigma) >= 1)
+    {
+      sg <- eta*sigmag
+    }
+    if(length(dim(sigma)) == 2){
+      sg <- t(diag(sqrt(eta),p)) %*% sigma %*% diag(sqrt(eta),p)
+    } else if(length(dim(sigmag)) == 3) {
+      sg[,,g] <- t(diag(sqrt(eta[g]),p))  %*% sigma[,,g] %*% diag(sqrt(eta[g]),p)
+    } else if(length(dim(sigma)) > 3) stop("Sigma is an array of dimension 4")
+  }
+  
+  
+  
+  
+  for(g in 1:G)
+  {
+    for(i in 1:m)
+    {
+      if(ncol(X) == 1 & is.vector(sigma) & length(sigma)==1)
+      {
+        # thetaig : matrix containing the probability of i-th observation in group g 
+        # is not contaminated
+        thetaig[i,g] <- dnorm(X[i,],mu[g],sigma)
+        # fxig: matrix containing the probability of contaminated normal distribution for
+        # observation i in group g
+        fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dnorm(X[i,],mu[g],sg[g])
+        
+      } else if(length(dim(sigma))==2)
+      {
+        thetaig[i,g] <- dMVNorm(X[i,],mu[,g],sigma)
+        fxig[i,g] <- alpha[g]*thethaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],sg[g])
+        
+      } else if(length(dim(sigma)) > 2)
+      {
+        if(ncol(X)>1)
+        {
+          thetaig[i,g] <-  dMVNorm(X[i,],mu[,g],sigma[,,g])
+          fxig[i,g] <- alpha[g] * thetaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],sg[,,g])
+          
+        }else if(ncol(X)==1)
+        {
+          if(is.null(dim(sigma)))
+          {
+            thetaig[i,g] <- dnorm(X[i,],mu[g],sigma)
+            fxig[i,g] <- alpha[g] * thetaig[i,g] + (1-alpha[g])*dnorm(X[i,],mu[g],eta[g]*sigma)
+          } else if(!is.null(dim(sigma)) )
+          {
+            thetaig[i,g] <- dnorm(X[i,],mu[g],sigma[,,g])
+            fxig[i,g] <- alpha[g] * thetaig[i,g] +  (1-alpha[g])*dnorm(X[i,],mu[g],sg[,,g])
+            
+          }
+          
+        }
+        
+      } #End-f
+      
+      # avoid division by zero
+      numz[i,g] <- pig[g] * fxig[i,g]
+      numv[i,g] <- alpha[g] * thetaig[i,g]
+      denv[i,g] <- fxig[i,g]
+      v[i,g] <- numv[i,g]/denv[i,g]
+      
+      
+    }#End-for i
+    
+  }#End-for G
+  
+  # calculating zhat and lhat
+  
+  # calculating zhat and lhat
+  denzi <- apply(numz,1,sum)
+  for (i in 1:m)
+  {
+    z[i,] <- numz[i,]/denzi[i]
+  }
+  lhat<-apply(z,1,which.max)
+  for (i in 1:m)
+  {
+    vhat[i] <- ifelse(v[i,l[i]]>0.5,1,0)
+  }
+  
+  output <- list(z = z, v = v, lhat = lhat, vhat = vhat )
+  return(output)
+  
+  
+}
+
+
+#CNmixt_DifIF <- function(Xtrain,G,contamination,model,intialization,alphafix,
+#                         alphamin,seed,start.z,start.v,start,label,AICcond,iter.max,
+#                         threshold)
+
+CNmixt_DifIF <- function(Xtrain,Xtest,ltrain,ltest,CE = "VVV",
+                         niterations = 10,alpharef = 0.98, tol = 0.01)
+{
+  # Xtrain: dataset that contains the training set
+  # Xtest:  dataset that contains the test set
+  # ltrain: a vector containing the label/group information of observations in training set
+  # ltest : a vector containing the label/group information of observations in test set
+  # CE    : a covariance structure of the covariance matrices 
+  # niterations: number of maximum iterations
+  # alpharef: a vector of length G with the proportion of good observations in each group
+  # tol:      tolerance value to use as a measure of improvement in log likelihood
+  
+  # Check parameters of the function
+  
+  if(!is.matrix(Xtrain)) Xtrain<-as.matrix(Xtrain)
+  if(!is.matrix(Xtest)) Xtest<-as.matrix(Xtest)
+  
+  accTest_nc <- 0.0
+  accTest_c <- 0.0
+  laccTest_c <- list()
+  ltest_r <- list()
+  output <- list()
+  lmu <- list()
+  lsigma <- list()
+  lalpha <- list()
+  leta <- list()
+  diflog <- list()
+  par <- list()
+  nvar <- ncol(Xtrain)
+  nobs <- nrow(Xtrain)
+  G <- length(unique(ltrain))
+  if(is.null(alpharef)) alpharef <- rep(0.95,G)
+  if(length(alpharef)>G) stop("alpharef must be of dimension G")
+  if(length(alpharef) == 1) alpharef <- rep(alpharef,G)
+  if(ncol(Xtrain)==1) CE <- "E" else CE <- CE
+  
+  # Estimating initial parameters value for the model assuming
+  # a non contaminated model using the function mstep and estep from 
+  # library mclust
+  mstep1 <-mclust::mstep(data = Xtrain,modelName = CE, z = unmap(ltrain))
+  estep1 <- mclust::estep(data = Xtest, modelName = CE, 
+                  parameters = mstep1$parameters)
+  z <- estep1$z  
+  lhat_nc <- apply(z,1,which.max)
+  accTest_nc <- sum(lhat_nc == ltest)/length(ltest)
+  
+  # Estimated initial parameters
+  par$mu <- mstep1$parameters$mean
+  par$sigma <- mstep1$parameters$variance$sigma
+  par$G <- mstep1$parameters$variance$G
+  par$pig <- apply(unmap(ltrain),2,sum)/nrow(Xtrain)
+  # give initial values for alpha
+  par$alpha <- alpharef
+  par$eta <- rep(1.011,G)
+  
+  
+  #  cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
+  
+  estep2 <- eCmn_DIF(Xtrain,ltrain,par)
+  estep2_test <- eCmn_DIF(Xtest,ltest,par)
+  vhat <- estep2$v
+  #cat("\n","vij = ", estep2$v, "\n")
+  lhat <-estep2$lhat
+  par$v <- vhat  
+  # Estimate parameters assuming contaminated set
+  iter <- 1
+  vtrain_r <- list()
+  vtest_r <- list()
+  logc <- list()
+  lmu[[iter]] <- par$mu
+  lsigma[[iter]] <- par$sigma
+  leta[[iter]] <- par$eta
+  vtrain_r[[iter]] <- vhat
+  vtest_r[[iter]]<-estep2_test$v
+  ltest_r[[iter]] <- lhat 
+  
+  # Create the function loglikCMN for different variables inflation factors within group
+  logc[[iter]] <- loglikCMN(X_train1, l_train,par) 
+  vtrain_r[[2]] <- matrix(-1.0, ncol = ncol(vhat), nrow(vhat))
+  diflog[[iter]] <- NA
+  #cat("\n","iter=",iter,";","diflog=",diflog[[iter]])
+  
+  
+  
+  
+}
+
 
 SSFit_DifIF<- function(Xtrain, Xtest, ltrain, ltest,
-                                  vtest, model = "EII",
-                                  pnolabeled = 0.5,
+                                  vtest, model = "VVV",
+                                  pnolabeled = 0,
                                   iterations = 10, 
                                  alpharef = 0.75, tol = 0.01)
   # Function SSFit_DifIF Semisupervised fitting for cases with different 
@@ -150,12 +420,17 @@ SSFit_DifIF<- function(Xtrain, Xtest, ltrain, ltest,
   
   if(ncol(Xtrain) == 1) 
   {
+    # fit Contaminated Mixture model with different variables inflation
+    # factor within cluster
     res <- CNmixt(Xtrain,G,  model = model, 
                   initialization = "random.post", alphamin = alpharef,
                   label = ltrain1,iter.max = iterations)
     
   }else if(ncol(Xtrain > 1))
   {
+    # fit Contaminated Mixture model with different variables inflation
+    # factor within cluster
+    
     res <- CNmixt(Xtrain,G,  model = model, 
                   initialization = "mixt", alphamin = alpharef,
                   label = ltrain1,iter.max = iterations)

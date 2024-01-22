@@ -1623,7 +1623,8 @@ ModelAccuracy3 <- function(X_train1,X_test1,l_train,l_test,CE,
   return(output)
 }
 
-Supervised_fitting <- function(X_train1,X_test1,l_train,l_test,CE,alpharef=0.98, tol = 0.01)
+Supervised_fitting <- function(X_train1,X_test1,l_train,l_test,CE="VVV",
+                               alpharef=0.98, tol = 0.01)
 {
   if(!is.matrix(X_train1)) X_train1 <- as.matrix(X_train1)
   if(!is.matrix(X_test1)) X_test1 <- as.matrix(X_test1)
@@ -1644,7 +1645,7 @@ Supervised_fitting <- function(X_train1,X_test1,l_train,l_test,CE,alpharef=0.98,
   if(is.null(alpharef)) alpharef <- rep(0.95,G)
   if(length(alpharef)>G) stop("alpharef must be of dimension G")
   if(length(alpharef) == 1) alpharef <- rep(alpharef,G)
-  if(ncol(X_train1)==1) CE <- "E" else CE <- "EII"
+  if(ncol(X_train1)==1) CE <- "E" else CE <- CE
   
   
   # Estimated parameters assuming no contaminated set
@@ -1654,7 +1655,7 @@ Supervised_fitting <- function(X_train1,X_test1,l_train,l_test,CE,alpharef=0.98,
   estep1 <- estep(data = X_test1, modelName = CE, 
                   parameters = mstep1$parameters)
   model0 <- CNmixt(X =X_train1, contamination = TRUE,
-                   G = 2, model = "EII",label = l_train)
+                   G = G, model = CE,label = l_train)
   summary(model0)
   str(model0$models)
 
