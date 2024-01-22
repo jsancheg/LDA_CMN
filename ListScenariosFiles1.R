@@ -15,6 +15,7 @@ F10 <- c(2,3)           # F10: number of separating variables
 # posibilities
 # possibilities for 2 classes
 Sets2 <- as.matrix(expand.grid(2,F10,F5,F4,F3,F1,F7,F6,F8,F8,0,F9,F9,0))
+# possibilities for 2 classes
 Sets3 <- as.matrix(expand.grid(3,F10,F5,F4,F3,F1,F7,F6,F8,F8,F8,F9,F9,F9))
 n2 <- nrow(Sets2)
 n3 <- nrow(Sets3)
@@ -48,7 +49,7 @@ Scenarios <- sapply(1:n,function(i) {
   
   
   
-
+  
   if( as.numeric(Sets[i,1]) == 2) # Number of classes
   {
     paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
@@ -61,27 +62,55 @@ Scenarios <- sapply(1:n,function(i) {
     
   }else if (as.numeric(Sets[i,1]) == 3)
   {
-   paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
-                     as.numeric(Sets[i,3]),"_",
-                     as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
-                     Sets[i,5],"_",Sets[i,7],"_",
-                     Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
-                     as.numeric(Sets[i,10])*100,as.numeric(Sets[i,11])*100,
-                     "_E",as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),
-                     as.numeric(Sets[i,14]),"_10.RDS")
+    paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
+           as.numeric(Sets[i,3]),"_",
+           as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
+           Sets[i,5],"_",Sets[i,7],"_",
+           Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
+           as.numeric(Sets[i,10])*100,as.numeric(Sets[i,11])*100,
+           "_E",as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),
+           as.numeric(Sets[i,14]),"_10.RDS")
   }
   
 })
+
+
+ind2.5vars  <- sapply(Scenarios , function(x)
+{
+  aux <- str_split_1(x,"_")
+  ind2.5 <- (as.numeric(aux[2]) == 2) & (as.numeric(aux[4]) == 5)
+  return(ind2.5)
+})
+
+ind2.100vars <- sapply(Scenarios , function(x)
+{
+  aux <- str_split_1(x,"_")
+  ind2.5 <- (as.numeric(aux[2]) == 2) & (as.numeric(aux[4]) == 100)
+  return(ind2.5)
+})
+
+
+Scenarios2.5 <- Scenarios[ind2.5vars]
+Scenarios2.100 <- Scenarios[ind2.100vars]
+
+n2.5 <- length(Scenarios2.5)
+n2.100 <- length(Scenarios2.100)
+
+n2.5
+n2.100
+
 
 Scenarios
 length(Scenarios)
 
 
+
+
 ind5vars <- sapply(Scenarios , function(x)
-  {
-    aux <- str_split_1(x,"_")
-    ind5 <- as.numeric(aux[4]) == 5
-    return(ind5)
+{
+  aux <- str_split_1(x,"_")
+  ind5 <- as.numeric(aux[4]) == 5
+  return(ind5)
 })
 
 ind100vars <- !ind5vars
@@ -89,7 +118,7 @@ ind100vars <- !ind5vars
 
 Scenarios5 <- Scenarios[ind5vars]
 Scenarios100 <- Scenarios[ind100vars]
-  
+
 
 n5 <- length(Scenarios5)
 n100 <- length(Scenarios100)
