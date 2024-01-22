@@ -73,8 +73,25 @@ Scenarios <- sapply(1:n,function(i) {
   
 })
 
-Scenarios
-length(Scenarios)
+ind2.5vars  <- sapply(Scenarios , function(x)
+{
+  aux <- str_split_1(x,"_")
+  ind2.5 <- (as.numeric(aux[2]) == 2) & (as.numeric(aux[4]) == 5)
+  return(ind2.5)
+})
+
+ind2.100vars <- sapply(Scenarios , function(x)
+{
+  aux <- str_split_1(x,"_")
+  ind2.100 <- (as.numeric(aux[2]) == 2) & (as.numeric(aux[4]) == 100)
+  return(ind2.100)
+})
+
+Scenarios2.5 <- Scenarios[ind2.5vars]
+Scenarios2.100 <- Scenarios[ind2.100vars]
+
+n2.5 <- length(Scenarios2.5)
+n2.100 <- length(Scenarios2.100)
 
 
 ind5vars <- sapply(Scenarios , function(x)
@@ -115,4 +132,23 @@ n100.8 <- floor(n100*8/10)
 n100.9 <- floor(n100*9/10)
 
 
+n2.5.1 <- floor(n2.5*1/10)
+n2.5.2 <- floor(n2.5*2/10)
+n2.5.3 <- floor(n2.5*3/10)
+n2.5.4 <- floor(n2.5*4/10)
+n2.5.5 <- floor(n2.5*5/10)
+n2.5.6 <- floor(n2.5*6/10)
+n2.5.7 <- floor(n2.5*7/10)
+n2.5.8 <- floor(n2.5*8/10)
+n2.5.9 <- floor(n2.5*9/10)
 
+
+n2.100.1 <- floor(n2.100*1/10)
+n2.100.2 <- floor(n2.100*2/10)
+n2.100.3 <- floor(n2.100*3/10)
+n2.100.4 <- floor(n2.100*4/10)
+n2.100.5 <- floor(n2.100*5/10)
+n2.100.6 <- floor(n2.100*6/10)
+n2.100.7 <- floor(n2.100*7/10)
+n2.100.8 <- floor(n2.100*8/10)
+n2.100.9 <- floor(n2.100*9/10)
