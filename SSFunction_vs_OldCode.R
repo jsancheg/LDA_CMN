@@ -196,3 +196,7 @@ Output <- list(models = mod$models ,
                AccuracyTM_NoCont = accTM_no_cont_samples)
 
 Output
+Output$CM
+Output$AccuracyCM
+
+Sfile$Metrics[1,]
