@@ -28,8 +28,8 @@ GenerateSFile <- function(file_name,pathScenarios, pathOutput)
                                pnolabeled = 0, niterations = 10,
                                alpharef = 0.99, tol = 0.01, epsilon = 0)
   
-  SSfile_name <- str_replace(file_name,"S_","SSV_")
-  saveRDS(Output,paste0(pathOutput,SSfile_name))
+  Sfile_name <- str_replace(file_name,"S_","SV_")
+  saveRDS(Output,paste0(pathOutput,Sfile_name))
   
   return(1);  
 }
