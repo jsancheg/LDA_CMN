@@ -1,5 +1,7 @@
-pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
-pathSSFiles <- "/home/jsancheg/Documents/SSFiles/"
+pathScenarios <- "M:/Scenarios/"
+pathSSFiles <- "M:/SSFiles/"
+pathSFiles <- "M:/SFiles/"
+library("stringr")
 
 F1 <- c("VD","MD","VO") # F1 : Mean distance
 F2 <- c(2,3)            # F2 : Number of classes
@@ -14,8 +16,13 @@ F10 <- c(2,3)           # F10: number of separating variables
 
 # posibilities
 # possibilities for 2 classes
+#Sets2 <- as.matrix(expand.grid(2,F10,F5,F4,F3,F1,F7,F6,F8,F8,0,F9,F9,0))
+#Sets3 <- as.matrix(expand.grid(3,F10,F5,F4,F3,F1,F7,F6,F8,F8,F8,F9,F9,F9))
+
+# New settings after meetin with Nema
 Sets2 <- as.matrix(expand.grid(2,F10,F5,F4,F3,F1,F7,F6,0.8,0.9,0,5,30,0))
-Sets3 <- as.matrix(expand.grid(3,F10,F5,F4,F3,F1,F7,F6,0.8,0.8,0.9,5,5,30))
+Sets3 <- as.matrix(expand.grid(2,F10,F5,F4,F3,F1,F7,F6,0.8,0.8,0.9,5,5,30))
+
 n2 <- nrow(Sets2)
 n3 <- nrow(Sets3)
 Sets <- rbind(Sets2,Sets3)
@@ -48,10 +55,10 @@ Scenarios <- sapply(1:n,function(i) {
   
   
   
-
+  
   if( as.numeric(Sets[i,1]) == 2) # Number of classes
   {
-    paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
+   paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
            as.numeric(Sets[i,3]),"_",
            as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
            Sets[i,5],"_",Sets[i,7],"_",
@@ -61,14 +68,14 @@ Scenarios <- sapply(1:n,function(i) {
     
   }else if (as.numeric(Sets[i,1]) == 3)
   {
-   paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
-                     as.numeric(Sets[i,3]),"_",
-                     as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
-                     Sets[i,5],"_",Sets[i,7],"_",
-                     Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
-                     as.numeric(Sets[i,10])*100,as.numeric(Sets[i,11])*100,
-                     "_E",as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),
-                     as.numeric(Sets[i,14]),"_10.RDS")
+    paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
+           as.numeric(Sets[i,3]),"_",
+           as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
+           Sets[i,5],"_",Sets[i,7],"_",
+           Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
+           as.numeric(Sets[i,10])*100,as.numeric(Sets[i,11])*100,
+           "_E",as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),
+           as.numeric(Sets[i,14]),"_10.RDS")
   }
   
 })
@@ -90,15 +97,16 @@ ind2.100vars <- sapply(Scenarios , function(x)
 Scenarios2.5 <- Scenarios[ind2.5vars]
 Scenarios2.100 <- Scenarios[ind2.100vars]
 
+#Scenarios2.100 <- dir(pathScenarios)
 n2.5 <- length(Scenarios2.5)
 n2.100 <- length(Scenarios2.100)
 
 
 ind5vars <- sapply(Scenarios , function(x)
-  {
-    aux <- str_split_1(x,"_")
-    ind5 <- as.numeric(aux[4]) == 5
-    return(ind5)
+{
+  aux <- str_split_1(x,"_")
+  ind5 <- as.numeric(aux[4]) == 5
+  return(ind5)
 })
 
 ind100vars <- !ind5vars
@@ -106,10 +114,10 @@ ind100vars <- !ind5vars
 
 Scenarios5 <- Scenarios[ind5vars]
 Scenarios100 <- Scenarios[ind100vars]
-  
+
 
 n5 <- length(Scenarios5)
-n100 <- length(Scenarios100)
+n100 <- length(Scenarios2.100)
 
 n5.1 <- floor(n5*1/10)
 n5.2 <- floor(n5*2/10)
@@ -152,6 +160,7 @@ n2.100.6 <- floor(n2.100*6/10)
 n2.100.7 <- floor(n2.100*7/10)
 n2.100.8 <- floor(n2.100*8/10)
 n2.100.9 <- floor(n2.100*9/10)
+n2.100.10 <- floor(n2.100*10/10)
 
 
 n2.100.p1 <- floor(n2.100*1/100)
