@@ -6,13 +6,13 @@ nruns <- 10
 
 Scenarios
 n <- nrow(Sets)
-aux <- vector("list",n5)
+aux <- vector("list",n100)
 
 j <- 1
 
 for(i in 1:n)
 {
-  if(as.numeric(Sets[i,3]) ==5 )  
+  if(as.numeric(Sets[i,3]) ==100 )  
     {
       aux[[j]] <- as.list(Sets[i,])
       j <- j + 1
@@ -48,7 +48,7 @@ for(i in 1:n)
 #my_ssh_session <- ssh_connect("2201449s@130.209.66.80:22")
 
 ini <- 1 
-fin <- n5
+fin <- n100
 
 length(aux)
 length(Scenarios5)
@@ -59,7 +59,7 @@ SimStatus <- mclapply((ini:fin),function(i)
 #  command2 <- "ls /home/pgrad1/2201449s/R/CMN/Scenarios3"
 #  FilesProcessed <- capture.output(ssh_exec_wait(my_ssh_session,command2))
   FilesProcessed <- dir(pathScenarios)
-  file_name <- Scenarios5[i]
+  file_name <- Scenarios100[i]
   
   if(is_empty(intersect(FilesProcessed,file_name)))
   {
