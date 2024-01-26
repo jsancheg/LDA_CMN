@@ -1,5 +1,19 @@
-pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
-pathSSFiles <- "/home/jsancheg/Documents/SSFiles/"
+# Get system information
+system_info <- Sys.info()
+system_info
+
+operative_system <- system_info["sysname"]
+nodename <- system_info["nodename"]
+
+if(operative_system == "Linux" & nodename == "WildFree") {
+  pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
+  pathSSFiles <- "/home/jsancheg/Documents/SSFiles/"
+  pathSSFiles <- "/home/jsancheg/Documents/SFiles/"
+}else{
+  pathScenarios <-"/home/jsancheg/git_environment/LDA_CMN/"
+  pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+  pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+}
 
 F1 <- c("VD","MD","VO") # F1 : Mean distance
 F2 <- c(2,3)            # F2 : Number of classes
