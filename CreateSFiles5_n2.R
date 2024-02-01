@@ -20,9 +20,23 @@ library(readr)
 # pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
 # Windows path
-pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
-pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
-pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
+system_info <- Sys.info()
+#OS_name <- system_info("")
+pc_name <- system_info['modename'] 
+
+if(pc_name == "LAPTOP-ADR3M911")
+{
+  pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+  pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+  pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
+  
+}else if(pc_name == "WildFree")
+{
+  pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
+  pathSSFiles <- "/home/jsancheg/Documents/SSFiles/"
+  pathSFiles <- "/home/jsancheg/Documents/SFiles/"
+  
+}
 
 
 dir(pathScenarios)

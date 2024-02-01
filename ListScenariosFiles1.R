@@ -1,5 +1,28 @@
-pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
-pathSSFiles <- "/home/jsancheg/Documents/SSFiles/"
+
+# Windows path
+system_info <- Sys.info()
+#OS_name <- system_info("")
+pc_name <- system_info['modename'] 
+
+if(pc_name == "LAPTOP-ADR3M911")
+{
+  pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+  pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+  pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
+  
+}else if(pc_name == "WildFree")
+{
+  pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
+  pathSSFiles <- "/home/jsancheg/Documents/SSFiles/"
+  pathSFiles <- "/home/jsancheg/Documents/SFiles/"
+  
+} else
+{
+  pathScenarios <- "M:/Scenarios/"
+  pathSSFiles <- "M:/SSFiles/"
+  pathSFiles <- "M:/SFiles/"
+}
+
 
 F1 <- c("VD","MD","VO") # F1 : Mean distance
 F2 <- c(2,3)            # F2 : Number of classes

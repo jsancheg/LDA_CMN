@@ -26,16 +26,16 @@ pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
 
 
 dir(pathScenarios)
-ini <- n2.5.4+1
-fin <- n2.5.5
-fin-ini
+ini <- n5.4+1
+fin <- n5.5
+fin-ini + 1
 
-tic("SFiles 5 variables 306 files")
+tic("SFiles 5 variables 39 files")
 mclapply(Scenarios5[ini:fin], function(x){
   
   SFilename <- str_replace(x,"S_","SV_")
   FilesProcessed <- dir(pathSFiles)
-  if(is_empty(intersect(FilesProcessed,SFilename))) GenerateSFile(x,pathScenarios,pathSFiles) else cat("\n The file ",SSFilename, " already exists in the directory. \n")
+  if(is_empty(intersect(FilesProcessed,SFilename))) GenerateSFile(x,pathScenarios,pathSFiles) else cat("\n The file ",SFilename, " already exists in the directory. \n")
   
 }, mc.cores = 1)
 toc()

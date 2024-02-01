@@ -26,11 +26,11 @@ pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
 
 
 dir(pathScenarios)
-ini <- n2.5.3+1
-fin <- n2.5.4
-fin-ini
+ini <- n5.3+1
+fin <- n5.4
+fin-ini + 1
 
-tic("SFiles 5 variables 306 files")
+tic("SFiles 5 variables 38 files")
 mclapply(Scenarios5[ini:fin], function(x){
   
   SFilename <- str_replace(x,"S_","SV_")

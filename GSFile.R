@@ -11,7 +11,8 @@
 
 GenerateSFile <- function(file_name,pathScenarios, pathOutput)
 {
-  fileScenario <- readRDS(paste0(pathScenarios,file_name))  
+
+  #  fileScenario <- readRDS(paste0(pathScenarios,file_name))  
   
   Number_Separating_Variables <-str_split_1(file_name, "_")[[3]]
   

@@ -1,3 +1,4 @@
+
 source("CMNFunctionsV2.R")
 source("SimulateScenario.R")
 source("ListScenarios.R")
@@ -18,6 +19,8 @@ for(i in 1:n)
       j <- j + 1
     }  
 }
+
+j
 
 #Scenarios5var <- sapply(1:n,function(i) {
 #  if( as.numeric(Sets[i,1]) == 2) # Number of classes
@@ -52,8 +55,27 @@ fin <- n5
 
 length(aux)
 length(Scenarios5)
-pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
 
+# Windows path
+system_info <- Sys.info()
+#OS_name <- system_info("")
+pc_name <- system_info['modename'] 
+
+if(pc_name == "LAPTOP-ADR3M911")
+{
+  pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+  pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+  pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
+  
+}else if(pc_name == "WildFree")
+{
+  pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
+  pathSSFiles <- "/home/jsancheg/Documents/SSFiles/"
+  pathSFiles <- "/home/jsancheg/Documents/SFiles/"
+  
+}
+
+tic("Create Scenarios for 5 variables")
 SimStatus <- mclapply((ini:fin),function(i)
 {
 #  command2 <- "ls /home/pgrad1/2201449s/R/CMN/Scenarios3"
@@ -82,3 +104,4 @@ SimStatus <- mclapply((ini:fin),function(i)
   
 }, mc.cores = 1)
 
+toc()

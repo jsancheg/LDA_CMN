@@ -27,8 +27,8 @@ pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
 
 
 dir(pathScenarios)
-ini <- n5.5+1
-fin <- n5.6
+ini <- n5.9+1
+fin <- n5
 fin-ini + 1
 
 tic("SFiles 5 variables 306 files")

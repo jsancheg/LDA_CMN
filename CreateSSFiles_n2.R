@@ -28,7 +28,7 @@ dir(pathScenarios)
 ini <- n5.1+1
 fin <- n5.2
 
-
+fin-ini
 
 mclapply(Scenarios5[ini:fin], function(x){
   
@@ -37,3 +37,4 @@ mclapply(Scenarios5[ini:fin], function(x){
   if(is_empty(intersect(FilesProcessed,SSFilename))) GenerateSSFile(x,pathScenarios,pathSSFiles) else cat("\n The file ",SSFilename, " already exists in the directory. \n")
   
 }, mc.cores = 1)
+

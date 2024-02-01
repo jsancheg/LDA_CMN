@@ -2,7 +2,6 @@
 source("Semisupervised.R")
 source("ListScenariosFiles.R")
 source("GSFile.R")
-
 library(purrr)
 library(ContaminatedMixt)
 
@@ -27,16 +26,16 @@ pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
 
 
 dir(pathScenarios)
-ini <- n5.5+1
-fin <- n5.6
-fin-ini + 1
+ini <- n5.7+1
+fin <- n5.8
+fin-ini
 
-tic("SFiles 5 variables 306 files")
+tic("SFiles 5 variables from n2 to n3")
 mclapply(Scenarios5[ini:fin], function(x){
   
   SFilename <- str_replace(x,"S_","SV_")
   FilesProcessed <- dir(pathSFiles)
-  if(is_empty(intersect(FilesProcessed,SFilename))) GenerateSFile(x,pathScenarios,pathSFiles) 
+  if(is_empty(intersect(FilesProcessed,SFilename))) GenerateSFile(x,pathScenarios,pathSFiles)
   else cat("\n The file ",SFilename, " already exists in the directory. \n")
   
 }, mc.cores = 1)

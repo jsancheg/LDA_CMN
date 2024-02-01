@@ -21,24 +21,22 @@ library(readr)
 # pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
 # pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
+# Windows path
+pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+
+
 dir(pathScenarios)
-ini <- floor(n*30/100) + 1
-fin <- floor(n*40/100)
-fin-ini
+ini <- n5.8+1
+fin <- n5.9
 
-LastFileProcessed <- list()
 
-tic("SSFiles scenarios with 100 variables from n3 to n4")
-mclapply(Scenarios[ini:fin], function(x){
+
+mclapply(Scenarios5[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
-  LastFileProcessed [[1]] <- x 
-  if(is_empty(intersect(FilesProcessed,SSFilename))) 
-  {
-    GenerateSSFile(x,pathScenarios,pathSSFiles)
-  } else cat("\n The file ",SSFilename, " already exists in the directory. \n")
+  if(is_empty(intersect(FilesProcessed,SSFilename))) GenerateSSFile(x,pathScenarios,pathSSFiles) else cat("\n The file ",SSFilename, " already exists in the directory. \n")
   
 }, mc.cores = 1)
-toc()
 

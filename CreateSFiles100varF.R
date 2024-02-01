@@ -16,6 +16,7 @@ library(googledrive)
 library(gargle)
 library(readr)
 
+
 # Ubunto paths
 # pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
 # pathFiles <- "/home/jsancheg/Documents/SSFiles/"
@@ -27,12 +28,12 @@ pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
 
 
 dir(pathScenarios)
-ini <- n5.5+1
-fin <- n5.6
+ini <- 1
+fin <- n2.100.p1
 fin-ini + 1
 
 tic("SFiles 5 variables 306 files")
-mclapply(Scenarios5[ini:fin], function(x){
+mclapply(Scenarios100[ini:fin], function(x){
   
   SFilename <- str_replace(x,"S_","SV_")
   FilesProcessed <- dir(pathSFiles)

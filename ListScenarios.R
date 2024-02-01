@@ -1,6 +1,29 @@
-pathScenarios <- "M:/Scenarios/"
-pathSSFiles <- "M:/SSFiles/"
-pathSFiles <- "M:/SFiles/"
+
+# Windows path
+system_info <- Sys.info()
+#OS_name <- system_info("")
+pc_name <- system_info['modename'] 
+
+if(pc_name == "LAPTOP-ADR3M911")
+{
+  pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+  pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+  pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
+  
+}else if(pc_name == "WildFree")
+{
+  pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
+  pathSSFiles <- "/home/jsancheg/Documents/SSFiles/"
+  pathSFiles <- "/home/jsancheg/Documents/SFiles/"
+  
+} else
+{
+  pathScenarios <- "M:/Scenarios/"
+  pathSSFiles <- "M:/SSFiles/"
+  pathSFiles <- "M:/SFiles/"
+}
+
+
 library("stringr")
 
 F1 <- c("VD","MD","VO") # F1 : Mean distance
@@ -21,7 +44,7 @@ F10 <- c(2,3)           # F10: number of separating variables
 
 # New settings after meetin with Nema
 Sets2 <- as.matrix(expand.grid(2,F10,F5,F4,F3,F1,F7,F6,0.8,0.9,0,5,30,0))
-Sets3 <- as.matrix(expand.grid(2,F10,F5,F4,F3,F1,F7,F6,0.8,0.8,0.9,5,5,30))
+Sets3 <- as.matrix(expand.grid(3,F10,F5,F4,F3,F1,F7,F6,0.8,0.8,0.9,5,5,30))
 
 n2 <- nrow(Sets2)
 n3 <- nrow(Sets3)
@@ -119,48 +142,47 @@ Scenarios100 <- Scenarios[ind100vars]
 n5 <- length(Scenarios5)
 n100 <- length(Scenarios2.100)
 
-n5.1 <- floor(n5*1/10)
-n5.2 <- floor(n5*2/10)
-n5.3 <- floor(n5*3/10)
-n5.4 <- floor(n5*4/10)
-n5.5 <- floor(n5*5/10)
-n5.6 <- floor(n5*6/10)
-n5.7 <- floor(n5*7/10)
-n5.8 <- floor(n5*8/10)
-n5.9 <- floor(n5*9/10)
+n5.1 <- floor(n5*10/100)
+n5.2 <- floor(n5*20/100)
+n5.3 <- floor(n5*30/100)
+n5.4 <- floor(n5*40/100)
+n5.5 <- floor(n5*50/100)
+n5.6 <- floor(n5*60/100)
+n5.7 <- floor(n5*70/100)
+n5.8 <- floor(n5*80/100)
+n5.9 <- floor(n5*90/100)
 
-n100.1 <- floor(n100*1/10)
-n100.2 <- floor(n100*2/10)
-n100.3 <- floor(n100*3/10)
-n100.4 <- floor(n100*4/10)
-n100.5 <- floor(n100*5/10)
-n100.6 <- floor(n100*6/10)
-n100.7 <- floor(n100*7/10)
-n100.8 <- floor(n100*8/10)
-n100.9 <- floor(n100*9/10)
-
-
-n2.5.1 <- floor(n2.5*1/10)
-n2.5.2 <- floor(n2.5*2/10)
-n2.5.3 <- floor(n2.5*3/10)
-n2.5.4 <- floor(n2.5*4/10)
-n2.5.5 <- floor(n2.5*5/10)
-n2.5.6 <- floor(n2.5*6/10)
-n2.5.7 <- floor(n2.5*7/10)
-n2.5.8 <- floor(n2.5*8/10)
-n2.5.9 <- floor(n2.5*9/10)
+n100.1 <- floor(n100*10/100)
+n100.2 <- floor(n100*20/100)
+n100.3 <- floor(n100*30/100)
+n100.4 <- floor(n100*40/100)
+n100.5 <- floor(n100*50/100)
+n100.6 <- floor(n100*60/100)
+n100.7 <- floor(n100*70/100)
+n100.8 <- floor(n100*80/100)
+n100.9 <- floor(n100*90/100)
 
 
-n2.100.1 <- floor(n2.100*1/10)
-n2.100.2 <- floor(n2.100*2/10)
-n2.100.3 <- floor(n2.100*3/10)
-n2.100.4 <- floor(n2.100*4/10)
-n2.100.5 <- floor(n2.100*5/10)
-n2.100.6 <- floor(n2.100*6/10)
-n2.100.7 <- floor(n2.100*7/10)
-n2.100.8 <- floor(n2.100*8/10)
-n2.100.9 <- floor(n2.100*9/10)
-n2.100.10 <- floor(n2.100*10/10)
+n2.5.1 <- floor(n2.5*10/100)
+n2.5.2 <- floor(n2.5*20/100)
+n2.5.3 <- floor(n2.5*30/100)
+n2.5.4 <- floor(n2.5*40/100)
+n2.5.5 <- floor(n2.5*50/100)
+n2.5.6 <- floor(n2.5*60/100)
+n2.5.7 <- floor(n2.5*70/100)
+n2.5.8 <- floor(n2.5*80/100)
+n2.5.9 <- floor(n2.5*90/100)
+
+
+n2.100.1 <- floor(n2.100*10/100)
+n2.100.2 <- floor(n2.100*20/100)
+n2.100.3 <- floor(n2.100*30/100)
+n2.100.4 <- floor(n2.100*40/100)
+n2.100.5 <- floor(n2.100*50/100)
+n2.100.6 <- floor(n2.100*60/100)
+n2.100.7 <- floor(n2.100*70/100)
+n2.100.8 <- floor(n2.100*80/100)
+n2.100.9 <- floor(n2.100*90/100)
 
 
 n2.100.p1 <- floor(n2.100*1/100)
