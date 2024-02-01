@@ -32,41 +32,49 @@ Sim_DIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   if(any(ptraining<0) | any(ptraining>1)) stop("ptraining is not a probability")
   if(any(alphag<0) | any(alphag>1)) stop("alpha takes values in the interval (0,1)")
   if(any(etag < 1))stop("eta has to be greater than 1")  
-  
+  if(!is.matrix(etag)) etag <- as.matrix(etag)
   aux <- (rmultinom(nobs,1,pig))
   l <- apply(aux,2,which.max)
   v <- rep(0,nobs)
 
-    if(ncol(X) == 1 & is.vector(sigmag) & length(sigmag)==1)
-  {
-    sg <- 0
-  } else if(is.array(sigmag))
-  {
-    sg <- array(0,dim = dim(sigmag))
-  }
-  
-  for(g in 1:G) 
+    if(p == 1 & is.vector(sigmag) & length(sigmag)==1)
     {
-      if(ncol(X) == 1 & is.vector(sigmag) ) # only 1 column in X but different groups
+          sg <- 0
+    }else if(p == 1 & is.vector(sigmag) * length(sigmag) > 1)
+    {
+          sg <- rep(0,length(sigmag))
+      }else if(p > 1 & is.matrix(sigmag))
+      {
+          sg <- matrix(0,ncol = ncol(sigmag), nrow = nrow(sigmag)) 
+      } else if(p >1 & is.array(sigmag))
+      {
+         sg <- array(0,dim = dim(sigmag))
+      }
+
+      if(p == 1 & is.vector(sigmag) ) # only 1 column in X but different groups
       {
           sg <- etag * sigmag # sg could be a vector of length 1 if there is only one group 
                               # of dimension G if there are G groups
-      }else if(length(dim(sigmag)) == 2){
+      }else if(p > 1 & length(dim(sigmag)) == 2) # equal variance across groups
+        {
            sg <- t(diag(sqrt(etag),p)) %*% sigmag %*% diag(sqrt(etag),p)
-      } else if(length(dim(sigmag)) == 3) {
-      sg[,,g] <- t(diag(sqrt(etag[,g]),p))  %*% sigmag[,,g] %*% diag(sqrt(etag[,g]),p)
-      } else if(length(dim(sigmag)) > 3) stop("Sigma is an array of dimension 4")
-    } # end-for g
-  
+      } else if(p > 1 & length(dim(sigmag)) == 3) 
+        {
+          for(g in 1:G)
+          {
+              sg[,,g] <- t(diag(sqrt(etag[,g]),p))  %*% sigmag[,,g] %*% diag(sqrt(etag[,g]),p)
+          }
+        } else if(length(dim(sigmag)) > 3) stop("Sigma is an array of dimension 4")
+
   mg <- apply(unmap(l),2,sum)
   
   for(i in 1:nobs)
     v[i] <- as.numeric(rbinom(1,1,alphag[l[i]]))
 
-  # initialize l
-  if(ncol(X) == 1 & is.vector(sigmag) ) 
+
+  # Case where X contains only 1 variable
+  if(p == 1 & is.vector(sigmag) ) 
   {
-    # same variance for all groups when X is composed by only 1 variable
     for (i in 1:nobs)
     {
       if(v[i] == 1) 
@@ -76,10 +84,10 @@ Sim_DIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
           {
             # groups with different mean and equal variance
             X[i,] <- rmnorm(1,mug[l[i]],sigmag) 
-          } else if(G > 1 & length(mug)== 1)  # more than 1 group with same mean
+          } else if(G > 1 & length(mug)== 1)  
           { # groups with same mean and different variance
             X[i,] <- rmnorm(1,mug,sigmag[l[i]])
-          } else if(G == 1) X[i,] <- rmnorm(1,mug,sigmag) # 1 group    
+          } else if(G == 1) X[i,] <- rmnorm(1,mug,sigmag) # 1 group same mean and variance   
       }else if(v[i]==0)
         # contaminated sample
           {  
@@ -96,7 +104,7 @@ Sim_DIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
     } # end for
   } # end if 
   
-   if(length(dim(sigmag)) == 2){
+   if(p > 1 & length(dim(sigmag)) == 2){
 #      Same covariance matrix for all groups
      for (i in 1:nobs)
       {
@@ -115,7 +123,7 @@ Sim_DIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
       
       } # end for
     
-  }else if(length(dim(sg)) > 2)
+  }else if(p >1 & length(dim(sg)) == 3) # different covariance matrix for groups
   {
     
     for (i in 1:nobs)
@@ -410,7 +418,7 @@ CNmixt_DifIF <- function(Xtrain,Xtest,ltrain,ltest,CE = "VVV",
   leta <- list()
   diflog <- list()
   par <- list()
-  nvar <- ncol(Xtrain)
+  p <- ncol(Xtrain)
   nobs <- nrow(Xtrain)
   G <- length(unique(ltrain))
   if(is.null(alpharef)) alpharef <- rep(0.95,G)
@@ -428,6 +436,9 @@ CNmixt_DifIF <- function(Xtrain,Xtest,ltrain,ltest,CE = "VVV",
   lhat_nc <- apply(z,1,which.max)
   accTest_nc <- sum(lhat_nc == ltest)/length(ltest)
   
+  # we are not doing vaiable selection an allow to fit the model with different 
+  # inflation factors stars with p = 5 and see how it goes Supervised
+  
   # Estimated initial parameters
   par$mu <- mstep1$parameters$mean
   par$sigma <- mstep1$parameters$variance$sigma
@@ -435,7 +446,15 @@ CNmixt_DifIF <- function(Xtrain,Xtest,ltrain,ltest,CE = "VVV",
   par$pig <- apply(unmap(ltrain),2,sum)/nrow(Xtrain)
   # give initial values for alpha
   par$alpha <- alpharef
-  par$eta <- rep(1.011,G)
+  if (p == 1 &) 
+    { 
+      par$eta <- 1.011
+    }
+    }else if (p > 1)
+    {
+      par$eta <- rep(1.011,G)
+    }
+
   
   
   #  cat("\n","mu=",par$mu,"-","alpha=",par$alpha,"- eta=",par$eta,"\n")
@@ -487,6 +506,7 @@ SSFit_DifIF<- function(Xtrain, Xtest, ltrain, ltest,
   # alpharef:     reference for alpha
   # tol:          tolerance
 {
+  p <- ncol(Xtrain)
   parameters_C <- list()
   parameters_Nc <- list()
   estimate <- list()
@@ -511,7 +531,7 @@ SSFit_DifIF<- function(Xtrain, Xtest, ltrain, ltest,
   ltrain1[ind_nolabeled] <- 0
   #table(ltrain1)
   
-  if(ncol(Xtrain) == 1) 
+  if(p == 1) 
   {
     # fit Contaminated Mixture model with different variables inflation
     # factor within cluster
@@ -519,7 +539,7 @@ SSFit_DifIF<- function(Xtrain, Xtest, ltrain, ltest,
                   initialization = "random.post", alphamin = alpharef,
                   label = ltrain1,iter.max = iterations)
     
-  }else if(ncol(Xtrain > 1))
+  }else if(p > 1)
   {
     # fit Contaminated Mixture model with different variables inflation
     # factor within cluster

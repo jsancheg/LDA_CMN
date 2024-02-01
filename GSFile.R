@@ -12,8 +12,8 @@
 GenerateSFile <- function(file_name,pathScenarios, pathOutput)
 {
 
-  #  fileScenario <- readRDS(paste0(pathScenarios,file_name))  
-  
+  fileScenario <- readRDS(paste0(pathScenarios,file_name))  
+
   Number_Separating_Variables <-str_split_1(file_name, "_")[[3]]
   
   if(Number_Separating_Variables == 2)
@@ -35,5 +35,33 @@ GenerateSFile <- function(file_name,pathScenarios, pathOutput)
   return(1);  
 }
 
+
+
 #GenerateSSFile(file_name,pathScenarios,pathSSFiles  )
+
+GenerateSFile_SSH <- function(file_name,pathScenarios)
+{
+  #filePathScenario <- paste0(pathScenarios,file_name)
+  #fileScenario <- readRDS(filePathScenario)  
+  
+  
+  Number_Separating_Variables <-str_split_1(file_name, "_")[[3]]
+  
+  if(Number_Separating_Variables == 2)
+  {
+    variables_TrueModel <- c("X2","X4")
+  }else if(Number_Separating_Variables == 3)
+  {
+    variables_TrueModel <- c("X2","X4","X5")
+  }
+  
+  CE <- "VVV"
+  Output <- SemiSupervised_HLS_SSH(file_name,pathScenarios,CE,variables_TrueModel,
+                                   pnolabeled = 0, niterations = 10,
+                                   alpharef = 0.99, tol = 0.01, epsilon = 0)
+  
+  
+  return(Output)  
+}
+
 

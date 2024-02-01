@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 # Windows path
 system_info <- Sys.info()
@@ -21,6 +22,25 @@ if(pc_name == "LAPTOP-ADR3M911")
   pathScenarios <- "M:/Scenarios/"
   pathSSFiles <- "M:/SSFiles/"
   pathSFiles <- "M:/SFiles/"
+=======
+library(stringr)
+
+# Get system information
+system_info <- Sys.info()
+system_info
+
+operative_system <- system_info["sysname"]
+nodename <- system_info["nodename"]
+
+if(operative_system == "Linux" & nodename == "WildFree") {
+  pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
+  pathSSFiles <- "/home/jsancheg/Documents/SSFiles/"
+  pathSSFiles <- "/home/jsancheg/Documents/SFiles/"
+}else{
+  pathScenarios <-"/home/jsancheg/git_environment/LDA_CMN/"
+  pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+  pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+>>>>>>> d56d2f130255c2b7e2879f93b8b6c7222476c15c
 }
 
 
@@ -135,6 +155,7 @@ n5 <- length(Scenarios5)
 n100 <- length(Scenarios100)
 
 n5.1 <- floor(n5*10/100)
+<<<<<<< HEAD
 n5.2 <- floor(n5*20/100)
 n5.3 <- floor(n5*30/100)
 n5.4 <- floor(n5*40/100)
@@ -143,6 +164,16 @@ n5.6 <- floor(n5*60/100)
 n5.7 <- floor(n5*70/100)
 n5.8 <- floor(n5*80/100)
 n5.9 <- floor(n5*90/100)
+=======
+n5.2 <- floor(n5*2/10)
+n5.3 <- floor(n5*3/10)
+n5.4 <- floor(n5*4/10)
+n5.5 <- floor(n5*5/10)
+n5.6 <- floor(n5*6/10)
+n5.7 <- floor(n5*7/10)
+n5.8 <- floor(n5*8/10)
+n5.9 <- floor(n5*9/10)
+>>>>>>> d56d2f130255c2b7e2879f93b8b6c7222476c15c
 
 n100.1 <- floor(n100*10/100)
 n100.2 <- floor(n100*20/100)

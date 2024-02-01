@@ -25,16 +25,16 @@ library(readr)
 
 
 dir(pathScenarios)
-ini <- n100.5
-fin <- n100.5 - 2
+ini <- n2.100.5
+fin <- n2.100.5 - 2
 
 
-
-system.time(mclapply(Scenarios100[ini:fin], function(x){
+tic("Files 100 variables")
+mclapply(Scenarios2.100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
   if(is_empty(intersect(FilesProcessed,SSFilename))) GenerateSSFile(x,pathScenarios,pathSSFiles) else cat("\n The file ",SSFilename, " already exists in the directory. \n")
   
-}, mc.cores = 3))
-
+}, mc.cores = 3)
+toc()

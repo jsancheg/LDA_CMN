@@ -17,13 +17,21 @@ library(googledrive)
 library(gargle)
 library(readr)
 
-# Ubunto paths
-# pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
-# pathFiles <- "/home/jsancheg/Documents/SSFiles/"
+system.info <- Sys.info()
+operative_system <- system.info['sysname']
+if(operative_system == "Linux" )
+{
+  # Ubuntu paths
+   pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
+   pathFiles <- "/home/jsancheg/Documents/SSFiles/"
+} else {
+  # Windows path
+   pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+   pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+  
+}
 
-# Windows path
-pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
-pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+
 
 # Function to authenticate with google drive using service account json
 #authenticate_service_account <- function(json_key_path){
