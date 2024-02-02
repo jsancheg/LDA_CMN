@@ -2099,6 +2099,7 @@ f_eta <- function(eta,z, v , X, mu, sigma)
   
 }
 
+
 mCmn1 <- function(Xtrain,ltrain,par,eta_max = 1000)
 {
   m <- nrow(Xtrain)
@@ -2170,10 +2171,10 @@ mCmn1 <- function(Xtrain,ltrain,par,eta_max = 1000)
     sigma1[,,g] <- W[,,g]/mg[g]
   }  
   
-  # calculate eta1 #
-  
+
   for(g in 1:G)
   {
+
     factor1 <- optimize(f_eta,c(1,eta_max),tol=0.0001, 
                         z = l[,g], v = v[,g], X = Xtrain,
                         mu = mu1[,g], sigma = sigma1[,,g], maximum = T)
