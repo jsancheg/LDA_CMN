@@ -164,36 +164,8 @@ df_A <- data.frame(
 )
 
 
-#fit_ADif <- mCmn_DIF(Xtrain = DatasetA$Xtrain,ltrain = DatasetA$ltrain, par = par_ADif0)
 
-#sigma_ADif <- matrix(unlist(fit_ADif$sigma),ncol = p_a,nrow = p_a,byrow = TRUE)
-#eta_ADif <- sqrt(matrix(unlist(fit_ADif$eta),ncol = p_a,nrow =p_a,byrow = TRUE )) 
-#par_ADif <- list(G = 1, pig = 1, mu = fit_ADif$mu, 
-#                sigma = sigma_ADif, 
-#                alpha = fit_ADif$alpha,
-#                eta = eta_ADif)
-
-#mu_ADifr <- round(fit_ADif$mu,2)
-#sigma_ADifr<- round(sigma_ADif,2)
-#alpha_ADifr <- round(fit_ADif$alpha,2)
-#eta_ADifr <- round(fit_ADif$eta,2)
-
-#pred_ADif <- eCmn_DIF(X = DatasetA$Xtest,labels = DatasetA$ltest, par = par_ADif)
-
-
-
-#Accuracy_ADif <- Accuracy(pred_ADif$vhat,DatasetA$vtest)
-#Sensitivity_ADif <- Sensitivity(DatasetA$vtest, pred_ADif$vhat,positive = 0)
-#Specificity_ADif <- Specificity(DatasetA$vtest,pred_ADif$vhat,positive = 0) 
-#Recall_ADif <- Recall(DatasetA$vtest, pred_ADif$vhat,positive = 0) 
-#Precision_ADif <- Precision(DatasetA$vtest,pred_ADif$vhat,positive = 0) 
-#ConfusionMatrix_ADif <- ConfusionMatrix(pred_ADif$vhat,DatasetA$vtest)
-#ConfusionDF_ADif <- ConfusionDF(pred_ADif$vhat,DatasetA$vtest)
-
-#ConfusionMatrix_AEq
-
-
-# Dataset b
+# DatasetB
 G_b <- 1
 p_b <- 3 # 3 variables
 nobs_b <- 100
@@ -204,12 +176,112 @@ sigma_b <- array(0,dim = c(p_b,p_b,G_b))
 sigma_b[,,1] <- diag(1,p_a)
 alpha_b <- 0.8
 eta_b <- c(1,5,1)
-DatasetB <- Sim_DIF(mu_b,sigma_b,pig_b,nobs_b,ptraining,alpha_b,eta_b)
+# DatasetB <- Sim_DIF(mu_b,sigma_b,pig_b,nobs_b,ptraining,alpha_b,eta_b)
+DatasetB <- readRDS("DatasetB.RDS")
 
 fit_BEq <- CNmixt(X = DatasetB$Xtrain,G = G_b, contamination = TRUE, model = "EII",
                   initialization = "mixt", label = DatasetB$ltrain)
 
-# Dataset c
+mu_BEq <- fit_BEq$models[[1]]$mu
+sigma_BEq <- fit_BEq$models[[1]]$Sigma
+alpha_BEq <- fit_BEq$models[[1]]$alpha
+eta_BEq <- fit_BEq$models[[1]]$eta
+
+par_BEq <- list(G = 1, pig = 1, mu = mu_BEq, 
+                sigma = sigma_BEq, 
+                alpha = alpha_BEq,
+                eta = eta_BEq)
+
+mu_BEqr <- round(mu_BEq,2)
+sigma_BEqr <- round(sigma_BEq,2)
+alpha_BEqr <- round(alpha_BEq,2)
+eta_BEqr <-round(eta_BEq,2)
+
+
+fit_BeqTest <- eCmn(DatasetB$Xtest,DatasetB$ltest,par_BEq)
+
+
+Accuracy_BEq <- Accuracy(fit_BeqTest$vhat,DatasetB$vtest)
+Sensitivity_BEq <- Sensitivity(DatasetB$vtest, fit_BeqTest$vhat,positive = 0)
+Specificity_BEq <- Specificity(DatasetB$vtest,fit_BeqTest$vhat,positive = 0) 
+Recall_BEq <- Recall(DatasetB$vtest, fit_BeqTest$vhat,positive = 0) 
+Precision_BEq <- Precision(DatasetB$vtest,fit_BeqTest$vhat,positive = 0) 
+ConfusionMatrix_BEq <- ConfusionMatrix(fit_BeqTest$vhat,DatasetB$vtest )
+ConfusionDF_BEq <- ConfusionDF(fit_BeqTest$vhat,DatasetB$vtest)
+F1_Score_BEq <- F1_Score(DatasetB$vtest,fit_BeqTest$vhat,positive = 0)
+
+#ConfusionMatrix_AEq <- confusionMatrix(factor(DatasetA$vtest),factor(fit_AeqTest$vhat) )
+
+par_BDif0 <- par_BEq
+eta0 <- array(0.0, dim = c(3,3,1))
+eta0[,,1]  <- diag(sqrt(par_BEq$eta),3)
+par_BDif0$eta <- eta0[,,1]
+par_BDif0$lambda <- 1
+
+set.seed(123)
+par_BDif0$v <- matrix(runif(nrow(DatasetB$Xtrain)*G_a), 
+                      nrow = nrow(DatasetB$Xtrain),ncol = G_a, byrow = TRUE)
+
+
+
+fit_BDif <- mCmn_DIF_EII(Xtrain = DatasetB$Xtrain,ltrain = DatasetB$ltrain, par = par_BDif0)
+
+mu_BDifr <- round(fit_BDif$mu,2)
+sigma_BDif <- as.vector(fit_BDif$lambda)*fit_BDif$sigma
+sigma_BDifr<- round(as.vector(fit_BDif$lambda)*fit_BDif$sigma,2)
+alpha_BDifr <- round(fit_BDif$alpha,2)
+eta_BDifr <- round(fit_BDif$eta,2)
+
+fit_BDif$lambda
+fit_BDif$eta
+
+eta_BDif <- (matrix(unlist(fit_BDif$eta),ncol = p_a,nrow =p_a,byrow = TRUE )) 
+
+par_BDif <- list(G = 1, pig = 1, mu = fit_BDif$mu,
+                 sigma = sigma_BDif,
+                 alpha = fit_BDif$alpha,
+                 eta = eta_BDif )
+
+
+pred_BDif <- eCmn_DIF(X = DatasetB$Xtest,labels = DatasetB$ltest, par = par_BDif)
+
+Accuracy_BDif <- Accuracy(pred_BDif$vhat,DatasetB$vtest)
+Sensitivity_BDif <- Sensitivity(DatasetB$vtest, pred_BDif$vhat,positive = 0)
+Specificity_BDif <- Specificity(DatasetB$vtest,pred_BDif$vhat,positive = 0) 
+Recall_BDif <- Recall(DatasetB$vtest, pred_BDif$vhat,positive = 0) 
+Precision_BDif <- Precision(DatasetB$vtest,pred_BDif$vhat,positive = 0) 
+ConfusionMatrix_BDif <- ConfusionMatrix(pred_BDif$vhat,DatasetB$vtest)
+ConfusionDF_BDif <- ConfusionDF(pred_BDif$vhat,DatasetB$vtest)
+F1_Score_BDif <- F1_Score(DatasetB$vtest,pred_BDif$vhat,positive = 0)
+
+ConfusionMatrix_BDif
+ConfusionMatrix_BEq
+
+
+t_BEq <- as.data.frame.matrix(ConfusionMatrix_BEq)
+colnames(t_BEq)
+
+t_BDif <-as.data.frame.matrix(ConfusionMatrix_BDif)
+
+t_B <- cbind(t_BEq,t_BDif)
+
+df_B <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","Sensitivity","Specificity",
+             "F1 score"),
+  Equal_IF = c(round(Accuracy_BEq,2),round(Precision_BEq,2),
+               round(Recall_BEq,2),round(Sensitivity_BEq,2),
+               round(Specificity_BEq,2),
+            round(F1_Score_BEq,2)),
+  Different_IF = c(round(Accuracy_BDif,2),round(Precision_BDif,2),
+                   round(Recall_BDif,2),round(Sensitivity_BDif,2),
+                   round(Specificity_BDif,2),
+            round(F1_Score_BDif,2))
+)
+
+
+
+
+# DatasetC
 G_c <- 2
 p_c <- 3 # 3 variables
 nobs_c <- 100
@@ -221,10 +293,108 @@ sigma_c[,,1] <- diag(1,p_c)
 sigma_c[,,2] <- diag(1,p_c)
 alpha_c <- c(0.8,0.9)
 eta_c <- matrix(c(5,1,5,10,5,1), nrow = p_c, ncol = G_c, byrow = TRUE )
-DatasetC <- Sim_DIF(mu_c,sigma_c,pig_c,nobs_c,ptraining,alpha_c,eta_c)
+#DatasetC <- Sim_DIF(mu_c,sigma_c,pig_c,nobs_c,ptraining,alpha_c,eta_c)
+DatasetC <- readRDS("DatasetC.RDS")
+
 
 fit_CEq <- CNmixt(X = DatasetC$Xtrain,G = G_c, contamination = TRUE, model = "EII",
                   initialization = "mixt", label = DatasetC$ltrain)
+
+mu_CEq <- fit_CEq$models[[1]]$mu
+sigma_CEq <- fit_CEq$models[[1]]$Sigma
+alpha_CEq <- fit_CEq$models[[1]]$alpha
+eta_CEq <- fit_CEq$models[[1]]$eta
+
+par_CEq <- list(G = 1, pig = 1, mu = mu_CEq, 
+                sigma = sigma_CEq, 
+                alpha = alpha_CEq,
+                eta = eta_CEq)
+
+mu_CEqr <- round(mu_CEq,2)
+sigma_CEqr <- round(sigma_CEq,2)
+alpha_CEqr <- round(alpha_CEq,2)
+eta_CEqr <-round(eta_CEq,2)
+
+
+fit_CeqTest <- eCmn_DIF(DatasetC$Xtest,DatasetC$ltest,par_CEq)
+
+
+Accuracy_CEq <- Accuracy(fit_CeqTest$vhat,DatasetC$vtest)
+Sensitivity_CEq <- Sensitivity(DatasetC$vtest, fit_CeqTest$vhat,positive = 0)
+Specificity_CEq <- Specificity(DatasetC$vtest,fit_CeqTest$vhat,positive = 0) 
+Recall_CEq <- Recall(DatasetC$vtest, fit_CeqTest$vhat,positive = 0) 
+Precision_CEq <- Precision(DatasetC$vtest,fit_CeqTest$vhat,positive = 0) 
+ConfusionMatrix_CEq <- ConfusionMatrix(fit_CeqTest$vhat,DatasetC$vtest )
+ConfusionDF_CEq <- ConfusionDF(fit_CeqTest$vhat,DatasetC$vtest)
+F1_Score_CEq <- F1_Score(DatasetC$vtest,fit_CeqTest$vhat,positive = 0)
+
+#ConfusionMatrix_AEq <- confusionMatrix(factor(DatasetA$vtest),factor(fit_AeqTest$vhat) )
+
+par_CDif0 <- par_CEq
+eta0 <- array(0.0, dim = c(3,3,1))
+eta0[,,1]  <- diag(sqrt(par_CEq$eta),3)
+par_CDif0$eta <- eta0[,,1]
+par_CDif0$lambda <- 1
+
+set.seed(123)
+par_CDif0$v <- matrix(runif(nrow(DatasetC$Xtrain)*G_c), 
+                      nrow = nrow(DatasetC$Xtrain),ncol = G_c, byrow = TRUE)
+
+
+
+fit_CDif <- mCmn_DIF_EII(Xtrain = DatasetC$Xtrain,ltrain = DatasetC$ltrain, par = par_CDif0)
+
+mu_BDifr <- round(fit_BDif$mu,2)
+sigma_BDif <- as.vector(fit_BDif$lambda)*fit_BDif$sigma
+sigma_BDifr<- round(as.vector(fit_BDif$lambda)*fit_BDif$sigma,2)
+alpha_BDifr <- round(fit_BDif$alpha,2)
+eta_BDifr <- round(fit_BDif$eta,2)
+
+fit_BDif$lambda
+fit_BDif$eta
+
+eta_BDif <- (matrix(unlist(fit_BDif$eta),ncol = p_a,nrow =p_a,byrow = TRUE )) 
+
+par_BDif <- list(G = 1, pig = 1, mu = fit_BDif$mu,
+                 sigma = sigma_BDif,
+                 alpha = fit_BDif$alpha,
+                 eta = eta_BDif )
+
+
+pred_BDif <- eCmn_DIF(X = DatasetB$Xtest,labels = DatasetB$ltest, par = par_BDif)
+
+Accuracy_BDif <- Accuracy(pred_BDif$vhat,DatasetB$vtest)
+Sensitivity_BDif <- Sensitivity(DatasetB$vtest, pred_BDif$vhat,positive = 0)
+Specificity_BDif <- Specificity(DatasetB$vtest,pred_BDif$vhat,positive = 0) 
+Recall_BDif <- Recall(DatasetB$vtest, pred_BDif$vhat,positive = 0) 
+Precision_BDif <- Precision(DatasetB$vtest,pred_BDif$vhat,positive = 0) 
+ConfusionMatrix_BDif <- ConfusionMatrix(pred_BDif$vhat,DatasetB$vtest)
+ConfusionDF_BDif <- ConfusionDF(pred_BDif$vhat,DatasetB$vtest)
+F1_Score_BDif <- F1_Score(DatasetB$vtest,pred_BDif$vhat,positive = 0)
+
+ConfusionMatrix_BDif
+ConfusionMatrix_BEq
+
+
+t_BEq <- as.data.frame.matrix(ConfusionMatrix_BEq)
+colnames(t_BEq)
+
+t_BDif <-as.data.frame.matrix(ConfusionMatrix_BDif)
+
+t_B <- cbind(t_BEq,t_BDif)
+
+df_B <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","Sensitivity","Specificity",
+             "F1 score"),
+  Equal_IF = c(round(Accuracy_BEq,2),round(Precision_BEq,2),
+               round(Recall_BEq,2),round(Sensitivity_BEq,2),
+               round(Specificity_BEq,2),
+            round(F1_Score_BEq,2)),
+  Different_IF = c(round(Accuracy_BDif,2),round(Precision_BDif,2),
+                   round(Recall_BDif,2),round(Sensitivity_BDif,2),
+                   round(Specificity_BDif,2),
+            round(F1_Score_BDif,2))
+)
 
 ```
 

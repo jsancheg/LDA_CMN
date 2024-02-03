@@ -1,6 +1,6 @@
 # 
 source("Semisupervised.R")
-source("ListScenariosFiles.R")
+source("ListScenarios.R")
 source("GSSFile.R")
 source("GSFile.R")
 library(ssh)
