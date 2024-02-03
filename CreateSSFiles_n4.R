@@ -2,7 +2,7 @@
 
 
 source("Semisupervised.R")
-source("ListScenariosFiles.R")
+source("ListScenarios.R")
 source("GSSFile.R")
 library(purrr)
 library(ContaminatedMixt)
@@ -22,18 +22,17 @@ library(readr)
 # pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
 dir(pathScenarios)
-ini <- floor(n*30/100) + 1
-fin <- floor(n*40/100)
-fin-ini
+ini <- n100.1 + 1
+fin <- n100.2
+fin-ini + 1
 
-LastFileProcessed <- list()
 
 tic("SSFiles scenarios with 100 variables from n3 to n4")
 mclapply(Scenarios[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
-  LastFileProcessed [[1]] <- x 
+  write.table(SSFilename,"LastFile.csv",sep = ",",col.names = "FileName",row.names = 1,append = TRUE )
   if(is_empty(intersect(FilesProcessed,SSFilename))) 
   {
     GenerateSSFile(x,pathScenarios,pathSSFiles)

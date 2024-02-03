@@ -26,8 +26,9 @@ pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
 pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
 
 
-ini <- n100.9
-fin <- n100
+dir(pathScenarios)
+ini <- n100.5+1
+fin <- n100.6
 
 fin-ini+1
 
@@ -35,8 +36,7 @@ mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
-  if(is_empty(intersect(FilesProcessed,SSFilename))) GenerateSSFile(x,pathScenarios,pathSSFiles) 
-  else cat("\n The file ",SSFilename, " already exists in the directory. \n")
-  
+  write.table(SSFilename,"LastFile.csv",sep = ",",col.names = "FileName",row.names = 1,append = TRUE )
+  if(is_empty(intersect(FilesProcessed,SSFilename))) GenerateSSFile(x,pathScenarios,pathSSFiles) else cat("\n The file ",SSFilename, " already exists in the directory. \n")
 }, mc.cores = 1)
 

@@ -1,6 +1,6 @@
 # 
 source("Semisupervised.R")
-source("ListScenariosFiles.R")
+source("ListScenarios.R")
 source("GSFile.R")
 
 library(purrr)
@@ -28,8 +28,8 @@ pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
 
 
 dir(pathScenarios)
-ini <- 1
-fin <- n2.100.p1
+ini <- n100.6+7
+fin <- n100.7
 fin-ini + 1
 
 tic("SFiles 5 variables 306 files")
@@ -37,6 +37,7 @@ mclapply(Scenarios100[ini:fin], function(x){
   
   SFilename <- str_replace(x,"S_","SV_")
   FilesProcessed <- dir(pathSFiles)
+#  write.table(SFilename,"LastFile.csv",sep = ",",col.names = "FileName",row.names = 1,append = TRUE )
   if(is_empty(intersect(FilesProcessed,SFilename))) GenerateSFile(x,pathScenarios,pathSFiles) 
   else cat("\n The file ",SFilename, " already exists in the directory. \n")
   
