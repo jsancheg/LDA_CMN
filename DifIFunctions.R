@@ -36,11 +36,12 @@ Sim_DIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   aux <- (rmultinom(nobs,1,pig))
   l <- apply(aux,2,which.max)
   v <- rep(0,nobs)
-
+  
+# initialize sigmag
     if(p == 1 & is.vector(sigmag) & length(sigmag)==1)
     {
           sg <- 0
-    }else if(p == 1 & is.vector(sigmag) * length(sigmag) > 1)
+    }else if(p == 1 & is.vector(sigmag) & length(sigmag) > 1)
     {
           sg <- rep(0,length(sigmag))
       }else if(p > 1 & is.matrix(sigmag))
@@ -110,15 +111,15 @@ Sim_DIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
       {
         if(v[i] == 1)
         {  
-          if(is.matrix(mug))
-            X[i,] <- rMVNorm(1,mug[,l[i]],sigmag)
-         else  X[i,] <- rMVNorm(1,mug,sigmag)
+          if(is.matrix(mug))  
+            X[i,] <- rMVNorm(1,mug[,l[i]],sigmag)  # different mean and same variance 
+         else  X[i,] <- rMVNorm(1,mug,sigmag) # same mean and variance 
         
         }else if(v[i]==0)
         {  
           if(is.matrix(mug))
-            X[i,] <- rMVNorm(1,mug[,l[i]],sg)
-          else  X[i,] <- rMVNorm(1,mug,sg)
+            X[i,] <- rMVNorm(1,mug[,l[i]],sg) # different mean and same variance
+          else  X[i,] <- rMVNorm(1,mug,sg) # same mean and variance
         } # end if-else v  
       
       } # end for
@@ -158,77 +159,264 @@ Sim_DIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
   
 }
 
-loglikCMN_DIF<-function(X,l, par)
+loglikCMN_DIF<-function(X,labels, par)
 {
-  
+  # labels: class labels
+  if(!is.matrix(X)) X <- as.matrix(X)
   mu <- as.matrix(par$mu)
-  if(is.matrix(X) & ncol(X)==1) 
-  { # cases when X contains only 1 variable
-    if(length(dim(par$sigma))>2) # if sigma is passed as a vector 
-    {
-      # sg variance covariance of non-contaminated samples
-      sg <- as.vector(par$sigma)
-      # sg1 variance covariance of contaminated samples
-      sg1 <- as.vector(par$eta * par$sigma) 
-    }else if(!is.matrix(par$sigma)) # if the covariance is a vector
-    {
-      sg <- rep(par$sigma,par$G)
-      sg1 <- rep(par$eta * par$sigma,par$G)
-    }
-  }else if(ncol(X)>1) # more than 1 variable contains in X
-  {
-    sg <- par$sigma
-    if(length(dim(par$sigma))>2 & G > 1) # each group has its covariance matrix
-    {
-      sg1 <- array(0.0 , dim= dim(sg)) # sg is an array
-      for(i_g in 1:G)
-        if(is.matrix(par$eta))
-        {
-          sg1[,,i_g] <- t(diag(par$eta[,i_g],p))*par$sigma[,,i_g]*diag(par$eta[,i_g],p)
-          
-        } else sg1[,,i_g] <- t(diag(par$eta[i_g],p))*par$sigma[,,i_g]*diag(par$eta[i_g],p)
-
-    }else if(length(dim(par$sigma))==2 & G > 1) # same covariance matrix for all groups
-    {   sg1 <- matrix(0.0 , nrow = nrow(sg), ncol=ncol(sg) )
-        for (i_g in 1: G)
-           if(is.matrix(par$eta))
-          {
-              sg1 <- t(diag(par$eta[,i_g],p))*par$sigma*diag(par$eta[,i_g],p)      
-          }else sg1 <- t(diag(par$eta,p))*par$sigma*diag(par$eta,p)
-    }
-  }
-  G <- par$G
+  p <- ncol(X)
+  
+  G <- length(unique(labels))
   pig <- par$pig
   alpha <- par$alpha
   eta <- par$eta
+  if(is.null(par$v) ) stop("The matrix of dimension mx2 with probabilities whether 
+                           the sample ith is contaminated or non-contaminated is 
+                            missed in the parameters")
   v <- par$v
-  
   m <- nrow(X)
-  p <- ncol(X)
-  
+
   l <- unmap(l)
   M <- matrix(0.0, nrow = m, ncol = G)
+  term1 <- 0
+  term2 <- 0
+  term3 <- 0
+
+#  initializing sg1
+  if(p == 1)
+  {
+    sg <- rep(0.0,G)  
+    sg1 <- rep(0.0,G)
+  }else if(p>1 & G > 1 & is.matrix(par$sigma) & length(dim(par$sigma))==2)
+  {
+      sg <- par$sigma
+      sg1 <- matrix(0.0,ncol = ncol(sg), nrow = nrow(sg))
+      
+  } else if ( p>1 & G > 1 & is.array(par$sigma) & length(dim(par$sigma))==3)
+  {
+    sg <- par$sigma
+    sg1 <- array(0.0,dim = c(p,p,G))
+    for(i_g in 1:G) {sg[,,i_g] <- par$sigma[,,i_g]}
+  }else if (is.list(par$sigma))
+  {
+    if(length(par$sigma) != G) stop("The covariance matrix has been pass as a list but it does not have the list does not contain 
+                                    the g covariance matrices where g is the number of groups ")
+    sg <- array(0.0, dim = c(p,p,G))
+    sg1 <- array(0.0,dim = c(p,p,G))
+    for(i_g in 1:G) sg[,,i_g] <- par$sigma[[i_g]]
+  }
+
+ 
+   
+#  # case X only is composed of 1 variable
+ 
+   if (p == 1 )
+  {
+      if(  G == 1 & length(par$sigma) == 1 ) # X contains 1 variable and 1 group
+      {# one group 
+        # variance of non contaminated samples
+        if(is.vector(par$eta) )
+        {
+          if(length(par$eta)== 1)
+            {
+              sg <- as.vector(par$sigma)
+              eta <- par$eta
+              sg1 <- eta * sigmag
+            } else if (length(par$eta) > 1)
+              stop("The dimension of eta is higher than 1 and there is only 1 group.")
+        } else if(is.matrix(par$eta))
+          stop("The dimension of eta is higher than number of groups that is 1.")
+      }else if( G > 1 & length(par$sigma) == 1) # X contains 1 variable and more than 1 group
+                                                # with same variance for all groups
+      { 
+          # variance of non-contaminated samples
+        if(is.vector(par$eta) & length(par$eta) == 1)
+        {# eta is dimension 1 when X contains 1 variable and 
+          # there are more than 1 group
+          # replicate eta and sigma for contaminated and non-contaminated samples
+          sg <- rep(par$sigma,G)
+          eta <- par$eta
+          sg1 <- rep(eta*sg,G)
+        }else if(is.vector(par$eta) & length(par$eta) == G)
+        { # eta is dimension G when X contains 1 variable and 
+          # there are more than 1 group replicate eta and sigma for non-contaminated samples
+          sg <- rep(par$sigma,G)
+          eta <- par$eta
+          sg1 <- eta*sg
+        } else if (is.vector(par$eta) & length(par$eta)!= G & length(par$eta)!=1) 
+          stop("The dimension of eta is not equal to the number of groups")
+      }else if(G > 1 & length(par$sigma) == G)
+      { # X contains 1 variable but there are more than 1 group with different variance
+        # variance of non-contaminated samples
+        if(is.vector(par$eta) & length(par$eta) == 1)
+        { # # eta is dimension 1 when X contains 1 variable and 
+          # there are G groups
+          # replicate eta and sigma for contaminated and non-contaminated samples
+          sg <- as.vector(par$sigma)
+          eta <- rep(par$eta,G)
+          sg1 <- eta * sg
+        } else if(is.vector(par$eta) & length(par$eta) == G)
+        { # eta is dimension G when X contains 1 variable and 
+          # there are more than 1 group replicate eta and sigma for non-contaminated samples
+          sg <- rep(par$sigma,G)
+          eta <- par$eta
+          sg1 <- eta*sg
+        } else if (is.vector(par$eta) & (length(par$eta)!= G & length(par$eta)!=1) ) 
+          stop("The dimension of eta is not equal to the number of groups")
+
+    } # end different groups with its own variance for X containing 1 variable
+  } # end if (p == 1)
   
-  
-  
+  if (p > 1) # more than 1 variable
+  {
+    if(G == 1 & length(dim(par$sigma))==2) # 1 group with its covariance matrix
+    {
+      if(is.vector(par$eta) & length(par$eta) == 1)
+      { # same variable inflation factor within the group
+#        sg <- par$sigma
+        eta <- par$eta
+        sg1 <- eta * sg
+      }else if (is.vector(par$eta) & length(par$eta) == p)
+      {# different variables inflation factors within the group
+ #       sg <- par$sigma
+        eta <- par$eta
+        sg1 <- t(diag(sqrt(par$eta),p)) %*% sg %*% diag(sqrt(par$eta),p)
+      }else if (is.vector(par$eta) & (length(par$eta) != G & length(par$eta) != p ) )
+        stop("The dimension of eta does not correspond to the number of variables")
+    } else if(G > 1 & length(dim(par$sigma))==2) # same covariance matrix for all groups
+      {     
+        if(is.vector(par$eta) & length(par$eta) == 1)
+          { # same variable inflation factor for all groups
+   #           sg <- par$sigma
+              eta <- par$eta
+              sg1 <- eta * sg
+          }
+        if(is.vector(par$eta) & length(par$eta) == G)
+          { # same variable inflation factor within group with
+            # each group having different inflation factors
+    #          sg <- par$sigma
+              eta <-par$eta
+#              sg1 <- array(0.0,dim = c(p,p,G))
+              for(i_g in 1:G)   sg1 [,,i_g] <- eta[i_g]*sg
+          }
+        if(is.vector(par$eta) & length(par$eta) == p)
+          {# different variables inflation factor within group with
+           # all groups having the same variables inflation factor
+          
+     #         sg <- par$sigma
+              eta <- diag(sqrt(par$eta),p)
+ #             sg1 <- array(0.0,dim = c(p,p,G))
+              for (i_g in 1:G) sg1[,,i_g] <- t(eta) %*% sg %*% eta 
+            } 
+        if(is.matrix(par$eta) & ncol(par$eta == 1 ) & nrow(par$eta) == p)
+        {# different variables inflation factor within group with
+         # all groups having the same variables inflation factor
+      #      sg <- par$sigma
+            eta <- diag(sqrt(as.vector(par$eta)),p)
+            sg1 <- t(eta) %*% sg %*% eta
+        }
+        if(is.matrix(par$eta) & ncol(par$eta) == G & nrow(par$eta) == p )
+            { # different variables inflation factor within group with
+              # all groups having different variables inflation factor
+      #        sg <- par$sigma
+              eta <- array(0.0, dim = c(p,p,G) )
+  #            sg1 <- array(0.0, dim = c(p,p,G))
+              for (i_g in 1:G)
+                {
+                  eta[,,i_g] <- diag(sqrt(par$eta[i_g]),p)
+                  sg1 [,,i_g] <-t(eta[,,i_g]) %*% sg %*% eta[,,i_g]
+                }
+            }  
+          if(is.vector(par$eta) & length(par$eta)!=1 & 
+             length(par$eta)!=p & length(par$eta) != G )
+                stop("The dimension of eta does not correspond with either the number of variables or number of groups")
+          if(is.matrix(par$eta) & ncol(par$eta)!= G &  nrow(par$eta)!=p &
+             ncol(par$eta)!=1  & ncol(par$eta)!=G )
+              stop("The dimension of eta does not correspond with either the number of variables or number of groups")
+        }  else if(G > 1 & length(dim(par$sigma))==3)
+        {
+            if(is.vector(par$eta) & length(par$eta) == 1)
+            { # same variable inflation factor for all groups
+              # different covariance matrix for each group
+  #            sg <- par$sigma
+              eta <- diag(sqrt(par$eta),p)
+              for (i_g in 1:G) sg1[,,i_g] <- t(eta) %*% sg[,,i_g] %*% eta 
+            }
+            if(is.vector(par$eta) & length(par$eta) == G)
+            { # same variable inflation factor within group with
+            # each group having different inflation factors
+ #             sg <- par$sigma
+              eta <- array(0.0, dim = c(p,p,G))
+  #            sg1 <- array(0.0,dim = c(p,p,G))
+              for(i_g in 1:G) 
+                {
+                  eta[,,i_g] <- diag(sqrt(par$eta[i_g]),p)
+                  sg1 [,,i_g] <- t(eta[,,i_g]) %*% sg[,,i_g] %*% eta[,,i_g] 
+                }  
+            }
+          if(is.vector(par$eta) & length(par$eta) == p)
+          {# different variables inflation factor within group with
+            # all groups having the same variables inflation factor
+#              sg <- par$sigma
+              eta <- diag(sqrt(par$eta),p)
+   #           sg1 <- array(0.0,dim = c(p,p,G))
+              for (i_g in 1:G) sg1[,,i_g] <- t(eta) %*% sg[,,i_g] %*% eta 
+            } 
+          if(is.matrix(par$eta)  )
+          {# different variables inflation factor within group with
+            # all groups having the same variables inflation factor
+   #         sg <- par$sigma
+            if(ncol(par$eta) == 1 & nrow(par$eta) == p)
+            {      eta <- diag(sqrt(as.vector(par$eta)),p)
+    #               sg1 <- array(0.0,dim = c(p,p,G))
+              for (i_g in 1:G) sg1[,,i_g] <- t(eta) %*% sg[,,i_g] %*% eta
+            }
+          
+            if(ncol(par$eta) == G & nrow(par$eta) == p )
+            { # different variables inflation factor within group with
+            # all groups having different variables inflation factor
+    #        sg <- par$sigma
+              eta <- array(0.0, dim = c(p,p,G) )
+     #        sg1 <- array(0.0, dim = c(p,p,G))
+              for (i_g in 1:G)
+                {
+                eta[,,i_g] <- diag(sqrt(par$eta[,i_g]),p)
+                sg1 [,,i_g] <-t(eta[,,i_g]) %*% sg[,,i_g] %*% eta[,,i_g]
+                }
+            } 
+            if(nrow(par$eta)!=p &  (ncol(par$eta)!= G  |  ncol(par$eta)!=1 )  )
+            {
+              stop("The dimension of eta does not correspond 
+                 with either the number of variables or number of groups")
+            }
+              
+          }
+          if(is.vector(par$eta) & length(par$eta)!=1 & 
+             length(par$eta)!=p & length(par$eta) != G )
+            stop("The dimension of eta does not correspond 
+                 with either the number of variables or number of groups")
+
+        }
+  } # end if (p>1)
+
   for (g in 1:G)
   {
     for(i in 1:m)
     {
       term1 <- log(pig[g])
-      if(length(dim(sg)) > 2)
+      if(length(dim(sg)) == 3)
       {
         term2 <- v[i,g] * (log(alpha[g]) + dMVNorm(X[i,],mu[,g],sg[,,g],log = TRUE) )
-        term3<-(1-v[i,g]) * (log(1-alpha[g]) + dMVNorm(X[i,],mu[,g],eta[g]*sg1[,,g], log = TRUE) )
+        term3<-(1-v[i,g]) * (log(1-alpha[g]) + dMVNorm(X[i,],mu[,g],sg1[,,g], log = TRUE) )
         
-      }else if(length(dim(sg))<=2)
+      }else if(length(dim(sg))==2)
       {
-        if(ncol(X)>1)
+        if(p>1)
         {
           s <- matrix(sg, ncol = p, nrow = p)
           term2 <- v[i,g] * ( log(alpha[g])+ dMVNorm(X[i,],mu[,g],data.matrix(s),log = TRUE ) )
-          term3 <-(1-v[i,g]) * ( log (1-alpha[g]) + dMVNorm(X[i,],mu[,g],eta[g]*s,log = TRUE ) )
-        } else if(ncol(X)==1)
+          term3 <-(1-v[i,g]) * ( log (1-alpha[g]) + dMVNorm(X[i,],mu[,g],sg1,log = TRUE ) )
+        } else if(p==1)
         {
           mu <- as.vector(mu)
           term2 <- v[i,g] * log(alpha[g]) + dnorm(X[i,],mu[g],sg[g] , log = TRUE) 
@@ -236,7 +424,7 @@ loglikCMN_DIF<-function(X,l, par)
         }
       }
       
-      if(ncol(l)> 1)
+      if(p > 1)
         M[i,g] <- l[i,g]*(term1 + term2 + term3)   
       else  M[i,g] <- l[i]*(term1 + term2 + term3)   
       
@@ -251,7 +439,8 @@ loglikCMN_DIF<-function(X,l, par)
 
 
 
-eCmn_DIF<-function(X,l,par)
+
+eCmn_DIF<-function(X,labels,par)
 {
   # eCmn_difIF E-step for contaminated mixture model with 
   #            different variable inflation factors within groups
@@ -262,98 +451,306 @@ eCmn_DIF<-function(X,l,par)
   
   m <- nrow(X)
   p <- ncol(X)
+  if(is.null(par$alpha)) stop("A vector with the same length of number of groups 
+                               that contains the percentage of non-contaminated 
+                               samples is required")
   alpha <- par$alpha
   mu <- par$mu
-  sigma <- par$sigma
-  G <- par$G
+  G <- length(unique(labels))
+  if(is.null(par$pig)) stop("A vector of the same length of the number of groups
+                            inidicating the percentage of observations in each class is missed
+                            in the parameters")
   pig <- par$pig
-  eta <- par$eta #  eta contains a matrix of dimension p x G, where each column corresponds
-                 #  the elements of the diagonal corresponding to variable inflation factor  
-                 #  for the group g
-  
   v <- matrix(0.0, ncol = G, nrow = m)
   z <- matrix(0.0, ncol = G, nrow = m)
   lhat <- rep(0,m)
   vhat <- rep(0,m)
-  
   fxig <- matrix(0.0, ncol = G, nrow = m)
   thetaig <- matrix(0.0, ncol = G, nrow = m)
-  
-  
   numz <- matrix(0.0, ncol = G, nrow = m) # numerator for calculating zhat
   numv <- matrix(0.0, ncol = G, nrow = m) # numerator for calculating vhat
   denz <- rep(0,m)                        # denominator for calculating z hat
   denv <- matrix(0.0, ncol = G, nrow = m) # denominator for calculating v hat
   
+ # sigma <- par$sigma
+ # eta <- par$eta #  eta contains a matrix of dimension p x G, where each column corresponds
+                 #  the elements of the diagonal corresponding to variable inflation factor  
+                 #  for the group g
   output <- list()
   
-  if(ncol(X) == 1 & is.vector(sigma) & length(sigma)==1)
+  if(p == 1)
   {
-    sg <- sigma
-  } else if(is.array(sigma))
-  {
-    sg <- array(0,dim = dim(sigma))
-  }
-  
-  for(g in 1:G) 
-  {
-    # different groups separated by only 1 variable with same variance or different variance
-    if(ncol(X)==1 & is.vector(sigma) & length(sigma) >= 1)
+    if (G == 1)
     {
-      sg <- eta*sigmag
+      if (is.vector(par$sigma) & length(par$sigma) == 1)
+      {
+        if(is.vector(par$eta) & length(par$eta) == 1 )
+        {
+          sigma <- par$sigma
+          eta <- par$eta
+          sigma1 <- eta * sigma
+        }else stop("The dimension of eta does not match")
+      }else stop("The dimension of sigma does not match with the number of Groups")
+    } else if ( G > 1)
+    {
+      if(is.vector(par$sigma) & length(par$sigma) == 1)
+      {
+        if(is.vector(par$eta) & length(par$eta) == 1)
+        {
+          eta <- rep(par$eta,G)
+          sigma <- rep(par$sigma,G)
+          sigma1 <- eta * sigma
+        }else if(is.vector(par$eta) & length(par$eta) == G)
+        {
+          eta <- par$eta
+          sigma <- rep(par$sigma,G)
+          sigma1 <- eta * sigma
+        }
+        
+      } else if ( is.vector(par$sigma) & length(par$sigma) == G)
+      {
+        if(is.vector(par$eta) & length(par$eta) == 1)
+        {
+          eta <- rep(par$eta,G)
+          sigma <- par$sigma
+          sigma1 <- eta * sigma
+        }else if(is.vector(par$eta) & length(par$eta) == G)
+        {
+          eta <- par$eta
+          sigma <- par$sigma
+          sigma1 <- eta * sigma
+        }
+      }
     }
-    if(length(dim(sigma)) == 2){
-      sg <- t(diag(sqrt(eta),p)) %*% sigma %*% diag(sqrt(eta),p)
-    } else if(length(dim(sigmag)) == 3) {
-      sg[,,g] <- t(diag(sqrt(eta[g]),p))  %*% sigma[,,g] %*% diag(sqrt(eta[g]),p)
-    } else if(length(dim(sigma)) > 3) stop("Sigma is an array of dimension 4")
   }
   
-  
-  
+  if(p > 1)
+  {
+    if(is.list(par$sigma) & G == 1)
+    {
+      if(is.vector(par$eta) & length(par$eta) == 1)
+      {
+        eta <- par$eta
+        sigma <- matrix(unlist(par$sigma),ncol=p,nrow =p, byrow = TRUE)
+        sigma1 <- eta * sigma
+      }else if(is.vector(par$eta) & length(par$eta) == p)
+      {
+        eta <- diag(sqrt( par$eta),p)
+        sigma <- matrix(unlist(par$sigma),ncol=p,nrow =p, byrow = TRUE)
+        sigma1 <- t(eta) %*% sigma %*% eta
+      }else if(is.matrix(par$eta))
+      {
+        sigma <- matrix(unlist(par$sigma),ncol=p,nrow =p, byrow = TRUE)
+        sigma1 <- t(eta) %*% sigma %*% eta
+        
+      }else if(is.array(par$eta))
+      {
+        eta <- matrix(unlist(par$eta), ncol =p,nrow = p,byrow = TRUE)
+        sigma <- matrix(unlist(par$sigma),ncol=p,nrow =p, byrow = TRUE)
+        sigma1 <- t(eta) %*% sigma %*% eta
+      }
+      
+    }
+    if (is.matrix(par$sigma) & G == 1 )
+    {   
+        if(is.vector(par$eta) & length(par$eta) == 1)
+        {
+          eta <- par$eta
+          sigma <- par$sigma
+          sigma1 <- eta * sigma
+        }else if(is.vector(par$eta) & length(par$eta) == p)
+        {
+          eta <- diag(sqrt( par$eta),p)
+          sigma <- par$sigma
+          sigma1 <- t(eta) %*% sigma %*% eta
+        }else if(is.matrix(par$eta))
+        {
+          if(ncol(par$eta)!= p | nrow(par$eta)!= p) stop("The dimensions of the matrix eta are not pxp")
+          if(ncol(par$eta) == p & nrow(par$eta)== p)
+          {
+            eta <- par$eta
+            sigma <- par$sigma
+            sigma1 <- t(eta) %*% sigma %*% eta
+            
+          }
+        }
+    }else if(is.matrix(par$sigma) & G > 1)
+    {
+      if(is.vector(par$eta) & length(par$eta) == 1)
+      {
+        eta <- par$eta
+        sigma <- par$sigma
+        sigma1 <- eta * sigma
+      }else if(is.vector(par$eta) & length(par$eta) == p)
+      {
+        eta <- diag(sqrt(par$eta),p)
+        sigma <- par$sigma
+        sigma1 <- t(eta) %*% sigma %*% eta
+      }else if(is.matrix(par$eta) & nrow(par$eta)== p & ncol(par$eta) == G)
+      {
+        sigma <- par$sigma
+        eta <- array(0.0, dim =c(p,p,G) )
+        sigma1 <- array(0.0, dim = c(p,p,G))
+        for (i_g in 1:G)
+        {
+            eta[,,i_g] <- diag(sqrt(par$eta[,g]),p)
+            sigma1[,,i_g] <- t(eta) %*% sigma %*% eta
+        }
+      }
+      
+    }else if(is.array(par$sigma) & length(dim(par$sigma))==3 & G > 1)
+    {
+      if(is.vector(par$eta) & length(par$eta) == 1)
+      {
+        eta <- par$eta
+        sigma <- par$sigma
+        sigma1 <- array(0.0, dim =c(p,p,G))
+        for(i_g in 1:G) sigma1[,,i_g] <- eta * sigma[,,i_g]
+      }else if(is.vector(par$eta) & length(par$eta) == p)
+      {
+        eta <- diag(sqrt(par$eta),p)
+        sigma <- par$sigma
+        sigma1 <- array(0.0, dim = c(p,p,G))
+        for(i_g in 1:G) sigma1[,,i_g] <- t(eta) %*% sigma[,,i_g] %*% eta
+      }else if(is.vector(par$eta) & length(par$eta) == G)
+      {
+        sigma <- par$sigma
+        eta <- par$eta
+        sigma1 <- array(0.0, dim = c(p,p,G))
+        for(i_g in 1:G) 
+        {
+          sigma1[,,i_g] <- eta[i_g] * sigma[,,i_g]
+        }
+      }else if(is.matrix(par$eta) & nrow(par$eta)== p & ncol(par$eta) == G)
+      {
+        sigma <- par$sigma
+        eta <- array(0.0, dim = c(p,p,G))
+        sigma1 <- array(0.0, dim = c(p,p,G))
+        for(i_g in 1:G)
+        {
+          eta[,,i_g] <- diag(sqrt(par$eta[,i_g]),p)
+          sigma1[,,i_g] <- t(eta[,,i_g]) %*% sigma[,,i_g] %*% eta[,,i_g]
+        }
+      }else if( is.array(par$eta) ) 
+      {
+        if( all( dim(par$eta) == c(p,p,G) ) == TRUE  ) 
+        {
+            sigma <- par$sigma
+            eta <- par$eta
+            for (i_g in 1:G) sigma1 <- t(eta[,,i_g]) %*% sigma %*% eta[,,i_g]
+        }
+      }
+    }else if(is.list(par$sigma) & length((par$sigma))==G & G > 1)
+    {
+      if(is.vector(par$eta) & length(par$eta) == 1)
+      {
+        eta <- par$eta
+        sigma <- par$sigma
+        sigma1 <- array(0.0, dim =c(p,p,G))
+        for(i_g in 1:G) sigma1[,,i_g] <- eta * sigma[,,i_g]
+      }else if(is.vector(par$eta) & length(par$eta) == p)
+      {
+        eta <- diag(sqrt(par$eta),p)
+        sigma <- par$sigma
+        sigma1 <- array(0.0, dim = c(p,p,G))
+        for(i_g in 1:G) sigma1[,,i_g] <- t(eta) %*% sigma[,,i_g] %*% eta
+      }else if(is.vector(par$eta) & length(par$eta) == G)
+      {
+        sigma <- par$sigma
+        eta <- par$eta
+        sigma1 <- array(0.0, dim = c(p,p,G))
+        for(i_g in 1:G) 
+        {
+          sigma1[,,i_g] <- eta[i_g] * sigma[,,i_g]
+        }
+      }else if(is.matrix(par$eta) & nrow(par$eta)== p & ncol(par$eta) == G)
+      {
+        sigma <- par$sigma
+        eta <- array(0.0, dim = c(p,p,G))
+        sigma1 <- array(0.0, dim = c(p,p,G))
+        for(i_g in 1:G)
+        {
+          eta[,,i_g] <- diag(sqrt(par$eta[,i_g]),p)
+          sigma1[,,i_g] <- t(eta[,,i_g]) %*% sigma[,,i_g] %*% eta[,,i_g]
+        }
+      }else if( is.array(par$eta) ) 
+      {
+        if( all( dim(par$eta) == c(p,p,G) ) == TRUE  ) 
+        {
+          sigma <- array(0.0,dim = c(p,p,G))
+          eta <- par$eta
+          for (i_g in 1:G) 
+            {
+              sigma[,,i_g] <- par$sigma[[i_g]]
+              sigma1[,,i_g] <- t(eta[,,i_g]) %*% sigma[,,i_g] %*% eta[,,i_g]
+            }  
+        }
+      }
+  }
+  }
+# Continuing here    
+  # Calculating z's and v's
   
   for(g in 1:G)
   {
     for(i in 1:m)
     {
-      if(ncol(X) == 1 & is.vector(sigma) & length(sigma)==1)
-      {
-        # thetaig : matrix containing the probability of i-th observation in group g 
-        # is not contaminated
-        thetaig[i,g] <- dnorm(X[i,],mu[g],sigma)
-        # fxig: matrix containing the probability of contaminated normal distribution for
-        # observation i in group g
-        fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dnorm(X[i,],mu[g],sg[g])
-        
-      } else if(length(dim(sigma))==2)
-      {
-        thetaig[i,g] <- dMVNorm(X[i,],mu[,g],sigma)
-        fxig[i,g] <- alpha[g]*thethaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],sg[g])
-        
-      } else if(length(dim(sigma)) > 2)
-      {
-        if(ncol(X)>1)
+      if(p == 1 )
         {
-          thetaig[i,g] <-  dMVNorm(X[i,],mu[,g],sigma[,,g])
-          fxig[i,g] <- alpha[g] * thetaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],sg[,,g])
-          
-        }else if(ncol(X)==1)
-        {
-          if(is.null(dim(sigma)))
+          if( G == 1 & is.vector(par$sigma) & length(par$sigma)==1 &
+              is.vector(par$eta) & length(par$eta) == 1)
           {
-            thetaig[i,g] <- dnorm(X[i,],mu[g],sigma)
-            fxig[i,g] <- alpha[g] * thetaig[i,g] + (1-alpha[g])*dnorm(X[i,],mu[g],eta[g]*sigma)
-          } else if(!is.null(dim(sigma)) )
+            # thetaig : matrix containing the probability of i-th observation in group g 
+            # is not contaminated
+            thetaig[i,g] <- dnorm(X[i,],mu,sigma)
+            # fxig: matrix containing the probability of contaminated normal distribution for
+            # observation i in group g
+            fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dnorm(X[i,],mu,sigma1)
+          }else if(G >1 & is.vector(par$sigma) )
           {
-            thetaig[i,g] <- dnorm(X[i,],mu[g],sigma[,,g])
-            fxig[i,g] <- alpha[g] * thetaig[i,g] +  (1-alpha[g])*dnorm(X[i,],mu[g],sg[,,g])
+            thetaig[i,g] <- dnorm(X[i,],mu[,g],sigma[g])
+            # fxig: matrix containing the probability of contaminated normal distribution for
+            # observation i in group g
+            fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dnorm(X[i,],mu[,g],sigma1[g])
             
           }
+      } # end-if p == 1
+      
+      if(p > 1)
+      {
+        if(G == 1 & is.matrix(par$sigma) )
+        {
+          thetaig[i,g] <- dMVNorm(X[i,],mu,sigma)
+          # fxig: matrix containing the probability of contaminated normal distribution for
+          # observation i in group g
+          fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu,sigma1)
+          
+        }else if(G > 1 & is.matrix(par$sigma) & is.vector(par$eta) )
+        {
+          thetaig[i,g] <- dMVNorm(X[i,],mu[,g],sigma)
+          # fxig: matrix containing the probability of contaminated normal distribution for
+          # observation i in group g
+          fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],sigma1)
+          
+        }else if(G>1 & is.matrix(par$sigma) & is.matrix(par$eta))
+        {
+          thetaig[i,g] <- dMVNorm(X[i,],mu[,g],sigma)
+          # fxig: matrix containing the probability of contaminated normal distribution for
+          # observation i in group g
+          fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],sigma1[,,g])
+          
+        }else if(G>1 & (is.array(par$sigma)|is.list(par$sigma) ) )
+        {
+          thetaig[i,g] <- dMVNorm(X[i,],mu[,g],sigma[,,g])
+          # fxig: matrix containing the probability of contaminated normal distribution for
+          # observation i in group g
+          fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],sigma1[,,g])
           
         }
-        
-      } #End-f
+      } # end-if p > 1
       
+
+
       # avoid division by zero
       numz[i,g] <- pig[g] * fxig[i,g]
       numv[i,g] <- alpha[g] * thetaig[i,g]
@@ -376,7 +773,7 @@ eCmn_DIF<-function(X,l,par)
   lhat<-apply(z,1,which.max)
   for (i in 1:m)
   {
-    vhat[i] <- ifelse(v[i,l[i]]>0.5,1,0)
+    vhat[i] <- ifelse(v[i,labels[i]]>0.5,1,0)
   }
   
   output <- list(z = z, v = v, lhat = lhat, vhat = vhat )
@@ -384,15 +781,835 @@ eCmn_DIF<-function(X,l,par)
   
   
 }
+f_etaDIF_EII <- function(eta_gj,z, v , X, mu, lambda)
+{
+  # eta_gj: contains the value of eta for the p-th variable
+  # z : a vector of dimension nx1 containing either
+  #     the labels of the observation for the g-th group where z = 1 if observation i belongs 
+  #     to group g in the case of supervised learning or
+  #     the estimated probabilities z of observation i belonging to group g in the case of
+  #     semi-supervised learning
+  # v : a vector of dimension nx1 containing either
+  #     the labels of whether the i-th observation is contaminated v = 0 
+  #     or non-contaminated v= 1  
+  #     or the estimated probabilities v of observation i is contaminated or not
+  #     where if the probability is higher than 0.5 the observation is non-contaminated
+  #     and if the probability is lower than 0.5 is contaminated.
+  # X : matrix of observations
+  # mu: mu_gj it is the mean for the group g the variable j 
+  # invSigma: invSigmajj it is the jth element of the diagonal of the estimated inverse 
+  #           matrix of the covariance
+  
+  m <- length(X)
+  #  G <- ncol(mu)
+  output <- 0.0
+  if(any(nrow(z),nrow(v))== m) stop("z and v has to be same length")
+  sum1 <- 0
+  sum2 <- 0
+  product1 <- numeric(m)
+  product2 <- numeric(m)
+  
+  product1 <- z*(1-v)
+  
+  for(i in 1:m)
+  {
+    product2[i]<- product1[i]* ( (X[i]-mu)^2 )
+  } #end-if i
+  sum1 <- (-1/(2*lambda*eta_gj)) * sum(product2)
+  sum2 <- -(log(eta_gj)/2) *sum(product1)    
+  
+  output <- sum1 + sum2
+  
+  return(output)
+  
+}
+
+
+
+f_etaDIF <- function(eta_gj,z, v , X, mu, invSigma_jj)
+{
+  # eta_gj: contains the value of eta for the p-th variable
+  # z : a vector of dimension nx1 containing either
+  #     the labels of the observation for the g-th group where z = 1 if observation i belongs 
+  #     to group g in the case of supervised learning or
+  #     the estimated probabilities z of observation i belonging to group g in the case of
+  #     semi-supervised learning
+  # v : a vector of dimension nx1 containing either
+  #     the labels of whether the i-th observation is contaminated v = 0 
+  #     or non-contaminated v= 1  
+  #     or the estimated probabilities v of observation i is contaminated or not
+  #     where if the probability is higher than 0.5 the observation is non-contaminated
+  #     and if the probability is lower than 0.5 is contaminated.
+  # X : matrix of observations
+  # mu: mu_gj it is the mean for the group g the variable j 
+  # invSigma: invSigmajj it is the jth element of the diagonal of the estimated inverse 
+  #           matrix of the covariance
+
+  m <- length(X)
+  #  G <- ncol(mu)
+  output <- 0.0
+  if(any(nrow(z),nrow(v))== m) stop("z and v has to be same length")
+  sum1 <- 0
+  sum2 <- 0
+  product1 <- numeric(m)
+  product2 <- numeric(m)
+  
+  product1 <- z*(1-v)
+  
+  for(i in 1:m)
+  {
+    product2[i]<- product1[i]* ( (X[i]-mu)^2 )
+  } #end-if i
+  sum1 <- (-invSigma_jj/(2*eta_gj)) * sum(product2)
+  sum2 <- -(log(eta_gj)/2) *sum(product1)    
+  
+  output <- sum1 + sum2
+  
+  return(output)
+  
+}
+
+
+mCmn_DIF_EII <- function(Xtrain,ltrain, par, eta_max = 1000)
+{
+  Xtrain <- as.matrix(Xtrain)
+  m <- nrow(Xtrain)
+  p <- ncol(Xtrain)
+  G <- length(unique(ltrain))
+  l <- unmap(ltrain)
+  
+  mu <- matrix(0.0, nrow = p, ncol = G) 
+  #sigma <- array(0.0, dim = c(p,p,G))
+  #inv_sigma <-array(0.0, dim =c(p,p,G) )
+  alpha <- numeric(G)
+  eta <- array(0.0, dim = c(p,p,G))
+  inv_eta<-array(0.0,dim = c(p,p,G))
+  lambda <- numeric(1)
+    
+  est_mu <- matrix(0.0, nrow = p, ncol = G)
+  est_lambda <- numeric(1)
+  if(G == 1) 
+    {
+      est_sigma <- diag(1,p)
+      sigma <- diag(1,p)
+      inv_sigma <- diag(1,p)
+    }  
+  if(G > 1)
+    {
+      sigma <- diag(1,p)
+      est_sigma<- array(0.0, dim = c(p,p,G))
+      inv_sigma <- array(0.0, dim = c(p,p,G))
+      for (g in 1:G) 
+        {
+          est_sigma[,,g] <- diag(1,p)
+          inv_sigma[,,g] <- solve(est_sigma[,,g])
+        }  
+    }    
+  est_alpha <- numeric(G)
+  est_eta <- array(0.0, dim = c(p,p,G))
+  
+  # Estimate initial parameters ---------------------------------------------
+  
+  #  if(is.empty.list(par))
+  #  {
+  #    mu0 <- sapply(1:G, function(g)
+  #    {
+  #      apply(Xtrain[ltrain==g,],2,mean)
+  #    })
+  #  }
+  
+  if(is.null(par$v))
+  {
+    set.seed(123)
+    v <- matrix(runif(m*G),nrow = m,ncol = G, byrow = TRUE)
+  }else if(is.matrix(par$v))
+           {
+             if(all(dim(par$v) == c(m,G)) == TRUE )
+                { v <- par$v}
+            }else stop("The dimension of v has to be mXG")
+
+  if(is.matrix(par$mu) & all(dim(par$mu)==c(p,G)) == TRUE )
+  {
+    mu<-par$mu
+  }else stop("Parameter mu has to be a matrix of dimension pxG")
+  
+  if(is.numeric(par$lambda) & length(par$lambda) == 1 )
+  {
+    lambda <- par$lambda
+  }else stop("Parameter lambda has to be a vector of dimension 1")
+  
+  if(is.vector(par$alpha) & length(par$alpha) == G) 
+  {
+    alpha <- par$alpha
+  } else stop("Parameter alpha has to be a vector of length G")
+  
+  if(is.array(par$eta))
+  {
+    if(length(dim(par$eta)) == 3)
+      if( all(dim(par$eta) == c(p,p,G)) == TRUE )  
+        eta <- par$eta 
+   }
+  if(is.matrix(par$eta))
+   {
+     if(length(dim(par$eta)) == 2)
+       if(all(dim(par$eta) == c(p,p)) == TRUE  )
+         eta <- par$eta
+   }else {stop("Parameter eta has to be a array of dimension pxpxG")}
+    
+  for (g in G)  
+    {
+      
+      if(G>1) inv_eta[,,g] <- solve(eta[,,g])
+      if(G == 1) inv_eta <- solve(eta)
+    } 
+  
+  mg <-apply(unmap(ltrain),2,sum)
+  pig <- mg/m
+  sum_lig_vig <- numeric(G)
+  sig <- vector("list",m)
+  sum_sig <- vector("list",G)
+  sum_sig_xi <- vector("list",G)
+  term1 <- vector("list",m)
+  term2 <- vector("list",m)
+  sumTerms<- vector("list",m)
+  sumSigma <-vector("list",G)
+  est_alpha <- numeric(length(alpha))
+
+  # CM-step1 ----------------------------------------------------------------
+  
+  # numerator for calculating alphag
+  if(is.matrix(v) & is.matrix(l))
+  {
+    
+    sum_lig_vig <- sapply(1:G, function(g) {sum(l[,g]*v[,g]) })
+    est_alpha <- sum_lig_vig/mg
+    
+    for(g in 1:G)
+    {
+      
+      for(i in 1:m)
+      {
+        if(p==1 & G == 1)
+        {
+          sig[[i]] <- (l[i]) *(   v[i,g] * diag(1,p) + 
+                                  (1-v[i,g]) * inv_eta )       
+          term1[[i]] <-v[i,g]* ( (Xtrain[i,]-mu) * (Xtrain[i,]-mu) )
+          term2[[i]] <- (1-v[i,g]) * inv_eta* (Xtrain[i,]-mu) * (Xtrain[i,]-mu) * inv_eta
+          sumTerms[[i]] <- l[i] *(term1[[i]] + term2[[i]])  
+        }else if (p ==1 & G>1)
+        {
+          sig[[i]] <- l[i,g] *(   v[i,g] * diag(1,p) + 
+                                    (1-v[i,g]) * inv_eta[g] )
+          term1[[i]] <-v[i,g]* ( (Xtrain[i,]-mu[g]) * (Xtrain[i,]-mu[g]) )
+          term2[[i]] <- (1-v[i,g]) * inv_eta[g]* (Xtrain[i,]-mu[g]) * (Xtrain[i,]-mu[g])* inv_eta[g]
+          sumTerms[[i]] <- l[i,g] *(term1[[i]] + term2[[i]])  
+        }else if(p> 1 & G == 1)
+        {
+          sig[[i]] <- l[i,g] *(   v[i,g] * diag(1,p) + 
+                                    (1-v[i,g]) * inv_eta  )  
+          term1[[i]] <-v[i,g]* t(as.matrix(Xtrain[i,]-mu[,g])) %*% as.matrix(Xtrain[i,]-mu[,g]) 
+          term2[[i]] <- (1-v[i,g]) * ( t(as.matrix(Xtrain[i,]-mu[,g])) %*% inv_eta 
+                                       %*% inv_eta %*% as.matrix(Xtrain[i,]-mu[,g]))
+          if(G == 1)  sumTerms[[i]] <- l[i] *(term1[[i]] + term2[[i]])  
+          if(G > 1)   sumTerms[[i]] <- l[i,g] *(term1[[i]] + term2[[i]])  
+          
+        }
+        else if (p > 1 & G > 1 )
+        {
+          sig[[i]] <- l[i,g] *(   v[i,g] * diag(1,p) + 
+                                    (1-v[i,g]) * inv_eta[,,g]  )  
+          term1[[i]] <-v[i,g]* ( (Xtrain[i,]-mu[,g]) %*% t(Xtrain[i,]-mu[,g]) )
+          term2[[i]] <- (1-v[i,g]) * ( (Xtrain[i,]-mu[,g]) %*% inv_eta[,,g] 
+                                       %*% inv_eta[,,g] %*% t(Xtrain[i,]-mu[,g]))
+          if(G == 1)  sumTerms[[i]] <- l[i] *(term1[[i]] + term2[[i]])  
+          if(G > 1)   sumTerms[[i]] <- l[i,g] *(term1[[i]] + term2[[i]])  
+        }
+        if(i==1) 
+        {
+          sum_sig[[g]] <- 0
+          sum_sig_xi[[g]] <-0
+          sumSigma[[g]] <-0
+        }  
+        sum_sig[[g]]  <- sum_sig[[g]] + sig[[i]]
+        sum_sig_xi[[g]] <-sum_sig_xi[[g]] + sig[[i]] %*% Xtrain[i,]
+        sumSigma[[g]] <- sumSigma[[g]] + sumTerms[[i]]
+      }# end-for i
+      est_mu[,g] <- t(sum_sig_xi[[g]]) %*% solve(sum_sig[[g]])
+      if(G==1) est_lambda <- sumSigma[[g]]/(p*mg)
+      if(G>1) est_lambda[g] <- sumSigma[[g]]/(p*mg[g])
+    }# end-for g          
+    
+  }# end-if
+  
+  
+  # CM-step2 ----------------------------------------------------------------
+  factor1 <- 0
+  eta_max <- 1000
+
+
+  for(g in 1:G)
+  {
+    for(j in 1:p)
+    {
+      factor1 <- optimize(f_etaDIF_EII,c(1,eta_max), tol = 0.001,
+                          z = l[,g], v = v[,g], X = Xtrain[,j],
+                          mu = est_mu[j,g], lambda = est_lambda, 
+                          maximum = TRUE)
+      est_eta[j,j,g] <- factor1$maximum
+    }
+  }
+  
+  
+  
+  
+  output <- list(mu = est_mu, sigma = est_sigma,lambda = est_lambda,
+                 alpha = est_alpha ,eta = est_eta, pig = pig, G = G)
+  
+  return(output)
+  
+  
+}
+
+
+mCmn_DIF_VVV <- function(Xtrain,ltrain,par,eta_max = 1000)
+{
+  Xtrain <- as.matrix(Xtrain)
+  m <- nrow(Xtrain)
+  p <- ncol(Xtrain)
+  G <- length(unique(ltrain))
+  l <- unmap(ltrain)
+  if(is.null(par$sigma)) stop("The variance covariance matrix of dimension pxp is required 
+                              in the parameters")
+  sigma <- par$sigma
+  inv_sigma <- array(0.0, dim = c(p,p,G) )
+  
+  if(!is.array(par$sigma) & !is.list(par$sigma) )
+  {
+    inv_sigma <- solve(sigma)
+  }else if(is.array(par$sigma) )
+  {
+    for(g in 1:G) inv_sigma[,,g] <- solve(par$sigma[,,g])
+  }else if(is.list(par$sigma)) 
+  {
+    if(length(par$sigma)!=G) stop("The list should contain the same number of covariance matrices as number of groups")
+    for(g in 1:G) inv_sigma[,,g] <- solve(par$sigma[[g]])
+  }
+  
+  
+  if (any(par$alpha>1) | any(par$alpha<0) ) stop("The parameter of level of contamination alpha should be between 0 and 1")
+  
+  # initial values
+  mu <- par$mu
+  
+  
+  # sigma and inv_sigma initialization --------------------------------------
+  
+  
+  # alpha initialization  
+  #  if(is.null(par$alpha) & G == 1) 
+  #  {
+  #    alpha <- 1.011
+  #  }else if(!is.null(par$alpha) & G == 1 & length(par$alpha) == 1)
+  #  {
+  #    alpha <- par$alpha 
+  #  }else if(is.null(par$alpha) & G >1)
+  #  {
+  #    alpha <- rep(1.011,G)
+  #  }else if(!is.null(par$alpha) & G >1 & length(par$alpha) == 1)
+  #  {
+  #    alpha <- rep(par$alpha,G)
+  #  }else if(!is.null(par$alpha) & G>1 & length(par$alpha) == G)
+  #  {
+  #    alpha <- par$alpha
+  #  }
+  #  
+  
+  #  if(is.vector(par$alpha) & length(par$alpha) == 1)
+  #  {
+  #    alpha <- rep(par$alpha,G)
+  #  }else if(is.vector(par$alpha) & length(par$alpha)== G)
+  #  {
+  #    alpha <- par$alpha
+  #  }else if(is.vector(par$alpha) & (length(par$alpha)!= 1 & length(par$alpha)!=G ) )
+  #    stop("The dimension of alpha does not correspond to the groups number")
+  
+  
+  # Eta initialization and inverse of Eta -------------------------------------------
+  
+  
+  if( p == 1 )
+  {
+    eta <- numeric()
+    inv_eta <- numeric()
+    if(G ==1)
+    {
+      if(is.vector(par$eta) & length(par$eta) == 1)
+      {
+        eta <- par$eta
+        inv_eta <- 1/eta
+      }else if(is.vector(par$eta) & length(par$eta)!= 1 ) 
+        stop("Dimension of parameter eta does not match having 1 group")
+    }else if(G>1)
+    {
+      if(is.vector(par$eta) & length(par$eta) == 1)
+      {
+        eta <- rep(par$eta,G)
+        inv_eta <-rep(1/eta,G)
+      }else if(is.vector(par$eta) & length(par$eta) == G)
+      { 
+        eta <- par$eta
+        inv_eta<- 1/eta
+      }
+    }
+  }
+  
+  if(p > 1)
+  {
+    eta <- array(0.0,dim = c(p,p,G))
+    inv_eta <- array(0.0, dim = c(p,p,G))
+    if(G == 1)
+    {
+      if(is.vector(par$eta) & (length(par$eta) == 1 | length(par$eta) == G ) ) 
+      {
+        eta[,,G] <- diag(sqrt(par$eta),p)
+        inv_eta[,,G] <- solve(eta[,,G])
+      }else if(is.vector(par$eta) & length(par$eta) != 1 & length(par$eta) != p)
+        stop("The dimension of eta is incorrect for having 1 group")
+      
+    }else if(G > 1)
+    {
+      if(is.vector(par$eta) & (length(par$eta) == 1 | length(par$eta) ==p ) )
+      {
+        for(g in 1:G)
+        {
+          eta[,,g] <- diag(sqrt(par$eta),p)
+          inv_eta[,,g] <- solve(eta[,,g])
+        } #end -for
+      } else if (is.vector(par$eta) & length(par$eta) == G)
+      {
+        for(g in 1:G)
+        {
+          eta[,,g] <- diag(sqrt(par$eta[g]),p)
+          inv_eta[,,g] <- solve(eta[,,g])
+        } #end -for
+        
+      } else if (is.matrix(par$eta) & nrow(par$eta)== p & ncol(par$eta) == G )
+      {
+        for(g in 1:G)
+        {
+          eta[,,g] <- diag(sqrt(par$eta[,g]),p)
+          inv_eta[,,g]<- solve(eta[,,g])
+        }
+      } else if (is.matrix(par$eta) & nrow(par$eta) == p & ncol(par$eta) == p)
+      {
+        for(g in 1:G)
+        {
+          eta[,,g] <- diag(sqrt(diag(par$eta)),p)
+          inv_eta[,,g] <- solve(eta[,,g])
+        }
+        
+      }else if(is.array(par$eta) )
+      {       
+        if( all(dim(par$eta) == c(p,p,G) ) == TRUE )
+          for(g in 1:G)
+          {
+            eta[,,g] <- diag( sqrt(diag(par$eta[,,g])) , p)
+            inv_eta[,,g] <- solve(eta[,,g])
+          }
+      }
+    }   # end-if G  
+  }# end-if p
+  
+  
+  
+  # v initialization --------------------------------------------------------
+  
+  if(is.null(par$v))
+  {
+    v<- matrix(c(runif(m*G)), ncol = G, nrow = nrow(X))
+  }else  v <- par$v
+  
+  
+  # Calculations ------------------------------------------------------------
+  
+  
+  mg <-apply(unmap(ltrain),2,sum)
+  pig <- mg/m
+  sum_lig_vig <- numeric(G)
+  sig <- vector("list",m)
+  sum_sig <- vector("list",G)
+  sum_sig_xi <- vector("list",G)
+  term1 <- vector("list",m)
+  term2 <- vector("list",m)
+  sumTerms<- vector("list",m)
+  sumSigma <-vector("list",G)
+  est_sigma <- vector("list",G)
+  est_alpha <- numeric(length(alpha))
+  est_mu <- matrix(0.0,nrow=p,ncol=G) 
+  
+  # CM-step1 ----------------------------------------------------------------
+  
+  # numerator for calculating alphag
+  if(is.matrix(v) & is.matrix(l))
+  {
+    
+    sum_lig_vig <- sapply(1:G, function(g) {sum(l[,g]*v[,g]) })
+    est_alpha <- sum_lig_vig/mg
+    
+    for(g in 1:G)
+    {
+      
+      for(i in 1:m)
+      {
+        if(p==1 & G == 1)
+        {
+          sig[[i]] <- l[i] *(   v[i,g] * inv_sigma + 
+                                  (1-v[i,g]) * inv_eta * inv_sigma * inv_eta  )       
+          term1[[i]] <-v[i,g]* ( (Xtrain[i,]-mu) * (Xtrain[i,]-mu) )
+          term2[[i]] <- (1-v[i,g]) * inv_eta* (Xtrain[i,]-mu) * (Xtrain[i,]-mu) * inv_eta
+          sumTerms[[i]] <- l[i] *(term1[[i]] + term2[[i]])  
+        }else if (p ==1 & G>1)
+        {
+          sig[[i]] <- l[i,g] *(   v[i,g] * inv_sigma[g] + 
+                                    (1-v[i,g]) * inv_eta[g] * inv_sigma[g] * inv_eta[g]  )
+          term1[[i]] <-v[i,g]* ( (Xtrain[i,]-mu[g]) * (Xtrain[i,]-mu[g]) )
+          term2[[i]] <- (1-v[i,g]) * inv_eta[g]* (Xtrain[i,]-mu[g]) * (Xtrain[i,]-mu[g])* inv_eta[g]
+          sumTerms[[i]] <- l[i,g] *(term1[[i]] + term2[[i]])  
+        }else if (p > 1 )
+        {
+          sig[[i]] <- l[i,g] *(   v[i,g] * inv_sigma[,,g] + 
+                                    (1-v[i,g]) * inv_eta[,,g] %*% inv_sigma[,,g] %*% inv_eta[,,g]  )  
+          term1[[i]] <-v[i,g]* ( (Xtrain[i,]-mu[,g]) %*% t(Xtrain[i,]-mu[,g]) )
+          term2[[i]] <- (1-v[i,g]) * (inv_eta[,,g] %*% (Xtrain[i,]-mu[,g]) %*% t(Xtrain[i,]-mu[,g]) %*% inv_eta[,,g])
+          if(G == 1)  sumTerms[[i]] <- l[i] *(term1[[i]] + term2[[i]])  
+          if(G > 1)   sumTerms[[i]] <- l[i,g] *(term1[[i]] + term2[[i]])  
+        }
+        if(i==1) 
+        {
+          sum_sig[[g]] <- 0
+          sum_sig_xi[[g]] <-0
+          sumSigma[[g]] <-0
+        }  
+        sum_sig[[g]]  <- sum_sig[[g]] + sig[[i]]
+        sum_sig_xi[[g]] <-sum_sig_xi[[g]] + sig[[i]] %*% Xtrain[i,]
+        sumSigma[[g]] <- sumSigma[[g]] + sumTerms[[i]]
+      }# end-for i
+      est_mu[,g] <- t(sum_sig_xi[[g]]) %*% solve(sum_sig[[g]])
+      if(G==1) est_sigma[[g]] <- sumSigma[[g]]/mg
+      if(G>1) est_sigma[[g]] <- sumSigma[[g]]/mg[g]
+    }# end-for g          
+    
+  }# end-if
+  
+  
+  # CM-step2 ----------------------------------------------------------------
+  factor1 <- 0
+  eta_max <- 1000
+  est_invSigma <- array(0.0,dim = c(p,p,G))
+  est_eta <- array(0.0, dim = c(p,p,G))
+  
+  for( g in 1:G)
+  {
+    est_invSigma[,,g] <- solve(est_sigma[[g]])
+  }
+  
+  for(g in 1:G)
+  {
+    for(j in 1:p)
+    {
+      factor1 <- optimize(f_etaDIF,c(1,eta_max), tol = 0.001,
+                          z = l[,g], v = v[,g], X = Xtrain[,j],
+                          mu = est_mu[j,g], invSigma = est_invSigma[j,j,g], 
+                          maximum = TRUE)
+      est_eta[j,j,g] <- factor1$maximum
+    }
+  }
+  
+  
+  
+  
+  output <- list(mu = est_mu, sigma = est_sigma,inv_Sigma = est_invSigma,
+                 alpha = est_alpha ,eta = est_eta, pig = pig, G = G)
+  
+  return(output)
+}
+
+
+mCmn_DIF <- function(Xtrain,ltrain,par)
+{
+  Xtrain <- as.matrix(Xtrain)
+  m <- nrow(Xtrain)
+  p <- ncol(Xtrain)
+  G <- length(unique(ltrain))
+  l <- unmap(ltrain)
+  if(is.null(par$sigma)) stop("The variance covariance matrix of dimension pxp is required 
+                              in the parameters")
+  sigma <- par$sigma
+  inv_sigma <- array(0.0, dim = c(p,p,G) )
+  
+  if(!is.array(par$sigma) & !is.list(par$sigma) )
+  {
+    inv_sigma <- solve(sigma)
+  }else if(is.array(par$sigma) )
+  {
+    for(g in 1:G) inv_sigma[,,g] <- solve(par$sigma[,,g])
+  }else if(is.list(par$sigma)) 
+  {
+    if(length(par$sigma)!=G) stop("The list should contain the same number of covariance matrices as number of groups")
+    for(g in 1:G) inv_sigma[,,g] <- solve(par$sigma[[g]])
+  }
+
+  
+  if (any(par$alpha>1) | any(par$alpha<0) ) stop("The parameter of level of contamination alpha should be between 0 and 1")
+
+  # initial values
+  mu <- par$mu
+  
+
+# sigma and inv_sigma initialization --------------------------------------
+
+  
+# alpha initialization  
+#  if(is.null(par$alpha) & G == 1) 
+#  {
+#    alpha <- 1.011
+#  }else if(!is.null(par$alpha) & G == 1 & length(par$alpha) == 1)
+#  {
+#    alpha <- par$alpha 
+#  }else if(is.null(par$alpha) & G >1)
+#  {
+#    alpha <- rep(1.011,G)
+#  }else if(!is.null(par$alpha) & G >1 & length(par$alpha) == 1)
+#  {
+#    alpha <- rep(par$alpha,G)
+#  }else if(!is.null(par$alpha) & G>1 & length(par$alpha) == G)
+#  {
+#    alpha <- par$alpha
+#  }
+#  
+  
+#  if(is.vector(par$alpha) & length(par$alpha) == 1)
+#  {
+#    alpha <- rep(par$alpha,G)
+#  }else if(is.vector(par$alpha) & length(par$alpha)== G)
+#  {
+#    alpha <- par$alpha
+#  }else if(is.vector(par$alpha) & (length(par$alpha)!= 1 & length(par$alpha)!=G ) )
+#    stop("The dimension of alpha does not correspond to the groups number")
+  
+
+# Eta initialization and inverse of Eta -------------------------------------------
+
+
+  if( p == 1 )
+  {
+    eta <- numeric()
+    inv_eta <- numeric()
+    if(G ==1)
+      {
+        if(is.vector(par$eta) & length(par$eta) == 1)
+          {
+            eta <- par$eta
+            inv_eta <- 1/eta
+        }else if(is.vector(par$eta) & length(par$eta)!= 1 ) 
+              stop("Dimension of parameter eta does not match having 1 group")
+      }else if(G>1)
+      {
+        if(is.vector(par$eta) & length(par$eta) == 1)
+        {
+            eta <- rep(par$eta,G)
+            inv_eta <-rep(1/eta,G)
+        }else if(is.vector(par$eta) & length(par$eta) == G)
+        { 
+            eta <- par$eta
+            inv_eta<- 1/eta
+        }
+      }
+    }
+  
+  if(p > 1)
+    {
+      eta <- array(0.0,dim = c(p,p,G))
+      inv_eta <- array(0.0, dim = c(p,p,G))
+      if(G == 1)
+      {
+          if(is.vector(par$eta) & (length(par$eta) == 1 | length(par$eta) == G ) ) 
+          {
+            eta[,,G] <- diag(sqrt(par$eta),p)
+            inv_eta[,,G] <- solve(eta[,,G])
+          }else if(is.vector(par$eta) & length(par$eta) != 1 & length(par$eta) != p)
+            stop("The dimension of eta is incorrect for having 1 group")
+      
+      }else if(G > 1)
+        {
+          if(is.vector(par$eta) & (length(par$eta) == 1 | length(par$eta) ==p ) )
+            {
+              for(g in 1:G)
+              {
+                eta[,,g] <- diag(sqrt(par$eta),p)
+                inv_eta[,,g] <- solve(eta[,,g])
+              } #end -for
+            } else if (is.vector(par$eta) & length(par$eta) == G)
+              {
+                  for(g in 1:G)
+                  {
+                    eta[,,g] <- diag(sqrt(par$eta[g]),p)
+                    inv_eta[,,g] <- solve(eta[,,g])
+                  } #end -for
+        
+              } else if (is.matrix(par$eta) & nrow(par$eta)== p & ncol(par$eta) == G )
+                  {
+                        for(g in 1:G)
+                            {
+                                  eta[,,g] <- diag(sqrt(par$eta[,g]),p)
+                                  inv_eta[,,g]<- solve(eta[,,g])
+                            }
+              } else if (is.matrix(par$eta) & nrow(par$eta) == p & ncol(par$eta) == p)
+                  {
+                        for(g in 1:G)
+                        {
+                            eta[,,g] <- diag(sqrt(diag(par$eta)),p)
+                            inv_eta[,,g] <- solve(eta[,,g])
+                        }
+        
+                  }else if(is.array(par$eta) )
+                    {       
+                           if( all(dim(par$eta) == c(p,p,G) ) == TRUE )
+                                for(g in 1:G)
+                                {
+                                  eta[,,g] <- diag( sqrt(diag(par$eta[,,g])) , p)
+                                  inv_eta[,,g] <- solve(eta[,,g])
+                                }
+                    }
+        }   # end-if G  
+    }# end-if p
+
+
+
+# v initialization --------------------------------------------------------
+
+  if(is.null(par$v))
+  {
+    v<- matrix(c(runif(m*G)), ncol = G, nrow = nrow(X))
+  }else  v <- par$v
+
+
+# Calculations ------------------------------------------------------------
+
+  
+  mg <-apply(unmap(ltrain),2,sum)
+  pig <- mg/m
+  sum_lig_vig <- numeric(G)
+  sig <- vector("list",m)
+  sum_sig <- vector("list",G)
+  sum_sig_xi <- vector("list",G)
+  term1 <- vector("list",m)
+  term2 <- vector("list",m)
+  sumTerms<- vector("list",m)
+  sumSigma <-vector("list",G)
+  est_sigma <- vector("list",G)
+  est_alpha <- numeric(length(alpha))
+  est_mu <- matrix(0.0,nrow=p,ncol=G) 
+
+# CM-step1 ----------------------------------------------------------------
+
+  # numerator for calculating alphag
+  if(is.matrix(v) & is.matrix(l))
+  {
+    
+    sum_lig_vig <- sapply(1:G, function(g) {sum(l[,g]*v[,g]) })
+    est_alpha <- sum_lig_vig/mg
+
+    for(g in 1:G)
+    {
+      
+      for(i in 1:m)
+      {
+        if(p==1 & G == 1)
+        {
+          sig[[i]] <- l[i] *(   v[i,g] * inv_sigma + 
+                                    (1-v[i,g]) * inv_eta * inv_sigma * inv_eta  )       
+          term1[[i]] <-v[i,g]* ( (Xtrain[i,]-mu) * (Xtrain[i,]-mu) )
+          term2[[i]] <- (1-v[i,g]) * inv_eta* (Xtrain[i,]-mu) * (Xtrain[i,]-mu) * inv_eta
+          sumTerms[[i]] <- l[i] *(term1[[i]] + term2[[i]])  
+        }else if (p ==1 & G>1)
+        {
+          sig[[i]] <- l[i,g] *(   v[i,g] * inv_sigma[g] + 
+                                    (1-v[i,g]) * inv_eta[g] * inv_sigma[g] * inv_eta[g]  )
+          term1[[i]] <-v[i,g]* ( (Xtrain[i,]-mu[g]) * (Xtrain[i,]-mu[g]) )
+          term2[[i]] <- (1-v[i,g]) * inv_eta[g]* (Xtrain[i,]-mu[g]) * (Xtrain[i,]-mu[g])* inv_eta[g]
+          sumTerms[[i]] <- l[i,g] *(term1[[i]] + term2[[i]])  
+        }else if (p > 1 )
+        {
+          sig[[i]] <- l[i,g] *(   v[i,g] * inv_sigma[,,g] + 
+                                    (1-v[i,g]) * inv_eta[,,g] %*% inv_sigma[,,g] %*% inv_eta[,,g]  )  
+          term1[[i]] <-v[i,g]* ( (Xtrain[i,]-mu[,g]) %*% t(Xtrain[i,]-mu[,g]) )
+          term2[[i]] <- (1-v[i,g]) * (inv_eta[,,g] %*% (Xtrain[i,]-mu[,g]) %*% t(Xtrain[i,]-mu[,g]) %*% inv_eta[,,g])
+          if(G == 1)  sumTerms[[i]] <- l[i] *(term1[[i]] + term2[[i]])  
+          if(G > 1)   sumTerms[[i]] <- l[i,g] *(term1[[i]] + term2[[i]])  
+        }
+        if(i==1) 
+          {
+            sum_sig[[g]] <- 0
+            sum_sig_xi[[g]] <-0
+            sumSigma[[g]] <-0
+          }  
+        sum_sig[[g]]  <- sum_sig[[g]] + sig[[i]]
+        sum_sig_xi[[g]] <-sum_sig_xi[[g]] + sig[[i]] %*% Xtrain[i,]
+        sumSigma[[g]] <- sumSigma[[g]] + sumTerms[[i]]
+      }# end-for i
+      est_mu[,g] <- t(sum_sig_xi[[g]]) %*% solve(sum_sig[[g]])
+      if(G==1) est_sigma[[g]] <- sumSigma[[g]]/mg
+      if(G>1) est_sigma[[g]] <- sumSigma[[g]]/mg[g]
+    }# end-for g          
+    
+  }# end-if
+
+
+# CM-step2 ----------------------------------------------------------------
+  factor1 <- 0
+  eta_max <- 1000
+  est_invSigma <- array(0.0,dim = c(p,p,G))
+  est_eta <- array(0.0, dim = c(p,p,G))
+
+   for( g in 1:G)
+    {
+      est_invSigma[,,g] <- solve(est_sigma[[g]])
+    }
+  
+  for(g in 1:G)
+  {
+    for(j in 1:p)
+    {
+      factor1 <- optimize(f_etaDIF,c(1,eta_max), tol = 0.001,
+                          z = l[,g], v = v[,g], X = Xtrain[,j],
+                          mu = est_mu[j,g], invSigma = est_invSigma[j,j,g], 
+                          maximum = TRUE)
+      est_eta[j,j,g] <- factor1$maximum
+    }
+  }
+    
+  
+              
+  
+  output <- list(mu = est_mu, sigma = est_sigma,inv_Sigma = est_invSigma,
+                 alpha = est_alpha ,eta = est_eta, pig = pig, G = G)
+  
+  return(output)
+}
+
 
 
 #CNmixt_DifIF <- function(Xtrain,G,contamination,model,intialization,alphafix,
 #                         alphamin,seed,start.z,start.v,start,label,AICcond,iter.max,
 #                         threshold)
 
+#Cnmixt_DIF <- function(X, G, model)
+
 CNmixt_DifIF <- function(Xtrain,Xtest,ltrain,ltest,CE = "VVV",
                          niterations = 10,alpharef = 0.98, tol = 0.01)
-{
+{  
+    
   # Xtrain: dataset that contains the training set
   # Xtest:  dataset that contains the test set
   # ltrain: a vector containing the label/group information of observations in training set
@@ -446,11 +1663,10 @@ CNmixt_DifIF <- function(Xtrain,Xtest,ltrain,ltest,CE = "VVV",
   par$pig <- apply(unmap(ltrain),2,sum)/nrow(Xtrain)
   # give initial values for alpha
   par$alpha <- alpharef
-  if (p == 1 &) 
+  if (p == 1 & is.vector(par$eta)) 
     { 
       par$eta <- 1.011
-    }
-    }else if (p > 1)
+    }else if (p > 1 & is.vector(par$eta))
     {
       par$eta <- rep(1.011,G)
     }

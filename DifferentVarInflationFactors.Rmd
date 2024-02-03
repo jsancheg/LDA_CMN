@@ -1,0 +1,351 @@
+---
+title: 'Mixture of contaminated normal distributions with different variables inflation
+  factor within classes '
+author: "Jorge Sanchez"
+date: "2024-02-01"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(mclust) # unmmap function
+library(DIRECT) #
+library(MLmetrics)
+library(xtable)
+library(kableExtra)
+library(knitr)
+library(dplyr)
+library(insight)
+library(caret)
+source("CMNFunctionsV2.R")
+source("DifIFunctions.R")
+
+
+
+write_matex <- function(x) {
+  begin <- "$$\\begin{bmatrix}"
+  end <- "\\end{bmatrix}$$"
+  X <-
+    apply(x, 1, function(x) {
+      paste(
+        paste(x, collapse = "&"),
+        "\\\\"
+      )
+    })
+  writeLines(c(begin, X, end))
+}
+
+write_matex2 <- function(x) {
+  begin <- "\\begin{bmatrix}"
+  end <- "\\end{bmatrix}"
+  X <-
+    apply(x, 1, function(x) {
+      paste(
+        paste(x, collapse = "&"),
+        "\\\\"
+      )
+    })
+  paste(c(begin, X, end), collapse = "")
+}
+# Dataset a
+G_a <- 1
+p_a <- 3 # 3 variables
+nobs_a <- 100
+ptraining <- 0.75
+pig_a <- 1
+mu_a <- matrix(c(0,0,0), nrow = p_a, ncol = G_a, byrow = TRUE)
+sigma_a <- array(0,dim = c(p_a,p_a,G_a))
+sigma_a[,,1] <- diag(1,p_a)
+alpha_a <- 0.8
+eta_a <- 5
+#DatasetA <- SimGClasses(mu_a,sigma_a,pig_a,nobs_a,ptraining,alpha_a,eta_a)
+DatasetA <- readRDS("DatasetA.RDS")
+fit_AEq <- CNmixt(X = DatasetA$Xtrain,G = G_a, contamination = TRUE, model = "EII",
+                  initialization = "mixt", label = DatasetA$ltrain)
+
+mu_AEq <- fit_AEq$models[[1]]$mu
+sigma_AEq <- fit_AEq$models[[1]]$Sigma
+alpha_AEq <- fit_AEq$models[[1]]$alpha
+eta_AEq <- fit_AEq$models[[1]]$eta
+
+
+par_AEq <- list(G = 1, pig = 1, mu = mu_AEq, 
+                sigma = sigma_AEq, 
+                alpha = alpha_AEq,
+                eta = eta_AEq)
+
+mu_AEqr <- round(mu_AEq,2)
+sigma_AEqr <- round(sigma_AEq,2)
+alpha_AEqr <- round(alpha_AEq,2)
+eta_AEqr <-round(eta_AEq,2)
+
+
+fit_AeqTest <- eCmn(DatasetA$Xtest,DatasetA$ltest,par_AEq)
+
+
+Accuracy_AEq <- Accuracy(fit_AeqTest$vhat,DatasetA$vtest)
+Sensitivity_AEq <- Sensitivity(DatasetA$vtest, fit_AeqTest$vhat,positive = 0)
+Specificity_AEq <- Specificity(DatasetA$vtest,fit_AeqTest$vhat,positive = 0) 
+Recall_AEq <- Recall(DatasetA$vtest, fit_AeqTest$vhat,positive = 0) 
+Precision_AEq <- Precision(DatasetA$vtest,fit_AeqTest$vhat,positive = 0) 
+ConfusionMatrix_AEq <- ConfusionMatrix(fit_AeqTest$vhat,DatasetA$vtest )
+ConfusionDF_AEq <- ConfusionDF(fit_AeqTest$vhat,DatasetA$vtest)
+F1_Score_AEq <- F1_Score(DatasetA$vtest,fit_AeqTest$vhat,positive = 0)
+
+#ConfusionMatrix_AEq <- confusionMatrix(factor(DatasetA$vtest),factor(fit_AeqTest$vhat) )
+
+par_ADif0 <- par_AEq
+eta0 <- array(0.0, dim = c(3,3,1))
+eta0[,,1]  <- diag(sqrt(par_AEq$eta),3)
+par_ADif0$eta <- eta0[,,1]
+par_ADif0$lambda <- 1
+
+set.seed(123)
+par_ADif0$v <- matrix(runif(nrow(DatasetA$Xtrain)*G_a), 
+                      nrow = nrow(DatasetA$Xtrain),ncol = G_a, byrow = TRUE)
+
+
+
+fit_ADif <- mCmn_DIF_EII(Xtrain = DatasetA$Xtrain,ltrain = DatasetA$ltrain, par = par_ADif0)
+
+mu_ADifr <- round(fit_ADif$mu,2)
+sigma_ADif <- as.vector(fit_ADif$lambda)*fit_ADif$sigma
+sigma_ADifr<- round(as.vector(fit_ADif$lambda)*fit_ADif$sigma,2)
+alpha_ADifr <- round(fit_ADif$alpha,2)
+eta_ADifr <- round(fit_ADif$eta,2)
+
+fit_ADif$lambda
+fit_ADif$eta
+
+eta_ADif <- (matrix(unlist(fit_ADif$eta),ncol = p_a,nrow =p_a,byrow = TRUE )) 
+
+par_ADif <- list(G = 1, pig = 1, mu = fit_ADif$mu,
+                 sigma = sigma_ADif,
+                 alpha = fit_ADif$alpha,
+                 eta = eta_ADif )
+
+
+pred_ADif <- eCmn_DIF(X = DatasetA$Xtest,labels = DatasetA$ltest, par = par_ADif)
+
+Accuracy_ADif <- Accuracy(pred_ADif$vhat,DatasetA$vtest)
+Sensitivity_ADif <- Sensitivity(DatasetA$vtest, pred_ADif$vhat,positive = 0)
+Specificity_ADif <- Specificity(DatasetA$vtest,pred_ADif$vhat,positive = 0) 
+Recall_ADif <- Recall(DatasetA$vtest, pred_ADif$vhat,positive = 0) 
+Precision_ADif <- Precision(DatasetA$vtest,pred_ADif$vhat,positive = 0) 
+ConfusionMatrix_ADif <- ConfusionMatrix(pred_ADif$vhat,DatasetA$vtest)
+ConfusionDF_ADif <- ConfusionDF(pred_ADif$vhat,DatasetA$vtest)
+F1_Score_ADif <- F1_Score(DatasetA$vtest,pred_ADif$vhat,positive = 0)
+
+ConfusionMatrix_ADif
+ConfusionMatrix_AEq
+
+
+t_AEq <- as.data.frame.matrix(ConfusionMatrix_AEq)
+colnames(t_AEq)
+
+t_ADif <-as.data.frame.matrix(ConfusionMatrix_ADif)
+
+t_A <- cbind(t_AEq,t_ADif)
+
+df_A <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","Sensitivity","Specificity",
+             "F1 score"),
+  Equal_IF = c(round(Accuracy_AEq,2),round(Precision_AEq,2),
+               round(Recall_AEq,2),round(Sensitivity_AEq,2),
+               round(Specificity_AEq,2),
+            round(F1_Score_AEq,2)),
+  Different_IF = c(round(Accuracy_ADif,2),round(Precision_ADif,2),
+                   round(Recall_ADif,2),round(Sensitivity_ADif,2),
+                   round(Specificity_ADif,2),
+            round(F1_Score_ADif,2))
+)
+
+
+#fit_ADif <- mCmn_DIF(Xtrain = DatasetA$Xtrain,ltrain = DatasetA$ltrain, par = par_ADif0)
+
+#sigma_ADif <- matrix(unlist(fit_ADif$sigma),ncol = p_a,nrow = p_a,byrow = TRUE)
+#eta_ADif <- sqrt(matrix(unlist(fit_ADif$eta),ncol = p_a,nrow =p_a,byrow = TRUE )) 
+#par_ADif <- list(G = 1, pig = 1, mu = fit_ADif$mu, 
+#                sigma = sigma_ADif, 
+#                alpha = fit_ADif$alpha,
+#                eta = eta_ADif)
+
+#mu_ADifr <- round(fit_ADif$mu,2)
+#sigma_ADifr<- round(sigma_ADif,2)
+#alpha_ADifr <- round(fit_ADif$alpha,2)
+#eta_ADifr <- round(fit_ADif$eta,2)
+
+#pred_ADif <- eCmn_DIF(X = DatasetA$Xtest,labels = DatasetA$ltest, par = par_ADif)
+
+
+
+#Accuracy_ADif <- Accuracy(pred_ADif$vhat,DatasetA$vtest)
+#Sensitivity_ADif <- Sensitivity(DatasetA$vtest, pred_ADif$vhat,positive = 0)
+#Specificity_ADif <- Specificity(DatasetA$vtest,pred_ADif$vhat,positive = 0) 
+#Recall_ADif <- Recall(DatasetA$vtest, pred_ADif$vhat,positive = 0) 
+#Precision_ADif <- Precision(DatasetA$vtest,pred_ADif$vhat,positive = 0) 
+#ConfusionMatrix_ADif <- ConfusionMatrix(pred_ADif$vhat,DatasetA$vtest)
+#ConfusionDF_ADif <- ConfusionDF(pred_ADif$vhat,DatasetA$vtest)
+
+#ConfusionMatrix_AEq
+
+
+# Dataset b
+G_b <- 1
+p_b <- 3 # 3 variables
+nobs_b <- 100
+ptraining <- 0.75
+pig_b <- 1
+mu_b <- matrix(c(0,0,0), nrow = p_b, ncol = G_b, byrow = TRUE)
+sigma_b <- array(0,dim = c(p_b,p_b,G_b))
+sigma_b[,,1] <- diag(1,p_a)
+alpha_b <- 0.8
+eta_b <- c(1,5,1)
+DatasetB <- Sim_DIF(mu_b,sigma_b,pig_b,nobs_b,ptraining,alpha_b,eta_b)
+
+fit_BEq <- CNmixt(X = DatasetB$Xtrain,G = G_b, contamination = TRUE, model = "EII",
+                  initialization = "mixt", label = DatasetB$ltrain)
+
+# Dataset c
+G_c <- 2
+p_c <- 3 # 3 variables
+nobs_c <- 100
+ptraining <- 0.75
+pig_c <- c(0.5,0.5)
+mu_c <- matrix(c(0,0,0,3,0,0), nrow = p_c, ncol = G_c, byrow = TRUE)
+sigma_c <- array(0,dim = c(p_c,p_c,G_c))
+sigma_c[,,1] <- diag(1,p_c)
+sigma_c[,,2] <- diag(1,p_c)
+alpha_c <- c(0.8,0.9)
+eta_c <- matrix(c(5,1,5,10,5,1), nrow = p_c, ncol = G_c, byrow = TRUE )
+DatasetC <- Sim_DIF(mu_c,sigma_c,pig_c,nobs_c,ptraining,alpha_c,eta_c)
+
+fit_CEq <- CNmixt(X = DatasetC$Xtrain,G = G_c, contamination = TRUE, model = "EII",
+                  initialization = "mixt", label = DatasetC$ltrain)
+
+```
+
+## Introduction
+ The traditional contaminated mixture model assumed that the contamination is the same for all variables within groups. The contaminated mixture model each group with a mixture of two normal distributions with two components. The first normal distribution models the non-contaminated samples while the second component models the contaminated samples. The contamination is control by two parameters which are the proportion of non-contaminated samples in each group $\alpha_{g}$ and the inflation factor $\eta_{g}$ that is the same for all variables within group.
+
+$$
+    f(\mathbf{x}|\vartheta) = \sum^{G}_{g=1} \pi_{g} \left[\alpha_{g} \mathcal{N}(x|\boldsymbol{\mu}_{g},\boldsymbol{\Sigma}_{g})  + (1-\alpha_{g})\mathcal{N}(x|\boldsymbol{\mu}_{g},\eta_{g}\boldsymbol{\Sigma}_{g}) \right]
+$$
+There are cases where the assumption that the inflation factor is the same for all variables  measured in an observation within groups might be unrealistic. It is possible that the characteristics or variables being contaminated are a few instead of a all variables. To model this scenario the previous equation can be modified by replacing the scalar $\eta_{g}$ that is the inflation factor for all variables within group $g$ by a matrix $N_{g}$ which is a diagonal matrix where each element of the diagonal $\eta_{gj}$ for $j = 1,\dots,p$ represent the inflation factor for the corresponding variable.
+
+$$
+    f(\mathbf{x}|\vartheta) = \sum^{G}_{g=1} \pi_{g} \left[\alpha_{g} \mathcal{N}(x|\boldsymbol{\mu}_{g},\boldsymbol{\Sigma}_{g})  + (1-\alpha_{g})\mathcal{N}(x|\boldsymbol{\mu}_{g},\dot{N}_{g}\boldsymbol{\Sigma}_{g}\dot{N}^{T}_{g}) \right]
+$$
+$$
+\dot{N}_{g} = \begin{bmatrix}
+\sqrt{\eta_{g1}} &     0     & \dots     & 0         \\
+0         & \sqrt{\eta_{g2}} & \dots     & 0         \\      
+\dots     & \dots     & \dots     & \dots     \\
+0         &     0     & \dots     & \sqrt{\eta_{gp}} \\   
+\end{bmatrix}
+$$
+
+
+## Simulation study: Comparison between mixtures with equal and different inflation factors within group
+
+
+### Overview
+In this section, the behavior of contaminated mixture normal models assuming equal and different variables inflation factor within group is investigated. To generate the data the following process is conducted to generate three datasets where $75\%$ of the samples composed the training subset and the remaining are part of the test subset.
+
+a) A contaminated dataset of $100$ samples in $p=3$ dimensions and same variable inflation factor within group and $G=1$; 
+b) A contaminated dataset of $100$ samples in $p=3$ dimensions with different variable inflation factor within group and $G=1$;
+c) A contaminated balanced dataset of $100$ samples in $p=3$ dimensions and $G=2$ with equal proportions for both groups and one group with same variable inflation factor and another group with different variable inflation factor;
+
+
+The parameters for the first dataset are
+$$
+\mu = \begin{pmatrix} 0 \\ 0 \\ 0\\ \end{pmatrix} , \Sigma = I_{3} = \begin{pmatrix} 1 & 0 & 0  \\ 0 & 1 & 0  \\ 0 & 0 & 1   \\ \end{pmatrix}, \alpha = 0.8, \eta = 5
+$$
+
+```{r plotA_training}
+pairs(DatasetA$Xtrain, col = c("red","blue")[DatasetA$vtrain + 1],
+      pch = ifelse(DatasetA$vtrain == 0,24,19), cex = 1)
+
+```
+
+Looking at the training data above, it is clear that the inflation factor is the same across all variables with a few contaminated samples further than the contaminated samples cloud. This dataset is fitted firstly with the contaminated mixture of normals model assuming equal variable inflation factor within group and secondly with the model assuming different variable inflation factor within group.
+
+The parameter estimates were obtained by using the command Cnmixt until covergence from the library ContaminatedMixt. Next, the self-coded E-step was used to obtain the labels whether a sample is non-contaminated or contaminated.  The function Cnmixt assumes equal variable inflation factor within group and their parameters are shown below.
+
+
+
+$$
+\mu = `r write_matex2(mu_AEqr)` , \Sigma = `r write_matex2(sigma_AEqr)`, \alpha = `r alpha_AEqr` , \eta = `r eta_AEqr`
+$$
+The initial values for the parameters of the model were taken from the contaminated mixture model produced by the function Cnmixt from the ContaminatedMixt package that assumes same variable inflation factor within group. Next, an iteration of a self-coded m-step that assumes different variable inflation factor within group for EII model was run to obtain the estimated parameters shown below. It is possible to see that there are some differences between the estimates obtained for both models. The main difference between the estimates is observed in the values that the model with different variables inflation factor take for $\alpha$ which suggest a $51\%$ of non-contaminated samples and implies a greater contamination that the other model. Also, the inflation factors in the diagonal of the matrix $\dot{N}$ are different and much smaller than $4.95$.
+
+$$
+\mu = `r write_matex2(mu_ADifr)` , \Sigma = `r write_matex2(sigma_ADifr)` , \alpha = `r alpha_ADifr`, \dot{N} * \dot{N}^{T} = N = `r write_matex2(eta_ADifr)`
+$$
+Next, a self-coded function E-step was used to obtain the estimates of labels corresponding whether the observations are non-contaminated or contaminated in the test set. It was observed that the estimates for $\alpha$ and $N$ were affected for the choose of the initial values of $\nu_{i}$ which denotes if the $i^{th}$ sample is non-contaminated if $\nu_{i}=1$ otherwise is $0$. The pairs plot of the samples in the test subset shows a little more dispersion for the pair $X_{1}$ and $X_{2}$ than for the pair $X_{1}$ and $X_{3}$.
+
+
+```{r plotA_test}
+pairs(DatasetA$Xtest, col = c("red","blue")[DatasetA$vtest + 1],
+      pch = ifelse(DatasetA$vtest == 0,24,19), cex = 1)
+
+```
+
+
+The confusion matrix where the rows are the actual values and the columns the predicted values for the model assuming same variable inflation factor within group , shows that it was possible to identify half of the contaminated observations and all the non-contaminated observations correctly.
+```{r CM_A}
+knitr::kable(t_AEq, format = "markdown")
+```
+
+However, taking a look of the performance of the model assuming different variables inflation factor within group is also able to identify half of the non-contaminated samples and misclassified $3$ non-contaminated samples as contaminated. As the data is generated for a model with same variable inflation factor within group, there is not surprise that it overcame their counterpart that assume different variable inflation factors within group. It is possible to confirm this result taking a look to the other metrics specially F1_Score.
+
+```{r CM_ADif}
+knitr::kable(t_ADif, format = "markdown")
+```
+
+```{r Df_CompA}
+#knitr::kable(df_A, format = "markdown")
+format_table(df_A)
+```
+
+
+The parameters for the second dataset are
+
+$$
+\mu = \begin{pmatrix} 0 \\ 0 \\ 0\\  \end{pmatrix} , \Sigma = I_{3} = \begin{pmatrix} 1 & 0 & 0  \\ 0 & 1 & 0  \\ 0 & 0 & 1   \\ \end{pmatrix}, \alpha = 0.8, N_{g} = \begin{pmatrix} 1 & 0 & 0 \\ 0 & \sqrt{5} & 0  \\ 0 & 0 & 1  \\  \end{pmatrix}
+$$
+
+```{r plotB_training}
+pairs(DatasetB$Xtrain, col = c("red","blue")[DatasetB$vtrain + 1],
+      pch = ifelse(DatasetB$vtrain == 0,24,19), cex = 1)
+
+```
+
+```{r plotB_test}
+pairs(DatasetB$Xtest, col = c("red","blue")[DatasetB$vtest + 1],
+      pch = ifelse(DatasetB$vtest == 0,24,19), cex = 1)
+
+```
+
+
+The parameters for the third dataset are
+
+$$
+\mu_{1} = \begin{pmatrix} 0 \\ 0 \\  0 \end{pmatrix} ,  \mu_{2} = \begin{pmatrix} 0 \\ 5 \\ 0 \end{pmatrix}  \Sigma_{1} = I_{3}, \Sigma_{2} = I_{3}, \alpha_{1} = 0.8, \alpha_{2} = 0.9, \eta_{1} = 5,N_{2} = \begin{pmatrix} 1 & 0 & 0  \\ 0 & \sqrt{10} & 0  \\ 0 & 0 & 1  \\\end{pmatrix}
+$$
+
+```{r plotC_training}
+pairs(DatasetC$Xtrain, col = c("green","blue")[DatasetC$ltrain],
+      pch = ifelse(DatasetC$vtrain == 0,24,19), cex = 1)
+
+```
+
+```{r plotC_test}
+pairs(DatasetC$Xtest, col = c("green","blue")[DatasetC$ltest],
+      pch = ifelse(DatasetC$vtest == 0,24,19), cex = 1)
+
+```
+
