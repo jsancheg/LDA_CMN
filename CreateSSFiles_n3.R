@@ -2,7 +2,7 @@
 
 
 source("Semisupervised.R")
-source("ListScenariosFiles.R")
+source("ListScenarios.R")
 source("GSSFile.R")
 library(purrr)
 library(ContaminatedMixt)
@@ -61,8 +61,8 @@ if(operative_system == "Linux" )
 
 
 dir(pathScenarios)
-ini <- n5.2 + 1
-fin <- n5.3
+ini <- n100.2 + 1
+fin <- n100.3
 
 fin - ini
 
@@ -70,7 +70,7 @@ FilesProcessed <- dir(pathSSFiles)
 
 
 tic("SSFiles")
-mclapply(Scenarios5[ini:fin], function(x){
+mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)

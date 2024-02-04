@@ -28,11 +28,11 @@ fin-ini + 1
 
 
 tic("SSFiles scenarios with 100 variables from n3 to n4")
-mclapply(Scenarios[ini:fin], function(x){
+mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
-  write.table(SSFilename,"LastFile.csv",sep = ",",col.names = "FileName",row.names = 1,append = TRUE )
+#  write.table(SSFilename,"LastFile.csv",sep = ",",col.names = "FileName",row.names = 1,append = TRUE )
   if(is_empty(intersect(FilesProcessed,SSFilename))) 
   {
     GenerateSSFile(x,pathScenarios,pathSSFiles)

@@ -221,7 +221,7 @@ SemiSupervisedFitting <- function(Xtrain, Xtest, ltrain, ltest,
   length(res$models[[1]]$group)
 
   
-  output <- list(CCRTestNc = CCRTest_Nc,CCRTestC = CCRTest_C,
+  Output <- list(CCRTestNc = CCRTest_Nc,CCRTestC = CCRTest_C,
                  ztest_hat_NC = estep_nc$z,
                  ltest_hat_NC =  ltest_hat_nc,
                  ztest_hat_C = ExpectedValues_C$z,
@@ -229,7 +229,7 @@ SemiSupervisedFitting <- function(Xtrain, Xtest, ltrain, ltest,
                  Expected_v = ExpectedValues_C$v,
                  vtest_hat = ExpectedValues_C$vhat,
                  niterations = iterations, par = parameters_C)
-    return(output)  
+    return(Output)  
 }
 
 
@@ -619,7 +619,7 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
       estimates[[i_sim]]$vTestHat_SaturatedM <- saturated_vtest
       } # end-for i_sim
      
-              output <-  list(Metrics = Metrics , 
+              Output <-  list(Metrics = Metrics , 
                      # Matrix of metrics
                      Metrics_SaturatedM = MmetricsSaturatedM,
                      Metrics_SM = MmetricsSM,
@@ -631,7 +631,7 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
                      
         #Check SSFilesToPRocessed[[4]]
               
-     return( output )
+     return( Output )
      
 }
 
@@ -645,14 +645,18 @@ SemiSupervised_HLS_SSH <- function(file_name,pathScenarios,CE,variables_True_Mod
   #    fileRDS<- readRDS(paste0(pathOutput,"S_2_2_5_3000_75_BAL_SCBSV_VD_A8080_E2020_10.RDS"))
   filePathScenario <-paste0(pathScenarios,file_name) 
   fileRDS <- readRDS(filePathScenario)
-  if (file.exists(filePathScenario)) 
-  {
+  sys_info <- Sys.info()
+  
+  if(!sys_info["nodename"] == "LAPTOP-ADR3M911")
+    
+      if (file.exists(filePathScenario)) 
+         {
     # Remove the file
-    file.remove(filePathScenario)
-    cat("File deleted successfully.\n")
-  } else {
-    cat("File does not exist.\n")
-  }
+            file.remove(filePathScenario)
+            cat("File deleted successfully.\n")
+            } else {
+            cat("File does not exist.\n")
+        }
   nsimulations <- length(fileRDS$GenData)
   if(!is.numeric(nsimulations) | nsimulations == 0) stop("The file doesn't contain any simulation")
   MmetricsSaturatedM <- vector("list",nsimulations)
@@ -895,7 +899,7 @@ SemiSupervised_HLS_SSH <- function(file_name,pathScenarios,CE,variables_True_Mod
     estimates[[i_sim]]$vTestHat_SaturatedM <- saturated_vtest
   } # end-for i_sim
   
-  output <-  list(Metrics = Metrics , 
+  Output <-  list(Metrics = Metrics , 
                   # Matrix of metrics
                   Metrics_SaturatedM = MmetricsSaturatedM,
                   Metrics_SM = MmetricsSM,
@@ -907,7 +911,7 @@ SemiSupervised_HLS_SSH <- function(file_name,pathScenarios,CE,variables_True_Mod
   
   #Check SSFilesToPRocessed[[4]]
   
-  return( output )
+  return( Output )
   
 }
 

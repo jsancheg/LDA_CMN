@@ -51,7 +51,7 @@ ini <- 1
 fin <- n100
 
 length(aux)
-length(Scenarios5)
+length(Scenarios100)
 pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
 
 SimStatus <- mclapply((ini:fin),function(i)

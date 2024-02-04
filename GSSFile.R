@@ -17,14 +17,14 @@ GenerateSSFile <- function(file_name,pathScenarios, pathOutput)
   
   if(Number_Separating_Variables == 2)
   {
-    variables_TrueModel <- c("X2","X4")
+    variables_True_Model <- c("X2","X4")
   }else if(Number_Separating_Variables == 3)
   {
-    variables_TrueModel <- c("X2","X4","X5")
+    variables_True_Model <- c("X2","X4","X5")
   }
   
   CE <- "VVV"
-  Output <- SemiSupervised_HLS(file_name,pathScenarios,CE,variables_TrueModel,
+  Output <- SemiSupervised_HLS(file_name,pathScenarios,CE,variables_True_Model,
                            pnolabeled = 0.5, niterations = 10,
                            alpharef = 0.99, tol = 0.01, epsilon = 0)
     

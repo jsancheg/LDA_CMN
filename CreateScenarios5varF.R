@@ -59,7 +59,7 @@ length(Scenarios5)
 # Windows path
 system_info <- Sys.info()
 #OS_name <- system_info("")
-pc_name <- system_info['modename'] 
+pc_name <- system_info['nodename'] 
 
 if(pc_name == "LAPTOP-ADR3M911")
 {
