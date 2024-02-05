@@ -61,10 +61,10 @@ if(operative_system == "Linux" )
 
 
 dir(pathScenarios)
-ini <- n100.2 + 1
+ini <- n100.2+1
 fin <- n100.3
 
-fin - ini
+fin - ini + 1
 
 FilesProcessed <- dir(pathSSFiles)
 

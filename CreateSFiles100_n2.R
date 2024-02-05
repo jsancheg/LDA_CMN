@@ -62,7 +62,7 @@ mclapply(Scenarios100[ini:fin], function(x){
   
   if(is_empty(intersect(FilesProcessed,SFilename))) 
     {
-      Output <- GenerateSFile(x,pathScenarios)
+      Output <- GenerateSFile(x,pathScenarios,pathSFiles)
       saveRDS(Output,paste0(pathSFiles,SFilename))
       
       if(!sys_info["nodename"] == "LAPTOP-ADR3M911")

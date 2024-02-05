@@ -27,7 +27,7 @@ pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
 
 
 dir(pathScenarios)
-ini <- n100.5+1
+ini <- n100.5+3
 fin <- n100.6
 
 fin-ini+1
