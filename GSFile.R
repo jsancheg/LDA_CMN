@@ -24,7 +24,7 @@ GenerateSFile <- function(file_name,pathScenarios, pathOutput)
     variables_True_Model <- c("X2","X4","X5")
   }
   
-  CE <- "VVV"
+  CE <- "EEI"
   Output <- SemiSupervised_HLS(file_name,pathScenarios,CE,variables_True_Model,
                                pnolabeled = 0, niterations = 10,
                                alpharef = 0.99, tol = 0.01, epsilon = 0)
@@ -55,7 +55,7 @@ GenerateSFile_SSH <- function(file_name,pathScenarios)
     variables_TrueModel <- c("X2","X4","X5")
   }
   
-  CE <- "VVV"
+  CE <- "EII"
   Output <- SemiSupervised_HLS_SSH(file_name,pathScenarios,CE,variables_TrueModel,
                                    pnolabeled = 0, niterations = 10,
                                    alpharef = 0.99, tol = 0.01, epsilon = 0)

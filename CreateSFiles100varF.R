@@ -28,18 +28,29 @@ pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
 
 
 dir(pathScenarios)
-ini <- n100.6+7
-fin <- n100.7
+ini <- n100.4 + 1
+fin <- n100.5
 fin-ini + 1
 
-tic("SFiles 5 variables 306 files")
+tic("SFiles n100.6 to n100.7")
 mclapply(Scenarios100[ini:fin], function(x){
   
   SFilename <- str_replace(x,"S_","SV_")
   FilesProcessed <- dir(pathSFiles)
-#  write.table(SFilename,"LastFile.csv",sep = ",",col.names = "FileName",row.names = 1,append = TRUE )
-  if(is_empty(intersect(FilesProcessed,SFilename))) GenerateSFile(x,pathScenarios,pathSFiles) 
-  else cat("\n The file ",SFilename, " already exists in the directory. \n")
+#  if(is_empty(intersect(FilesProcessed,SFilename)))
+#  {
+    tryCatch(
+      {
+        GenerateSFile(x,pathScenarios,pathSFiles) 
+        return(1)
+      }, error = function(e){
+        cat("Error fitting scenario: ",x, "\n")
+        return(NULL)
+        
+      }
+    )
+    
+#  }else cat("\n The file ",SFilename, " already exists in the directory. \n")
   
 }, mc.cores = 1)
 toc()

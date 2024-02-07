@@ -29,7 +29,7 @@ library("stringr")
 F1 <- c("VD","MD","VO") # F1 : Mean distance
 F2 <- c(2,3)            # F2 : Number of classes
 F3 <- c("BAL","INB")    # F3 : class proportion matrix with the number of columns equals to F2
-F4 <- c(3000,4000)      # F4 : Number of observations
+F4 <- c(3000)      # F4 : Number of observations
 F5 <- c(5,100)          # F5 : Number of variables
 F6 <- c(0.75,0.85)      # F6 : Percentage of samples used as training
 F7 <- c("SCBSV","SCBNSV","SCBSNSV","IND") # F7 : Correlation structure
@@ -140,7 +140,7 @@ Scenarios100 <- Scenarios[ind100vars]
 
 
 n5 <- length(Scenarios5)
-n100 <- length(Scenarios2.100)
+n100 <- length(Scenarios100)
 
 n5.1 <- floor(n5*10/100)
 n5.2 <- floor(n5*20/100)

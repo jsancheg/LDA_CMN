@@ -1855,8 +1855,8 @@ SimScenario <- function(Sets, nruns,pathOutput)
     #return(1);    
   }else
   {
-    cat("\n The file already exists in the directory \n")
-    return("File already exists in the directory")
+#    cat("\n The file already exists in the directory \n")
+#    return("File already exists in the directory")
     #    return(0);
   } # end-if generate files
   return(c("File no generated"));
