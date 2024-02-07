@@ -330,7 +330,7 @@ HeadLongSearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
         X_test1 <- Xtest %>% dplyr::select(all_of(PM))
 
         models[[cont]] <-  SemiSupervisedFitting(X_train1,X_test1,ltrain,ltest,
-                              vtest,pnolabeled, model = "EEI",
+                              vtest,pnolabeled, model = CE,
                               iterations = iterations, 
                               alpharef = alpharef )
         
@@ -445,10 +445,10 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
       
       
       saturated_mod <-  SemiSupervisedFitting(Xtrain,Xtest,ltrain,ltest,
-                                              vtest, "VVV",pnolabeled) 
+                                              vtest, CE,pnolabeled) 
       
       selectedVar_mod <- HeadLongSearch(Xtrain,Xtest,RW,ltrain,ltest,vtest,
-                                        CE = "VVV", pnolabeled = 0.5, iterations = niterations,
+                                        CE = CE, pnolabeled = 0.5, iterations = niterations,
                                         alpharef = 0.75, tol = 0.01, epsilon = 0)
       
       
@@ -463,7 +463,7 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
         
         TrueModel  <- SemiSupervisedFitting(Xtrain_TM,
                                             Xtest_TM,ltrain,ltest,
-                                            vtest,"VVV",pnolabeled,
+                                            vtest,CE,pnolabeled,
                                             iterations = niterations,
                                             alpharef = 0.75, 
                                             tol = 0.01)
@@ -725,10 +725,10 @@ SemiSupervised_HLS_SSH <- function(file_name,pathScenarios,CE,variables_True_Mod
     
     
     saturated_mod <-  SemiSupervisedFitting(Xtrain,Xtest,ltrain,ltest,
-                                            vtest, "VVV",pnolabeled) 
+                                            vtest, CE,pnolabeled) 
     
     selectedVar_mod <- HeadLongSearch(Xtrain,Xtest,RW,ltrain,ltest,vtest,
-                                      CE = "VVV", pnolabeled = 0.5, iterations = niterations,
+                                      CE , pnolabeled = 0.5, iterations = niterations,
                                       alpharef = 0.75, tol = 0.01, epsilon = 0)
     
     
@@ -743,7 +743,7 @@ SemiSupervised_HLS_SSH <- function(file_name,pathScenarios,CE,variables_True_Mod
       
       TrueModel  <- SemiSupervisedFitting(Xtrain_TM,
                                           Xtest_TM,ltrain,ltest,
-                                          vtest,"VVV",pnolabeled,
+                                          vtest,CE,pnolabeled,
                                           iterations = niterations,
                                           alpharef = 0.75, 
                                           tol = 0.01)

@@ -284,6 +284,12 @@ df_B <- data.frame(
             round(F1_Score_BDif,2))
 )
 
+#  Running the E-step when the parameters are the true parameters and 
+#  estimate the labels
+
+
+
+#  Runing the M-step when the labels are the true and estimate the parameters
 
 
 
