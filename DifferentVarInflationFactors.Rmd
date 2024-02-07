@@ -4,9 +4,9 @@ title: 'Mixture of contaminated normal distributions with different variables in
 author: "Jorge Sanchez"
 date: "2024-02-01"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -258,6 +258,8 @@ ConfusionMatrix_BDif <- ConfusionMatrix(pred_BDif$vhat,DatasetB$vtest)
 ConfusionDF_BDif <- ConfusionDF(pred_BDif$vhat,DatasetB$vtest)
 F1_Score_BDif <- F1_Score(DatasetB$vtest,pred_BDif$vhat,positive = 0)
 
+
+
 ConfusionMatrix_BDif
 ConfusionMatrix_BEq
 
@@ -504,19 +506,58 @@ format_table(df_A)
 The parameters for the second dataset are
 
 $$
-\mu = \begin{pmatrix} 0 \\ 0 \\ 0\\  \end{pmatrix} , \Sigma = I_{3} = \begin{pmatrix} 1 & 0 & 0  \\ 0 & 1 & 0  \\ 0 & 0 & 1   \\ \end{pmatrix}, \alpha = 0.8, N_{g} = \begin{pmatrix} 1 & 0 & 0 \\ 0 & \sqrt{5} & 0  \\ 0 & 0 & 1  \\  \end{pmatrix}
+\mu = \begin{pmatrix} 0 \\ 0 \\ 0\\  \end{pmatrix} , \Sigma = I_{3} = \begin{pmatrix} 1 & 0 & 0  \\ 0 & 1 & 0  \\ 0 & 0 & 1   \\ \end{pmatrix}, \alpha = 0.8, \dot{N}_{g} = \begin{pmatrix} 1 & 0 & 0 \\ 0 & \sqrt{5} & 0  \\ 0 & 0 & 1  \\  \end{pmatrix}
 $$
+The main different between the second dataset versus the previous one is that the data is generated from allowing different variables inflation factor within the group. It is possible to see that $X_{2}$ has an inflation factor higher than $X_{1}$ and $X_{3}$. The experiment consist of fitting first the variable assuming the same variable inflation factor in the group and next allowing different variable inflation factor within the group and comparing the results obtained.
 
 ```{r plotB_training}
 pairs(DatasetB$Xtrain, col = c("red","blue")[DatasetB$vtrain + 1],
       pch = ifelse(DatasetB$vtrain == 0,24,19), cex = 1)
 
 ```
+It is possible to observed that in the training and test subset there is a much higher dispersion in the variable $X2$ in comparison with $X_{1}$ and $X_{3}$.
 
 ```{r plotB_test}
 pairs(DatasetB$Xtest, col = c("red","blue")[DatasetB$vtest + 1],
       pch = ifelse(DatasetB$vtest == 0,24,19), cex = 1)
 
+```
+
+Similar procedure is carry out fitting the data with the model EII assuming same variable inflation factor in the group and the parameters obtained are:
+
+
+$$
+\mu = `r write_matex2(mu_BEqr)` , \Sigma = `r write_matex2(sigma_BEqr)`, \alpha = `r alpha_BEqr` , \eta = `r eta_BEqr`
+$$
+
+
+It is possible to observe that the estimations for $\mu,\Sigma$ are quite close, while there is a noticeable different in the estimates for $\alpha$ since the estimate parameter assumes there is less contaminated samples than what the true parameter states. The estimation for $\eta$ could be confused by the estimated for $\lambda$ as the model fitted is EII. It is possible to see that the value the estimate takes is $1.22$ (see diagonal of the variance covariance matrix). 
+
+Next, the same data is fit with the model allowing different variables inflation factor within group and the parameter estimates are shown below:
+
+
+
+$$
+\mu = `r write_matex2(mu_BDifr)` , \Sigma = `r write_matex2(sigma_BDifr)` , \alpha = `r alpha_BDifr`, \dot{N} * \dot{N}^{T} = N = `r write_matex2(eta_BDifr)`
+$$
+The parameters obtained for $\mu,\Sigma,$ and $\lambda$ are very similar as the initial values for the parameters come from the estimates for the model EII with same variable inflation factor within group. The main difference between the estimates produced by these two models lies in the estimates for $\alpha$ that is $0.51$ which means that the inflation factor is being overestimated as the percentage of non-contaminated samples is $0.9$. Also, It is possible to see that the variable inflation factor estimates are different for variables $X_{1},X_{2}$ and $X_{3}$. Also, the estimate for the variable inflation factor corresponding to $X_{2}$ is smaller that the true variable.
+
+Taking a look of the performance of the model assuming same variable inflation factor within group we can see that it is not able to identify any of the $5$ contaminated samples. The plot of the test subset shows that the contaminated samples are quite close to the non-contaminated samples.
+
+```{r CM_B}
+knitr::kable(t_BEq, format = "markdown")
+```
+
+The model allowing different variables inflation factor within group performs better than its counterpart that assumes same variable inflation factor in the group. The former is able to detect $2$ of the $5$ contaminated samples. 
+
+```{r CM_BDif}
+knitr::kable(t_BDif, format = "markdown")
+```
+The rest of the metrics confirms that when the data was coming from different variables inflation factors the model allowing different inflation factor seems to be more appropiate than assuming equal inflation factor within group. Nevertheless, more exploration is needed.
+
+```{r Df_CompB}
+#knitr::kable(df_A, format = "markdown")
+format_table(df_B)
 ```
 
 

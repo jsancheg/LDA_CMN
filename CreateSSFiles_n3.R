@@ -70,12 +70,22 @@ FilesProcessed <- dir(pathSSFiles)
 
 
 tic("SSFiles")
-mclapply(Scenarios100[ini:fin], function(x){
+tryCatch( 
+{
+        mclapply(Scenarios100[ini:fin], function(x){
   
-  SSFilename <- str_replace(x,"S_","SSV_")
-  FilesProcessed <- dir(pathSSFiles)
-  if(is_empty(intersect(FilesProcessed,SSFilename))) GenerateSSFile(x,pathScenarios,pathSSFiles) else cat("\n The file ",SSFilename, " already exists in the directory. \n")
+      SSFilename <- str_replace(x,"S_","SSV_")
+      FilesProcessed <- dir(pathSSFiles)
+      if(is_empty(intersect(FilesProcessed,SSFilename))) GenerateSSFile(x,pathScenarios,pathSSFiles) else cat("\n The file ",SSFilename, " already exists in the directory. \n")
   
-}, mc.cores = 1)
-
+   }, mc.cores = 1)
+      return(1)  
+},
+    error = function(e)
+    {
+      cat("Error processing scenario ",x, " ",e$message, "\n")
+      return(NULL)
+    }
+)
 toc()
+

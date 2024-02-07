@@ -43,19 +43,19 @@ if(!sys_info["nodename"] == "LAPTOP-ADR3M911")
 
 
 
-ini <- n2.100.1 
-fin <- n2.100.2
+ini <- n2.100.2+1 
+fin <- n2.100.3
 fin-ini + 1
 
 tic(paste0("Supervised files fitted :"),as.character(fin-ini))
 mclapply(Scenarios100[ini:fin], function(x){
   
-  command2 <- "ls /home/pgrad1/2201449s/R/CMN/SFiles"
   SFilename <- str_replace(x,"S_","SV_")
   FilesProcessed <- dir(pathSFiles)
   
       if(!sys_info["nodename"] == "LAPTOP-ADR3M911")
       {
+          command2 <- "ls /home/pgrad1/2201449s/R/CMN/SFiles"
           FilesProcessed <- capture.output(ssh_exec_wait(my_ssh_session,command2))
           scp_download(my_ssh_session, paste0("/home/pgrad1/2201449s/R/CMN/Scenarios3/",x),pathScenarios )
         }
@@ -64,6 +64,10 @@ mclapply(Scenarios100[ini:fin], function(x){
     {
       Output <- GenerateSFile(x,pathScenarios,pathSFiles)
       saveRDS(Output,paste0(pathSFiles,SFilename))
+  }else {
+    cat("\n The file ",SFilename, " already exists in the directory. \n")
+  }
+  
       
       if(!sys_info["nodename"] == "LAPTOP-ADR3M911")
       {
@@ -96,9 +100,6 @@ mclapply(Scenarios100[ini:fin], function(x){
       }
       
             
-    }else {
-      cat("\n The file ",SSFilename, " already exists in the directory. \n")
-      }
   
   
   

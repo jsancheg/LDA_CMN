@@ -22,7 +22,7 @@ library(readr)
 # pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
 dir(pathScenarios)
-ini <- n100.1 + 1
+ini <- n100.1 + 10
 fin <- n100.2
 fin-ini + 1
 
