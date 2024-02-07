@@ -1,6 +1,6 @@
 # 
 source("Semisupervised.R")
-source("ListScenariosFiles.R")
+source("ListScenarios.R")
 source("GSSFile.R")
 library(purrr)
 library(ContaminatedMixt)
@@ -25,8 +25,8 @@ library(readr)
 
 
 dir(pathScenarios)
-ini <- n2.100.5
-fin <- n2.100.5 - 2
+ini <- n100.3+1
+fin <- n100.4 
 
 
 tic("Files 100 variables")

@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-
 # Windows path
 system_info <- Sys.info()
 #OS_name <- system_info("")
@@ -23,8 +21,6 @@ if(pc_name == "LAPTOP-ADR3M911")
   pathSSFiles <- "M:/SSFiles/"
   pathSFiles <- "M:/SFiles/"
 }
-
-=======
 # Get system information
 system_info <- Sys.info()
 system_info
@@ -41,7 +37,6 @@ if(operative_system == "Linux" & nodename == "WildFree") {
   pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
   pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
 }
->>>>>>> d56d2f130255c2b7e2879f93b8b6c7222476c15c
 
 F1 <- c("VD","MD","VO") # F1 : Mean distance
 F2 <- c(2,3)            # F2 : Number of classes
