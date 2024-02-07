@@ -7,6 +7,7 @@ source("GSSFile.R")
 library(purrr)
 library(ContaminatedMixt)
 
+
 if (!requireNamespace("googledrive", quietly = TRUE)) {
   install.packages("googledrive")
 }
@@ -22,8 +23,8 @@ library(readr)
 # pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
 dir(pathScenarios)
-ini <- n100.1 
-fin <- n100.2
+ini <- n100.2+1 
+fin <- n100.3
 fin-ini + 1
 
 

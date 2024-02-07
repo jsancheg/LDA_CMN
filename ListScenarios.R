@@ -51,6 +51,9 @@ n3 <- nrow(Sets3)
 Sets <- rbind(Sets2,Sets3)
 n <- nrow(Sets)
 
+n5 <- 0
+n100 <- 0
+
 Scenarios <- sapply(1:n,function(i) {
   # prefix file: "S_(F2)Sets[i,1]_(F10)S_Sets[i,2]_(F5)S_Sets[i,3]_(F4)S_Sets[i,4]_
   #               (F3)S_Sets[i,8]_(F1)Sets[i,5]_(F7)Sets[i,7]_(F6)Sets[i,6]_(F8.1)Sets[i,9]_
@@ -133,15 +136,75 @@ ind5vars <- sapply(Scenarios , function(x)
 })
 
 ind100vars <- !ind5vars
+ n5<-  sum(ind5vars)
+ n100 <- sum(ind100vars)
+  
 
-
-Scenarios5 <- Scenarios[ind5vars]
-Scenarios100 <- Scenarios[ind100vars]
-
-
-n5 <- length(Scenarios5)
-n100 <- length(Scenarios100)
-
+ Scenarios5 <- character(n5)
+ Scenarios100 <-character(n100)
+ 
+j5<- 1
+j100<-1 
+for (i in 1:n)
+{
+  
+    if (as.numeric(Sets[i,3]) == 5)
+    {
+        if( as.numeric(Sets[i,1]) == 2) # Number of classes
+        {
+                                Scenarios5[j5] <- paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
+                                as.numeric(Sets[i,3]),"_",
+                                as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
+                                Sets[i,5],"_",Sets[i,7],"_",
+                                Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
+                                as.numeric(Sets[i,10])*100,"_E",
+                                as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),"_10.RDS")
+        
+          }else if (as.numeric(Sets[i,1]) == 3)
+          {
+                                Scenarios5[j5] <- paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
+                                as.numeric(Sets[i,3]),"_",
+                                as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
+                                Sets[i,5],"_",Sets[i,7],"_",
+                                Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
+                                as.numeric(Sets[i,10])*100,as.numeric(Sets[i,11])*100,
+                                "_E",as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),
+                                as.numeric(Sets[i,14]),"_10.RDS")
+          }
+      
+      
+          j5 <- j5 + 1                
+                          
+      } else if(as.numeric(Sets[i,3]) == 100)
+          {
+            if( as.numeric(Sets[i,1]) == 2) # Number of classes
+            {
+                        Scenarios100[j100] <- paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
+                                  as.numeric(Sets[i,3]),"_",
+                                  as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
+                                  Sets[i,5],"_",Sets[i,7],"_",
+                                  Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
+                                  as.numeric(Sets[i,10])*100,"_E",
+                                  as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),"_10.RDS")
+          
+              }else if (as.numeric(Sets[i,1]) == 3)
+              {
+                        Scenarios100[j100] <- paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
+                                  as.numeric(Sets[i,3]),"_",
+                                  as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
+                                  Sets[i,5],"_",Sets[i,7],"_",
+                                  Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
+                                  as.numeric(Sets[i,10])*100,as.numeric(Sets[i,11])*100,
+                                  "_E",as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),
+                                  as.numeric(Sets[i,14]),"_10.RDS")
+              }
+          
+              j100<-j100+1
+          }  
+}
+ 
+ 
+ 
 n5.1 <- floor(n5*10/100)
 n5.2 <- floor(n5*20/100)
 n5.3 <- floor(n5*30/100)

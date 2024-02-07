@@ -16,7 +16,6 @@ for(i in 1:n)
   if(as.numeric(Sets[i,3]) ==100 )  
     {
       aux[[j]] <- as.list(Sets[i,])
-      j <- j + 1
       
       
       
@@ -42,6 +41,7 @@ for(i in 1:n)
                as.numeric(Sets[i,14]),"_10.RDS")
       }
       
+      j <- j + 1
       
     }  
 }

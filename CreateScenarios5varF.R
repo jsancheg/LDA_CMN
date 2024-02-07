@@ -17,7 +17,6 @@ for(i in 1:n)
   if(as.numeric(Sets[i,3]) ==5 )  
     {
       aux[[j]] <- as.list(Sets[i,])
-      j <- j + 1
       
       if( as.numeric(Sets[i,1]) == 2) # Number of classes
       {
@@ -41,11 +40,13 @@ for(i in 1:n)
                                   as.numeric(Sets[i,14]),"_10.RDS")
       }
       
+      j <- j + 1
+      
       
     }  
 }
 
-j
+
 
 #Scenarios5var <- sapply(1:n,function(i) {
 #  if( as.numeric(Sets[i,1]) == 2) # Number of classes
