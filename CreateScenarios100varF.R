@@ -4,7 +4,8 @@ source("ListScenarios.R")
 library(ssh)
 nruns <- 10
 
-Scenarios
+Scenarios100<-character(n100)
+
 n <- nrow(Sets)
 aux <- vector("list",n100)
 
@@ -16,32 +17,36 @@ for(i in 1:n)
     {
       aux[[j]] <- as.list(Sets[i,])
       j <- j + 1
+      
+      
+      
+      if( as.numeric(Sets[i,1]) == 2) # Number of classes
+      {
+        Scenarios100[j] <- paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
+               as.numeric(Sets[i,3]),"_",
+               as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
+               Sets[i,5],"_",Sets[i,7],"_",
+               Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
+               as.numeric(Sets[i,10])*100,"_E",
+               as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),"_10.RDS")
+        
+      }else if (as.numeric(Sets[i,1]) == 3)
+      {
+        Scenarios100[j] <- paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
+               as.numeric(Sets[i,3]),"_",
+               as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
+               Sets[i,5],"_",Sets[i,7],"_",
+               Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
+               as.numeric(Sets[i,10])*100,as.numeric(Sets[i,11])*100,
+               "_E",as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),
+               as.numeric(Sets[i,14]),"_10.RDS")
+      }
+      
+      
     }  
 }
 
-#Scenarios5var <- sapply(1:n,function(i) {
-#  if( as.numeric(Sets[i,1]) == 2) # Number of classes
-#  {
-#    paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
-#           as.numeric(Sets[i,3]),"_",
-#           as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
-#           Sets[i,5],"_",Sets[i,7],"_",
-#           Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
-#           as.numeric(Sets[i,10])*100,"_E",
-#           as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),"_10.RDS")
-    
-#  }else if (as.numeric(Sets[i,1]) == 3)
-#  {
-#    paste0("S_",as.numeric(Sets[i,1]),"_",as.numeric(Sets[i,2]),"_",
-#           as.numeric(Sets[i,3]),"_",
-#           as.numeric(Sets[i,4]),"_",as.numeric(Sets[i,8])*100,"_",
-#           Sets[i,5],"_",Sets[i,7],"_",
-#           Sets[i,6],"_A",as.numeric(Sets[i,9])*100, 
-#           as.numeric(Sets[i,10])*100,as.numeric(Sets[i,11])*100,
-#           "_E",as.numeric(Sets[i,12]), as.numeric(Sets[i,13]),
-#           as.numeric(Sets[i,14]),"_10.RDS")
-#  }
-#})
+
 
 
 
@@ -49,6 +54,8 @@ for(i in 1:n)
 
 ini <- 1 
 fin <- n100
+
+fin-ini + 1
 
 length(aux)
 length(Scenarios100)
@@ -61,8 +68,8 @@ SimStatus <- mclapply((ini:fin),function(i)
   FilesProcessed <- dir(pathScenarios)
   file_name <- Scenarios100[i]
   
-  if(is_empty(intersect(FilesProcessed,file_name)))
-  {
+#  if(is_empty(intersect(FilesProcessed,file_name)))
+#  {
     SimProgress <- SimScenario(aux[[i]],nruns,pathScenarios)
     #    scp_upload(my_ssh_session,paste0(pathScenarios,file_name),"/home/pgrad1/2201449s/R/CMN/SFiles/")
     filePathScenario <- paste0(pathScenarios,file_name)
@@ -78,7 +85,7 @@ SimStatus <- mclapply((ini:fin),function(i)
     #      cat("File does not exist.\n")
     #   }
     
-  }
+ # }
   
 }, mc.cores = 1)
 
