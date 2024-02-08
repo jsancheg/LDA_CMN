@@ -22,8 +22,8 @@ library(readr)
 # pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
 # Windows path
-pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
-pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+#pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+#pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
 
 
 ini <- n100.9
@@ -31,14 +31,25 @@ fin <- n100
 
 fin-ini+1
 
-mclapply(Scenarios100[(ini+10):fin], function(x){
+mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
-  if(is_empty(intersect(FilesProcessed,SSFilename))) 
-    {
+#  if(is_empty(intersect(FilesProcessed,SSFilename))) 
+#    {
+    tryCatch(
+      {
+        
       GenerateSSFile(x,pathScenarios,pathSSFiles) 
-    }else cat("\n The file ",SSFilename, " already exists in the directory. \n")
+        return(1)
+      }, error = function(e){
+        cat("Error fitting scenario: ",x, "\n")
+        return(NULL)
+        
+      }
+    )
+    
+ #   }else cat("\n The file ",SSFilename, " already exists in the directory. \n")
   
 }, mc.cores = 1)
 

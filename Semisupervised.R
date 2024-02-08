@@ -99,7 +99,7 @@ E_StepCMN <- function(X,l,par)
 
 
 SemiSupervisedFitting <- function(Xtrain, Xtest, ltrain, ltest,
-                                 vtest, model = "EII",
+                                 vtest, model = "EEI",
                                  pnolabeled = 0.5,
                                  iterations = 10, 
                                  alpharef = 0.75, tol = 0.01)

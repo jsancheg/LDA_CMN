@@ -17,14 +17,6 @@ library(googledrive)
 library(gargle)
 library(readr)
 
-# Ubunto paths
-# pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
-# pathFiles <- "/home/jsancheg/Documents/SSFiles/"
-
-# Windows path
-pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
-pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
-
 
 dir(pathScenarios)
 ini <- n100.6+1

@@ -2,6 +2,7 @@
 source("Semisupervised.R")
 source("ListScenarios.R")
 source("GSFile.R")
+source("GSSFile.R")
 
 library(purrr)
 library(ContaminatedMixt)
@@ -21,11 +22,15 @@ library(readr)
 # pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
 # pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
+# Windows path
+pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
 
 
 dir(pathScenarios)
-ini <- n100.4 + 1
-fin <- n100.5
+ini <- n100.9 
+fin <- n100
 fin-ini + 1
 
 tic("SFiles n100.6 to n100.7")
