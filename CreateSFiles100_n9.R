@@ -23,17 +23,17 @@ library(readr)
 # pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
 # Windows path
-pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
-pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
-pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
+#pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+#pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+#pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
 
 
 dir(pathScenarios)
-ini <- n100.9 
-fin <- n100
+ini <- n100.8+1 
+fin <- n100.9
 fin-ini + 1
 
-tic("SFiles n100.6 to n100.7")
+tic("SFiles n100.8+1 to n100.9")
 mclapply(Scenarios100[ini:fin], function(x){
   
   SFilename <- str_replace(x,"S_","SV_")

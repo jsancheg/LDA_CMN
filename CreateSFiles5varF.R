@@ -21,9 +21,9 @@ library(readr)
 # pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
 # Windows path
-pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
-pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
-pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
+#pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+#pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+#pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
 
 
 dir(pathScenarios)
