@@ -32,7 +32,7 @@ fin <- n5
 fin-ini + 1
 
 tic("SFiles 5 variables 192 files")
-mclapply(Scenarios5[ini:fin], function(x){
+status <- mclapply(Scenarios5[ini:fin], function(x){
   
   SFilename <- str_replace(x,"S_","SV_")
   FilesProcessed <- dir(pathSFiles)
