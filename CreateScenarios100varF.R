@@ -60,6 +60,8 @@ fin-ini + 1
 length(aux)
 length(Scenarios100)
 
+#pathScenarios <- "E:/University of Glasgow/Thesis/ScenariosNew/"
+
 SimStatus <- mclapply((ini:fin),function(i)
 {
 #  command2 <- "ls /home/pgrad1/2201449s/R/CMN/Scenarios3"

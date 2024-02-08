@@ -101,6 +101,8 @@ if(pc_name == "LAPTOP-ADR3M911")
   
 }
 
+#pathScenarios <- "E:/University of Glasgow/Thesis/ScenariosNew/"
+
 tic("Create Scenarios for 5 variables")
 SimStatus <- mclapply((ini:fin),function(i)
 {
