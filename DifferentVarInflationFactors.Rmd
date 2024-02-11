@@ -173,7 +173,7 @@ ptraining <- 0.75
 pig_b <- 1
 mu_b <- matrix(c(0,0,0), nrow = p_b, ncol = G_b, byrow = TRUE)
 sigma_b <- array(0,dim = c(p_b,p_b,G_b))
-sigma_b[,,1] <- diag(1,p_a)
+sigma_b[,,1] <- diag(1,p_b)
 alpha_b <- 0.8
 eta_b <- c(1,5,1)
 # DatasetB <- Sim_DIF(mu_b,sigma_b,pig_b,nobs_b,ptraining,alpha_b,eta_b)
@@ -212,16 +212,64 @@ F1_Score_BEq <- F1_Score(DatasetB$vtest,fit_BeqTest$vhat,positive = 0)
 
 #ConfusionMatrix_AEq <- confusionMatrix(factor(DatasetA$vtest),factor(fit_AeqTest$vhat) )
 
-par_BDif0 <- par_BEq
+# Giving as initial values for parameters the real values
+par_BDif0 <- list(G = G_b, pig = pig_b, mu = mu_b, 
+                sigma = sigma_b, 
+                alpha = alpha_b,
+                eta = eta_b)
+
+par_BDif0$G
+par_BDif0$pig
+par_BDif0$mu
+par_BDif0$sigma
+par_BDif0$alpha
+par_BDif0$eta
+
+pred_BDif0 <- eCmn_DIF(X = DatasetB$Xtest,labels = DatasetB$ltest, par = par_BDif0)
+
+Accuracy_BDif0 <- Accuracy(pred_BDif0$vhat,DatasetB$vtest)
+Sensitivity_BDif0 <- Sensitivity(DatasetB$vtest, pred_BDif0$vhat,positive = 0)
+Specificity_BDif0 <- Specificity(DatasetB$vtest,pred_BDif0$vhat,positive = 0) 
+Recall_BDif0 <- Recall(DatasetB$vtest, pred_BDif0$vhat,positive = 0) 
+Precision_BDif0 <- Precision(DatasetB$vtest,pred_BDif0$vhat,positive = 0) 
+ConfusionMatrix_BDif0 <- ConfusionMatrix(pred_BDif0$vhat,DatasetB$vtest)
+ConfusionDF_BDif0 <- ConfusionDF(pred_BDif0$vhat,DatasetB$vtest)
+F1_Score_BDif0 <- F1_Score(DatasetB$vtest,pred_BDif0$vhat,positive = 0)
+
+
+# Giving the real values for eta and 
+
+par_BDif0$v <-as.matrix( DatasetB$vtrain )
+
+ms_BDif0 <- mCmn_DIF_EII(Xtrain = DatasetB$Xtrain,ltrain = DatasetB$ltrain, par = par_BDif0)
+
+ms_BDif0$mu
+ms_BDif0$sigma
+ms_BDif0$lambda
+ms_BDif0$alpha
+ms_BDif0$eta
+
+# as lambda is present in the model EII then we modify sigma to be multiplied 
+# by lambda
+
+par_BDif0 <- list(G = G_b, pig = pig_b, mu = mu_b, 
+                sigma = sigma_b, 
+                alpha = alpha_b,
+                eta = eta_b)
+
+loglikCMN_DIF(X = DatasetB$Xtrain,labels = DatasetB$ltrain , par = par_BDif0)
+  
 eta0 <- array(0.0, dim = c(3,3,1))
 eta0[,,1]  <- diag(sqrt(par_BEq$eta),3)
 diag(eta0[,,1])^2
 
 par_BDif0$eta <- eta0[,,1]
 par_BDif0$lambda <- 1
-
 set.seed(123)
-par_BDif0$v <- matrix(runif(nrow(DatasetB$Xtrain)*G_a), 
+
+
+
+par_BDif0$v <- matrix(runif(nrow(DatasetB$Xtrain)*G_b), 
                       nrow = nrow(DatasetB$Xtrain),ncol = G_a, byrow = TRUE)
 
 
