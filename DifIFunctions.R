@@ -98,7 +98,7 @@ Sim_DIF <- function(mug,sigmag,pig,nobs,ptraining,alphag,etag)
             X[i,] <- rmnorm(1,mug[,l[i]],sg)
           }else if (G>1 & length(mug)== 1) # more than 1 group with same mean
           { # groups with same mean and different variance
-            X[i,] <- rnorm(1,mug,sg[l[i]])
+            X[i,] <- rmnorm(1,mug,sg[l[i]])
           }else if (G==1) X[i,] <- rmnorm(1,mug,sg) # 1 group
           } # end if-else v  
       
@@ -653,7 +653,7 @@ eCmn_DIF<-function(X,labels,par)
         }
       }
       
-    }else if(is.array(par$sigma) & length(dim(par$sigma))==3 & G > 1)
+    }else if(is.array(par$sigma) & length(dim(par$sigma))==3 )
     {
       if(is.vector(par$eta) & length(par$eta) == 1)
       {
@@ -797,7 +797,7 @@ eCmn_DIF<-function(X,labels,par)
           # observation i in group g
           fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],sigma1[,,g])
           
-        }else if(G>1 & (is.array(par$sigma)|is.list(par$sigma) ) )
+        }else if(G>=1 & (is.array(par$sigma)|is.list(par$sigma) ) )
         {
           thetaig[i,g] <- dMVNorm(X[i,],mu[,g],sigma[,,g])
           # fxig: matrix containing the probability of contaminated normal distribution for
@@ -839,6 +839,8 @@ eCmn_DIF<-function(X,labels,par)
   
   
 }
+
+
 f_etaDIF_EII <- function(eta_gj,z, v , X, mu, lambda)
 {
   # eta_gj: contains the value of eta for the p-th variable
@@ -1196,41 +1198,41 @@ mCmn_DIF_EII <- function(Xtrain,ltrain, par, eta_max = 1000)
     { v <- par$v}
   }else stop("The dimension of v has to be mXG")
   
-  if(is.matrix(par$mu) & all(dim(par$mu)==c(p,G)) == TRUE )
-  {
-    mu<-par$mu
-  }else stop("Parameter mu has to be a matrix of dimension pxG")
+  #if(is.matrix(par$mu) & all(dim(par$mu)==c(p,G)) == TRUE )
+  #{
+  #  mu<-par$mu
+  #}else stop("Parameter mu has to be a matrix of dimension pxG")
   
-  if(is.numeric(par$lambda) & length(par$lambda) == 1 )
-  {
+  #if(is.numeric(par$lambda) & length(par$lambda) == 1 )
+  #{
     lambda <- par$lambda
-  }else stop("Parameter lambda has to be a vector of dimension 1")
+  #}else stop("Parameter lambda has to be a vector of dimension 1")
   
-  if(is.vector(par$alpha) & length(par$alpha) == G) 
-  {
-    alpha <- par$alpha
-  } else stop("Parameter alpha has to be a vector of length G")
+  #if(is.vector(par$alpha) & length(par$alpha) == G) 
+  #{
+  #  alpha <- par$alpha
+  #} else stop("Parameter alpha has to be a vector of length G")
   
-  if(is.array(par$eta))
-  {
-    if(length(dim(par$eta))== 2 & G >= 1)
-    {
-      for (g in 1:G) eta[,,g] <- par$eta
-    }else if(length(dim(par$eta)) == 3)
-      if( all(dim(par$eta) == c(p,p,G)) == TRUE )  
-        eta <- par$eta 
-  } else if(is.matrix(par$eta))
-  {
-    if(all(dim(par$eta) == c(p,p)) == TRUE  )
-      eta <- par$eta
-  }else {stop("Parameter eta has to be a array of dimension pxpxG")}
+  #if(is.array(par$eta))
+  #{
+  #  if(length(dim(par$eta))== 2 & G >= 1)
+  #  {
+  #    for (g in 1:G) eta[,,g] <- par$eta
+  #  }else if(length(dim(par$eta)) == 3)
+  #    if( all(dim(par$eta) == c(p,p,G)) == TRUE )  
+  #      eta <- par$eta 
+  #} else if(is.matrix(par$eta))
+  #{
+  #  if(all(dim(par$eta) == c(p,p)) == TRUE  )
+  #    eta <- par$eta
+  #}else {stop("Parameter eta has to be a array of dimension pxpxG")}
   
-  for (g in 1:G)  
-  {
+  #for (g in 1:G)  
+  #{
     
-    if(G>1) inv_eta[,,g] <- solve(eta[,,g])
-    if(G == 1) inv_eta[,,g] <- solve(eta[,,g])
-  } 
+  #  if(G>1) inv_eta[,,g] <- solve(eta[,,g])
+  #  if(G == 1) inv_eta[,,g] <- solve(eta[,,g])
+  #} 
   
   mg <-apply(unmap(ltrain),2,sum)
   pig <- mg/m
