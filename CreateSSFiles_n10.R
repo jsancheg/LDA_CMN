@@ -26,8 +26,8 @@ library(readr)
 #pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
 
 
-ini <- n100.8+1
-fin <- n100.9
+ini <- n100.9+1
+fin <- n100
 
 fin-ini+1
 

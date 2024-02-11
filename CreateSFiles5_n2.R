@@ -40,8 +40,8 @@ if(pc_name == "LAPTOP-ADR3M911")
 
 
 dir(pathScenarios)
-ini <- n2.5.1+1
-fin <- n2.5.2
+ini <- n5.1+1
+fin <- n25.2
 fin-ini
 
 tic("SFiles 5 variables 306 files")

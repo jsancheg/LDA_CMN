@@ -1,7 +1,7 @@
 source("Semisupervised.R")
+source("ListScenarios.R")
+source("GSFile.R")
 source("GSSFile.R")
-pathScenarios <- "/home/jsancheg/git_environment/LDA_CMN/Scenarios/"
-pathSSFiles <- "/home/jsancheg/git_environment/LDA_CMN/SSFiles/"
 
 #pathScenarios <- "/home/pgrad1/2201449s/R/CMN/ScenariosNew/"
 #pathSSFiles <- "/home/pgrad1/2201449s/R/CMN/ScenariosNew/SSFiles/"

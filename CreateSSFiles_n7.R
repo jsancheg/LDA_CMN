@@ -17,31 +17,39 @@ library(googledrive)
 library(gargle)
 library(readr)
 
+# Ubunto paths
+# pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
+# pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
-dir(pathScenarios)
+# Windows path
+#pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+#pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+
+
 ini <- n100.6+1
 fin <- n100.7
 
 fin-ini+1
 
-status <- mclapply(Scenarios100[ini:fin], function(x){
+mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
 #  if(is_empty(intersect(FilesProcessed,SSFilename))) 
-#  {
-  tryCatch(
-    {
-      
-        GenerateSSFile(x,pathScenarios,pathSSFiles) 
+#    {
+    tryCatch(
+      {
+        
+      GenerateSSFile(x,pathScenarios,pathSSFiles) 
         return(1)
-    }, error = function(e)
-    {
+      }, error = function(e){
         cat("Error fitting scenario: ",x, "\n")
         return(NULL)
-    }
-  )
+        
+      }
+    )
+    
+ #   }else cat("\n The file ",SSFilename, " already exists in the directory. \n")
   
-#  }else cat("\n The file ",SSFilename, " already exists in the directory. \n")
 }, mc.cores = 1)
 

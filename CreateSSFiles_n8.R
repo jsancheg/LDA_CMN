@@ -4,8 +4,6 @@
 source("Semisupervised.R")
 source("ListScenarios.R")
 source("GSSFile.R")
-source("GSFile.R")
-l
 library(purrr)
 library(ContaminatedMixt)
 
@@ -28,12 +26,12 @@ library(readr)
 #pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
 
 
-ini <- n100.5+1
-fin <- n100.6
+ini <- n100.7+1
+fin <- n100.8
 
 fin-ini+1
 
-status <-mclapply(Scenarios100[ini:fin], function(x){
+mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)

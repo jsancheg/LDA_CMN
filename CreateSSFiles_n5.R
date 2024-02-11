@@ -2,7 +2,7 @@
 
 
 source("Semisupervised.R")
-source("ListScenariosFiles.R")
+source("ListScenarios.R")
 source("GSSFile.R")
 library(purrr)
 library(ContaminatedMixt)
@@ -22,26 +22,34 @@ library(readr)
 # pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
 # Windows path
-pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
-pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+#pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+#pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
 
 
-dir(pathScenarios)
-ini <- n5.4+1
-fin <- n5.5
+ini <- n100.7+1
+fin <- n100.8
 
-LastFileProcessed <- NULL
-countFilesProcessed <- 0
+fin-ini+1
 
-mclapply(Scenarios5[ini:fin], function(x){
+status<-mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
-  LastFileProcessed <- x
+#  if(is_empty(intersect(FilesProcessed,SSFilename))) 
+#    {
+    tryCatch(
+      {
+        
+      GenerateSSFile(x,pathScenarios,pathSSFiles) 
+        return(1)
+      }, error = function(e){
+        cat("Error fitting scenario: ",x, "\n")
+        return(NULL)
+        
+      }
+    )
+    
+ #   }else cat("\n The file ",SSFilename, " already exists in the directory. \n")
   
-  if(is_empty(intersect(FilesProcessed,SSFilename))) 
-    {
-        GenerateSSFile(x,pathScenarios,pathSSFiles) 
-        countFilesProcessed <- countFilesProcessed + 1
-  } else cat("\n The file ",SSFilename, " already exists in the directory. \n")
 }, mc.cores = 1)
+
