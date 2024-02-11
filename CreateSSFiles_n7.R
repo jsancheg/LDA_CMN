@@ -31,7 +31,7 @@ fin <- n100.7
 
 fin-ini+1
 
-mclapply(Scenarios100[ini:fin], function(x){
+status <- mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
