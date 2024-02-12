@@ -253,7 +253,7 @@ ms_BDif0$eta
 # by lambda
 
 par_BDif0 <- list(G = G_b, pig = pig_b, mu = mu_b, 
-                sigma = sigma_b, 
+                sigma = lambda * sigma_b, 
                 alpha = alpha_b,
                 eta = eta_b)
 

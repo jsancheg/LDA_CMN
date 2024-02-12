@@ -176,7 +176,7 @@ loglikCMN_DIF<-function(X,labels, par)
   v <- par$v
   m <- nrow(X)
 
-  l <- unmap(l)
+  l <- unmap(labels)
   M <- matrix(0.0, nrow = m, ncol = G)
   term1 <- 0
   term2 <- 0
@@ -192,7 +192,7 @@ loglikCMN_DIF<-function(X,labels, par)
       sg <- par$sigma
       sg1 <- matrix(0.0,ncol = ncol(sg), nrow = nrow(sg))
       
-  } else if ( p>1 & G > 1 & is.array(par$sigma) & length(dim(par$sigma))==3)
+  } else if ( p>1 & G >= 1 & is.array(par$sigma) & length(dim(par$sigma))==3)
   {
     sg <- par$sigma
     sg1 <- array(0.0,dim = c(p,p,G))
@@ -333,7 +333,7 @@ loglikCMN_DIF<-function(X,labels, par)
           if(is.matrix(par$eta) & ncol(par$eta)!= G &  nrow(par$eta)!=p &
              ncol(par$eta)!=1  & ncol(par$eta)!=G )
               stop("The dimension of eta does not correspond with either the number of variables or number of groups")
-        }  else if(G > 1 & length(dim(par$sigma))==3)
+        }  else if(G >= 1 & length(dim(par$sigma))==3)
         {
             if(is.vector(par$eta) & length(par$eta) == 1)
             { # same variable inflation factor for all groups
