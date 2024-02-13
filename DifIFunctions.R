@@ -187,7 +187,7 @@ loglikCMN_DIF<-function(X,labels, par)
   {
     sg <- rep(0.0,G)  
     sg1 <- rep(0.0,G)
-  }else if(p>1 & G > 1 & is.matrix(par$sigma) & length(dim(par$sigma))==2)
+  }else if(p>1 & G >= 1 & is.matrix(par$sigma) & length(dim(par$sigma))==2)
   {
       sg <- par$sigma
       sg1 <- matrix(0.0,ncol = ncol(sg), nrow = nrow(sg))
@@ -209,7 +209,7 @@ loglikCMN_DIF<-function(X,labels, par)
  
    
 #  # case X only is composed of 1 variable
- 
+#    compute  sigma1 
    if (p == 1 )
   {
       if(  G == 1 & length(par$sigma) == 1 ) # X contains 1 variable and 1 group
@@ -271,7 +271,10 @@ loglikCMN_DIF<-function(X,labels, par)
   {
     if(G == 1 & length(dim(par$sigma))==2) # 1 group with its covariance matrix
     {
-      if(is.vector(par$eta) & length(par$eta) == 1)
+      if(is.array(par$eta)){
+        eta <- par$eta[,,1]
+        sg1  <-t(eta) %*% sg %*% eta
+      }else if(is.vector(par$eta) & length(par$eta) == 1)
       { # same variable inflation factor within the group
 #        sg <- par$sigma
         eta <- par$eta
@@ -355,13 +358,21 @@ loglikCMN_DIF<-function(X,labels, par)
                 }  
             }
           if(is.vector(par$eta) & length(par$eta) == p)
-          {# different variables inflation factor within group with
+            {# different variables inflation factor within group with
             # all groups having the same variables inflation factor
 #              sg <- par$sigma
               eta <- diag(sqrt(par$eta),p)
    #           sg1 <- array(0.0,dim = c(p,p,G))
               for (i_g in 1:G) sg1[,,i_g] <- t(eta) %*% sg[,,i_g] %*% eta 
-            } 
+            }
+          if(is.array(par$eta))
+          {
+            for (i_g in 1:G)
+            {
+              eta[,,i_g] <- par$eta[,,g]
+              sg1 [,,i_g] <-t(eta[,,i_g]) %*% sg[,,i_g] %*% eta[,,i_g]
+            }
+          }
           if(is.matrix(par$eta)  )
           {# different variables inflation factor within group with
             # all groups having the same variables inflation factor
@@ -439,13 +450,20 @@ loglikCMN_DIF<-function(X,labels, par)
 
 
 
-emCmn_DIF_EII <- function(X, labels, par,iterations= 10)
+emCmn_DIF_EII <- function(X, labels,  Maxiterations= 10, threshold = 0.01)
 {
   if(!is.matrix(X)) X <- as.matrix(X)
   
   p <- ncol(X)
   m <- nrow(X)
-  if(is.null(par$G))  G <- length(unique(labels)) else  G <- par$G
+  G <- length(unique(labels))
+  
+  v0 <- matrix(runif(m*G), nrow = m, ncol = G, byrow = TRUE)
+  lampda0 <- 1
+  exit <- 0
+  loglik <- c(0.0,0.0,0.0)   
+  
+  #if(is.null(par$G))  G <- length(unique(labels)) else  G <- par$G
     
     alpha0 <- rep(0.9,G)
     eta0 <- array(0.0, dim = c(p,p,G))
@@ -461,38 +479,69 @@ emCmn_DIF_EII <- function(X, labels, par,iterations= 10)
         apply(X[which(labels==g),],2,mean)
     })
     sigma0 <- array(0.0, dim = c(p,p,G))
-    for(g in 1:g)
+    for(g in 1:G)
     {
-      sigma0[,,g] <- cov(X[which(labels == g),])
+      sigma0[,,g] <- diag(1,p)
       eta0[,,g] <- diag(1.10,p) 
     }
-    v0 <- matrix(runif(m*G), nrow = m, ncol = G, byrow = TRUE)
-    lampda0 <- 1
-    
+  
     par <- list(G = G, pig = pig0, mu = mu0,
                 sigma = sigma0, alpha = alpha0,
                 eta = eta0, z = l, v =  v0, lambda = lampda0)
     
+    loglik[1] <- loglikCMN_DIF(X,labels,par)  
+    loglik[1]
+    
     estep0 <- eCmn_DIF(X,labels,par)
-
     par$v <- estep0$v
+    iter <- 0
+    llvalue <- 0
+    a <- 0
+    b <- 0
     
-    ll <- list()
-    
-    for (i in 1:iterations)
+    while(exit == 0)
     {
-        mstep1 <- mCmn_DIF_EII(X,labels,par)
-        par$pig <- mstep1$pig
-        par$mu <- mstep1$mu
-        par$sigma<-mstep1$sigma
-        par$alpha <- mstep1$alpha
-        par$eta <- mstep1$eta
-        par$lambda <- mstep1$lambda
-        estep1 <- eCmn_DIF(X,labels,par)
-        par$v <- estep1$v
-        
-#        ll[i] <- loglikCMN_DIF(X,labels,par)
+          iter <- iter + 1  
+          mstep1 <- mCmn_DIF_EII(X,labels,par)
+          llvalue <- loglikCMN_DIF(X,labels,par)
+          par$pig <- mstep1$pig
+          par$mu <- mstep1$mu
+          par$sigma <- mstep1$lambda * mstep1$sigma
+          par$alpha <- mstep1$alpha
+          par$eta <- mstep1$eta
+          par$lambda <- mstep1$lambda
+          
+          
+      if(iter >= Maxiterations) 
+            { 
+              exit == 1
+            }else {
+                loglik[3] = loglik[2]
+                loglik[2] = loglik[1]
+                loglik[1] = llvalue
+                if(iter > 2)
+                  {
+                  if(abs(loglik[2]-loglik[3]) == 0) 
+                    {
+                      exit = 1
+                    }else{
+                      a = (loglik[1]-loglik[2])/(loglik[2]-loglik[3])
+                      b = loglik[2] + (1/(1-a)*(loglik[1]-loglik[2]))
+                      if(abs(b-loglik[1])< threshold) exit = 1
+                    }
+                  }
+            }
+          estep1 <- eCmn_DIF(X,labels,par)
+          par$v <- estep1$v
+          
     }
+    
+    output <- list(G = par$G, pig = par$pig, mu = par$mu,
+                   sigma = par$sigma/par$lambda, alpha = par$alpha, 
+                   eta = par$eta, z = par$z, v = par$v,
+                   lambda = par$lambda, iterations = iter,
+                   ll = llvalue)
+    return(output)
 }
 
 eCmn_DIF<-function(X,labels,par)
@@ -628,6 +677,11 @@ eCmn_DIF<-function(X,labels,par)
             sigma1 <- t(eta) %*% sigma %*% eta
             
           }
+        }else if(is.array(par$eta))
+        {
+            eta <- par$eta[,,1]
+            sigma <- par$sigma
+            sigma1 <-t(eta) %*% sigma %*% eta
         }
     }else if(is.matrix(par$sigma) & G > 1)
     {
@@ -694,7 +748,7 @@ eCmn_DIF<-function(X,labels,par)
             eta <- par$eta
             sigma1 <- array(0.0, dim = c(p,p,G))
             
-            for (i_g in 1:G) sigma1[,,i_g] <- t(eta[,,i_g]) %*% sigma[,,g] %*% eta[,,i_g]
+            for (i_g in 1:G) sigma1[,,i_g] <- t(eta[,,i_g]) %*% sigma[,,i_g] %*% eta[,,i_g]
         }
       }
     }else if(is.list(par$sigma) & length((par$sigma))==G & G > 1)
