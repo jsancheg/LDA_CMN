@@ -369,7 +369,7 @@ loglikCMN_DIF<-function(X,labels, par)
           {
             for (i_g in 1:G)
             {
-              eta[,,i_g] <- par$eta[,,g]
+              eta[,,i_g] <- par$eta[,,i_g]
               sg1 [,,i_g] <-t(eta[,,i_g]) %*% sg[,,i_g] %*% eta[,,i_g]
             }
           }
@@ -502,6 +502,7 @@ emCmn_DIF_EII <- function(X, labels,  Maxiterations= 10, threshold = 0.01)
     while(exit == 0)
     {
           iter <- iter + 1  
+          cat("\n iteration:=",iter,"\n")
           mstep1 <- mCmn_DIF_EII(X,labels,par)
           llvalue <- loglikCMN_DIF(X,labels,par)
           par$pig <- mstep1$pig
@@ -514,7 +515,7 @@ emCmn_DIF_EII <- function(X, labels,  Maxiterations= 10, threshold = 0.01)
           
       if(iter >= Maxiterations) 
             { 
-              exit == 1
+              exit = 1
             }else {
                 loglik[3] = loglik[2]
                 loglik[2] = loglik[1]

@@ -149,16 +149,28 @@ CompArealTestv <- cbind(True = DatasetA$vtest, Pred = predArealTestv)
 
 condTrueAreal_0Trainv <- CompArealTrainv[,1] == 0
 condPredAreal_1Trainv <- CompArealTrainv[,2] == 1
+condPredAreal_0Trainv <- CompArealTrainv[,2] == 0
+
 condAreal_01Trainv <- condTrueAreal_0Trainv & condPredAreal_1Trainv
+condAreal_00Trainv <- condTrueAreal_0Trainv & condPredAreal_0Trainv
+
 indAreal_T0_P1_Trainv <- which(condAreal_01Trainv == TRUE)
+indAreal_T0_P0_Trainv <- which(condAreal_00Trainv == TRUE)
+
 CompArealTrainv[indAreal_T0_P1_Trainv,]
 
 
 
 condTrueAreal_0Testv <- CompArealTestv[,1] == 0
 condPredAreal_1Testv <- CompArealTestv[,2] == 1
+condPredAreal_0Testv <- CompArealTestv[,2] == 0
+
 condAreal_01Testv <- condTrueAreal_0Testv & condPredAreal_1Testv
+condAreal_00Testv <- condTrueAreal_0Testv & condPredAreal_0Testv
+
 indAreal_T0_P1_Testv <- which(condAreal_01Testv == TRUE)
+indAreal_T0_P0_Testv <- which(condAreal_00Testv == TRUE)
+
 CompArealTestv[indAreal_T0_P1_Testv,]
 
 
@@ -176,7 +188,7 @@ ms_ADifrealv$eta
 
 # fit the data with model allowing different variable inflation factor within group
 
-fit_ADif <- emCmn_DIF_EII(X = DatasetA$Xtrain,labels = DatasetA$ltrain)
+fit_ADif <- emCmn_DIF_EII(X = DatasetA$Xtrain,labels = DatasetA$ltrain, Maxiterations = 10,threshold = 0.01)
 
 
 par_ADif <- NULL
@@ -215,17 +227,29 @@ CompADifTestv <- cbind(True = DatasetA$vtest, Pred = pred_ADifTestv)
 
 condTrueADif_0Trainv <- CompADifTrainv[,1] == 0
 condPredADif_1Trainv <- CompADifTrainv[,2] == 1
+condPredADif_0Trainv <- CompADifTrainv[,2] == 0
+
 condADif_01Trainv <- condTrueADif_0Trainv & condPredADif_1Trainv
+condADif_00Trainv <- condTrueADif_0Trainv & condPredADif_0Trainv
+
 indADif_T0_P1_Trainv <- which(condADif_01Trainv == TRUE)
-CompADifTrainv[indADif_T0_P1_Trainv,]
+indADif_T0_P0_Trainv <- which(condADif_00Trainv == TRUE)
+
+#CompADifTrainv[indADif_T0_P1_Trainv,]
 
 
 
 condTrueADif_0Testv <- CompADifTestv[,1] == 0
 condPredADif_1Testv <- CompADifTestv[,2] == 1
+condPredADif_0Testv <- CompADifTestv[,2] == 0
+
 condADif_01Testv <- condTrueADif_0Testv & condPredADif_1Testv
+condADif_00Testv <- condTrueADif_0Testv & condPredADif_0Testv
+
 indADif_T0_P1_Testv <- which(condADif_01Testv == TRUE)
-CompADifTestv[indADif_T0_P1_Testv,]
+indADif_T0_P0_Testv <- which(condADif_00Testv == TRUE)
+
+#CompADifTestv[indADif_T0_P1_Testv,]
 
 
 # round estimated parameters  
@@ -378,17 +402,29 @@ CompBrealTestv <- cbind(True = DatasetB$vtest, Pred = predBrealTestv)
 
 condTrueBreal_0Trainv <- CompBrealTrainv[,1] == 0
 condPredBreal_1Trainv <- CompBrealTrainv[,2] == 1
+condPredBreal_0Trainv <- CompBrealTrainv[,2] == 0
+
 condBreal_01Trainv <- condTrueBreal_0Trainv & condPredBreal_1Trainv
+condBreal_00Trainv <- condTrueBreal_0Trainv & condPredBreal_0Trainv
+
 indBreal_T0_P1_Trainv <- which(condBreal_01Trainv == TRUE)
-CompBrealTrainv[indBreal_T0_P1_Trainv,]
+indBreal_T0_P0_Trainv <- which(condBreal_00Trainv == TRUE)
+
+#CompBrealTrainv[indBreal_T0_P1_Trainv,]
 
 
 
 condTrueBreal_0Testv <- CompBrealTestv[,1] == 0
 condPredBreal_1Testv <- CompBrealTestv[,2] == 1
+condPredBreal_0Testv <- CompBrealTestv[,2] == 0
+
 condBreal_01Testv <- condTrueBreal_0Testv & condPredBreal_1Testv
+condBreal_00Testv <- condTrueBreal_0Testv & condPredBreal_0Testv
+
 indBreal_T0_P1_Testv <- which(condBreal_01Testv == TRUE)
-CompBrealTestv[indBreal_T0_P1_Testv,]
+indBreal_T0_P0_Testv <- which(condBreal_00Testv == TRUE)
+
+#CompBrealTestv[indBreal_T0_P1_Testv,]
 
 
 #  Running the M-step when the labels are the true and estimate the parameters
@@ -405,7 +441,7 @@ ms_BDifrealv$eta
 
 # fit the data with model allowing different variable inflation factor within group
 
-fit_BDif <- emCmn_DIF_EII(X = DatasetB$Xtrain,labels = DatasetB$ltrain, Maxiterations = 10)
+fit_BDif <- emCmn_DIF_EII(X = DatasetB$Xtrain,labels = DatasetB$ltrain, Maxiterations = 10, threshold = 0.1)
 
 
 par_BDif <- NULL
@@ -444,17 +480,29 @@ CompBDifTestv <- cbind(True = DatasetB$vtest, Pred = pred_BDifTestv)
 
 condTrueBDif_0Trainv <- CompBDifTrainv[,1] == 0
 condPredBDif_1Trainv <- CompBDifTrainv[,2] == 1
+condPredBDif_0Trainv <- CompBDifTrainv[,2] == 0
+
 condBDif_01Trainv <- condTrueBDif_0Trainv & condPredBDif_1Trainv
+condBDif_00Trainv <- condTrueBDif_0Trainv & condPredBDif_0Trainv
+
 indBDif_T0_P1_Trainv <- which(condBDif_01Trainv == TRUE)
-CompBDifTrainv[indBDif_T0_P1_Trainv,]
+indBDif_T0_P0_Trainv <- which(condBDif_01Trainv == TRUE)
+
+#CompBDifTrainv[indBDif_T0_P1_Trainv,]
 
 
 
 condTrueBDif_0Testv <- CompBDifTestv[,1] == 0
 condPredBDif_1Testv <- CompBDifTestv[,2] == 1
+condPredBDif_0Testv <- CompBDifTestv[,2] == 0
+
 condBDif_01Testv <- condTrueBDif_0Testv & condPredBDif_1Testv
+condBDif_00Testv <- condTrueBDif_0Testv & condPredBDif_0Testv
+
 indBDif_T0_P1_Testv <- which(condBDif_01Testv == TRUE)
-CompBDifTestv[indBDif_T0_P1_Testv,]
+indBDif_T0_P0_Testv <- which(condBDif_00Testv == TRUE)
+
+#CompBDifTestv[indBDif_T0_P1_Testv,]
 
 
 # round estimated parameters  
@@ -688,8 +736,8 @@ pairs(DatasetA$Xtrain, panel = function(x,y, ...) {
          pch = ifelse(DatasetA$vtrain == 0,24,19),
          cex = 1,
          ...)
-      text(x[indAreal_T0_P1_testv],y[indAreal_T0_P1_testv],
-           labels=c(indAreal_T0_P1_testv),pos = 4)
+      text(x[indAreal_T0_P0_Trainv],y[indAreal_T0_P0_Trainv],
+           labels=c(indAreal_T0_P0_Trainv),pos = 4)
 } )
 ```
 
@@ -711,9 +759,18 @@ Next, a self-coded function E-step was used to obtain the estimates of labels co
 
 
 ```{r plotA_test}
-pairs(DatasetA$Xtest, col = c("red","blue")[DatasetA$vtest + 1],
-      pch = ifelse(DatasetA$vtest == 0,24,19), cex = 1)
+#pairs(DatasetA$Xtest, col = c("red","blue")[DatasetA$vtest + 1],
+#      pch = ifelse(DatasetA$vtest == 0,24,19), cex = 1)
 
+pairs(DatasetA$Xtest, panel = function(x,y, ...) {
+  points(x,y, 
+         col = c("red","blue")[DatasetA$vtest + 1],
+         pch = ifelse(DatasetA$vtest == 0,24,19),
+         cex = 1,
+         ...)
+      text(x[indAreal_T0_P0_Testv],y[indAreal_T0_P0_Testv],
+           labels=c(indAreal_T0_P0_Testv),pos = 4)
+} )
 ```
 
 
@@ -742,16 +799,32 @@ $$
 The main different between the second dataset versus the previous one is that the data is generated from allowing different variables inflation factor within the group. It is possible to see that $X_{2}$ has an inflation factor higher than $X_{1}$ and $X_{3}$. The experiment consist of fitting first the variable assuming the same variable inflation factor in the group and next allowing different variable inflation factor within the group and comparing the results obtained.
 
 ```{r plotB_training}
-pairs(DatasetB$Xtrain, col = c("red","blue")[DatasetB$vtrain + 1],
-      pch = ifelse(DatasetB$vtrain == 0,24,19), cex = 1)
-
+#pairs(DatasetB$Xtrain, col = c("red","blue")[DatasetB$vtrain + 1],
+#      pch = ifelse(DatasetB$vtrain == 0,24,19), cex = 1)
+pairs(DatasetB$Xtrain, panel = function(x,y, ...) {
+  points(x,y, 
+         col = c("red","blue")[DatasetB$vtrain + 1],
+         pch = ifelse(DatasetB$vtrain == 0,24,19),
+         cex = 1,
+         ...)
+      text(x[indBreal_T0_P0_Trainv],y[indBreal_T0_P0_Trainv],
+           labels=c(indBreal_T0_P0_Trainv),pos = 4)
+} )
 ```
 It is possible to observed that in the training and test subset there is a much higher dispersion in the variable $X2$ in comparison with $X_{1}$ and $X_{3}$.
 
 ```{r plotB_test}
-pairs(DatasetB$Xtest, col = c("red","blue")[DatasetB$vtest + 1],
-      pch = ifelse(DatasetB$vtest == 0,24,19), cex = 1)
-
+#pairs(DatasetB$Xtest, col = c("red","blue")[DatasetB$vtest + 1],
+#      pch = ifelse(DatasetB$vtest == 0,24,19), cex = 1)
+pairs(DatasetB$Xtest, panel = function(x,y, ...) {
+  points(x,y, 
+         col = c("red","blue")[DatasetB$vtest + 1],
+         pch = ifelse(DatasetB$vtest == 0,24,19),
+         cex = 1,
+         ...)
+#      text(x[indBreal_T0_P0_Testv],y[indBreal_T0_P0_Testv],
+#           labels=c(indBreal_T0_P0_Testv),pos = 4)
+} )
 ```
 
 Similar procedure is carry out fitting the data with the model EII assuming same variable inflation factor in the group and the parameters obtained are:
