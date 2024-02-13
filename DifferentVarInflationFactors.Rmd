@@ -405,7 +405,7 @@ ms_BDifrealv$eta
 
 # fit the data with model allowing different variable inflation factor within group
 
-fit_BDif <- emCmn_DIF_EII(X = DatasetB$Xtrain,labels = DatasetB$ltrain)
+fit_BDif <- emCmn_DIF_EII(X = DatasetB$Xtrain,labels = DatasetB$ltrain, Maxiterations = 10)
 
 
 par_BDif <- NULL
