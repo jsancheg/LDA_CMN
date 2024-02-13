@@ -101,6 +101,10 @@
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\rfoot{\thepage}
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{array}
@@ -207,8 +211,18 @@ The parameters for the first dataset are \[
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{pairs}\NormalTok{(DatasetA}\SpecialCharTok{$}\NormalTok{Xtrain, }\AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"red"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetA}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{+} \DecValTok{1}\NormalTok{],}
-      \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetA}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{), }\AttributeTok{cex =} \DecValTok{1}\NormalTok{)}
+\CommentTok{\#pairs(DatasetA$Xtrain, col = c("red","blue")[DatasetA$vtrain + 1],}
+\CommentTok{\#      pch = ifelse(DatasetA$vtrain == 0,24,19), cex = 1)}
+
+\FunctionTok{pairs}\NormalTok{(DatasetA}\SpecialCharTok{$}\NormalTok{Xtrain, }\AttributeTok{panel =} \ControlFlowTok{function}\NormalTok{(x,y, ...) \{}
+  \FunctionTok{points}\NormalTok{(x,y, }
+         \AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"red"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetA}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{+} \DecValTok{1}\NormalTok{],}
+         \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetA}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{),}
+         \AttributeTok{cex =} \DecValTok{1}\NormalTok{,}
+\NormalTok{         ...)}
+      \FunctionTok{text}\NormalTok{(x[indAreal\_T0\_P0\_Trainv],y[indAreal\_T0\_P0\_Trainv],}
+           \AttributeTok{labels=}\FunctionTok{c}\NormalTok{(indAreal\_T0\_P0\_Trainv),}\AttributeTok{pos =} \DecValTok{4}\NormalTok{)}
+\NormalTok{\} )}
 \end{Highlighting}
 \end{Shaded}
 
@@ -245,7 +259,7 @@ inflation factors in the diagonal of the matrix \(\dot{N}\) are
 different and much smaller than \(4.95\).
 
 \[
-\mu = \begin{bmatrix}0.34 \\0.16 \\0.1 \\\end{bmatrix} , \Sigma = \begin{bmatrix}1.14&0&0 \\0&1.14&0 \\0&0&1.14 \\\end{bmatrix} , \alpha = 0.51, \dot{N} * \dot{N}^{T} = N = \begin{bmatrix}2&0&0 \\0&1.83&0 \\0&0&1.68 \\\end{bmatrix}
+\mu = \begin{bmatrix}0.07 \\0.16 \\0.13 \\\end{bmatrix} , \Sigma = \begin{bmatrix}1.31&0&0 \\0&1.31&0 \\0&0&1.31 \\\end{bmatrix} , \alpha = 0.93, \dot{N} * \dot{N}^{T} = N = \begin{bmatrix}14.07&0&0 \\0&6.53&0 \\0&0&1.93 \\\end{bmatrix}
 \] Next, a self-coded function E-step was used to obtain the estimates
 of labels corresponding whether the observations are non-contaminated or
 contaminated in the test set. It was observed that the estimates for
@@ -257,8 +271,18 @@ pair \(X_{1}\) and \(X_{2}\) than for the pair \(X_{1}\) and \(X_{3}\).
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{pairs}\NormalTok{(DatasetA}\SpecialCharTok{$}\NormalTok{Xtest, }\AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"red"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetA}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{+} \DecValTok{1}\NormalTok{],}
-      \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetA}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{), }\AttributeTok{cex =} \DecValTok{1}\NormalTok{)}
+\CommentTok{\#pairs(DatasetA$Xtest, col = c("red","blue")[DatasetA$vtest + 1],}
+\CommentTok{\#      pch = ifelse(DatasetA$vtest == 0,24,19), cex = 1)}
+
+\FunctionTok{pairs}\NormalTok{(DatasetA}\SpecialCharTok{$}\NormalTok{Xtest, }\AttributeTok{panel =} \ControlFlowTok{function}\NormalTok{(x,y, ...) \{}
+  \FunctionTok{points}\NormalTok{(x,y, }
+         \AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"red"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetA}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{+} \DecValTok{1}\NormalTok{],}
+         \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetA}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{),}
+         \AttributeTok{cex =} \DecValTok{1}\NormalTok{,}
+\NormalTok{         ...)}
+      \FunctionTok{text}\NormalTok{(x[indAreal\_T0\_P0\_Testv],y[indAreal\_T0\_P0\_Testv],}
+           \AttributeTok{labels=}\FunctionTok{c}\NormalTok{(indAreal\_T0\_P0\_Testv),}\AttributeTok{pos =} \DecValTok{4}\NormalTok{)}
+\NormalTok{\} )}
 \end{Highlighting}
 \end{Shaded}
 
@@ -301,13 +325,13 @@ result taking a look to the other metrics specially F1\_Score.
 \end{Highlighting}
 \end{Shaded}
 
-\begin{longtable}[]{@{}lrr@{}}
+\begin{longtable}[]{@{}lr@{}}
 \toprule()
-& 0 & 1 \\
+& 1 \\
 \midrule()
 \endhead
-0 & 2 & 2 \\
-1 & 3 & 18 \\
+0 & 4 \\
+1 & 21 \\
 \bottomrule()
 \end{longtable}
 
@@ -320,12 +344,12 @@ result taking a look to the other metrics specially F1\_Score.
 
 \begin{verbatim}
 ##        Metric Equal_IF Different_IF
-## 1    Accuracy     0.92         0.80
-## 2   Precision     1.00         0.40
-## 3      Recall     0.50         0.50
-## 4 Sensitivity     0.50         0.50
-## 5 Specificity     1.00         0.86
-## 6    F1 score     0.67         0.44
+## 1    Accuracy     0.92         0.84
+## 2   Precision     1.00             
+## 3      Recall     0.50             
+## 4 Sensitivity     0.50             
+## 5 Specificity     1.00         1.00
+## 6    F1 score     0.67
 \end{verbatim}
 
 The parameters for the second dataset are
@@ -343,8 +367,17 @@ obtained.
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{pairs}\NormalTok{(DatasetB}\SpecialCharTok{$}\NormalTok{Xtrain, }\AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"red"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetB}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{+} \DecValTok{1}\NormalTok{],}
-      \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetB}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{), }\AttributeTok{cex =} \DecValTok{1}\NormalTok{)}
+\CommentTok{\#pairs(DatasetB$Xtrain, col = c("red","blue")[DatasetB$vtrain + 1],}
+\CommentTok{\#      pch = ifelse(DatasetB$vtrain == 0,24,19), cex = 1)}
+\FunctionTok{pairs}\NormalTok{(DatasetB}\SpecialCharTok{$}\NormalTok{Xtrain, }\AttributeTok{panel =} \ControlFlowTok{function}\NormalTok{(x,y, ...) \{}
+  \FunctionTok{points}\NormalTok{(x,y, }
+         \AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"red"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetB}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{+} \DecValTok{1}\NormalTok{],}
+         \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetB}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{),}
+         \AttributeTok{cex =} \DecValTok{1}\NormalTok{,}
+\NormalTok{         ...)}
+      \FunctionTok{text}\NormalTok{(x[indBreal\_T0\_P0\_Trainv],y[indBreal\_T0\_P0\_Trainv],}
+           \AttributeTok{labels=}\FunctionTok{c}\NormalTok{(indBreal\_T0\_P0\_Trainv),}\AttributeTok{pos =} \DecValTok{4}\NormalTok{)}
+\NormalTok{\} )}
 \end{Highlighting}
 \end{Shaded}
 
@@ -355,8 +388,17 @@ a much higher dispersion in the variable \(X2\) in comparison with
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{pairs}\NormalTok{(DatasetB}\SpecialCharTok{$}\NormalTok{Xtest, }\AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"red"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetB}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{+} \DecValTok{1}\NormalTok{],}
-      \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetB}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{), }\AttributeTok{cex =} \DecValTok{1}\NormalTok{)}
+\CommentTok{\#pairs(DatasetB$Xtest, col = c("red","blue")[DatasetB$vtest + 1],}
+\CommentTok{\#      pch = ifelse(DatasetB$vtest == 0,24,19), cex = 1)}
+\FunctionTok{pairs}\NormalTok{(DatasetB}\SpecialCharTok{$}\NormalTok{Xtest, }\AttributeTok{panel =} \ControlFlowTok{function}\NormalTok{(x,y, ...) \{}
+  \FunctionTok{points}\NormalTok{(x,y, }
+         \AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"red"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetB}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{+} \DecValTok{1}\NormalTok{],}
+         \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetB}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{),}
+         \AttributeTok{cex =} \DecValTok{1}\NormalTok{,}
+\NormalTok{         ...)}
+\CommentTok{\#      text(x[indBreal\_T0\_P0\_Testv],y[indBreal\_T0\_P0\_Testv],}
+\CommentTok{\#           labels=c(indBreal\_T0\_P0\_Testv),pos = 4)}
+\NormalTok{\} )}
 \end{Highlighting}
 \end{Shaded}
 
@@ -383,7 +425,7 @@ inflation factor within group and the parameter estimates are shown
 below:
 
 \[
-\mu = \begin{bmatrix}0.06 \\-0.08 \\0.07 \\\end{bmatrix} , \Sigma = \begin{bmatrix}1.22&0&0 \\0&1.22&0 \\0&0&1.22 \\\end{bmatrix} , \alpha = 0.51, \dot{N} * \dot{N}^{T} = N = \begin{bmatrix}1&0&0 \\0&1.15&0 \\0&0&1 \\\end{bmatrix}
+\mu = \begin{bmatrix}0.06 \\-0.07 \\0.07 \\\end{bmatrix} , \Sigma = \begin{bmatrix}1.18&0&0 \\0&1.18&0 \\0&0&1.18 \\\end{bmatrix} , \alpha = 0.99, \dot{N} * \dot{N}^{T} = N = \begin{bmatrix}1&0&0 \\0&5.63&0 \\0&0&1 \\\end{bmatrix}
 \] The parameters obtained for \(\mu,\Sigma,\) and \(\lambda\) are very
 similar as the initial values for the parameters come from the estimates
 for the model EII with same variable inflation factor within group. The
@@ -429,13 +471,13 @@ inflation factor in the group. The former is able to detect \(2\) of the
 \end{Highlighting}
 \end{Shaded}
 
-\begin{longtable}[]{@{}lrr@{}}
+\begin{longtable}[]{@{}lr@{}}
 \toprule()
-& 0 & 1 \\
+& 1 \\
 \midrule()
 \endhead
-0 & 2 & 3 \\
-1 & 2 & 18 \\
+0 & 5 \\
+1 & 20 \\
 \bottomrule()
 \end{longtable}
 
@@ -454,11 +496,11 @@ inflation factor within group. Nevertheless, more exploration is needed.
 \begin{verbatim}
 ##        Metric Equal_IF Different_IF
 ## 1    Accuracy     0.80         0.80
-## 2   Precision                  0.50
-## 3      Recall                  0.40
-## 4 Sensitivity                  0.40
-## 5 Specificity     1.00         0.90
-## 6    F1 score                  0.44
+## 2   Precision                      
+## 3      Recall                      
+## 4 Sensitivity                      
+## 5 Specificity     1.00         1.00
+## 6    F1 score
 \end{verbatim}
 
 The parameters for the third dataset are
