@@ -369,7 +369,7 @@ loglikCMN_DIF<-function(X,labels, par)
           {
             for (i_g in 1:G)
             {
-              eta[,,i_g] <- par$eta[,,g]
+              eta[,,i_g] <- par$eta[,,i_g]
               sg1 [,,i_g] <-t(eta[,,i_g]) %*% sg[,,i_g] %*% eta[,,i_g]
             }
           }
@@ -448,6 +448,107 @@ loglikCMN_DIF<-function(X,labels, par)
   return(loglik)
 }
 
+emCmn1_DIF_EII <- function(X, labels,  initpar = NULL, Maxiterations= 10, threshold = 0.01)
+{
+  if(!is.matrix(X)) X <- as.matrix(X)
+  
+  p <- ncol(X)
+  m <- nrow(X)
+  G <- length(unique(labels))
+  
+  v0 <- matrix(runif(m*G), nrow = m, ncol = G, byrow = TRUE)
+  lampda0 <- 1
+  exit <- 0
+  loglik <- c(0.0,0.0,0.0)   
+  
+  #if(is.null(par$G))  G <- length(unique(labels)) else  G <- par$G
+  
+  alpha0 <- rep(0.9,G)
+  eta0 <- array(0.0, dim = c(p,p,G))
+  pig <- numeric(G)
+  mu <- matrix(0.0, nrow = p , ncol = G)
+  sigma <- array(0.0, dim = c(p,p,G))
+  
+  l <- unmap(labels)
+  mg <- apply(l,2,sum)
+  pig0 <-mg/length(labels)
+  
+  if(!is.null(initpar))
+  {
+    mu0 <-sapply(1:G,function(g){
+      apply(X[which(labels==g),],2,mean)
+    })
+    sigma0 <- array(0.0, dim = c(p,p,G))
+    for(g in 1:G)
+    {
+      sigma0[,,g] <- diag(1,p)
+      eta0[,,g] <- diag(1.10,p) 
+    }
+    
+    par <- list(G = G, pig = pig0, mu = mu0,
+                sigma = sigma0, alpha = alpha0,
+                eta = eta0, z = l, v =  v0, lambda = lampda0)
+    
+  }else par <- list(G = initpar$G, pig = initpar$pig,
+                    mu = initpar$mu, sigma = initpar$sigma,
+                    alpha = initpar$alpha, eta = initpar$eta,
+                    z =l, v = initpar$v, lambda = initpar$lambda)
+  
+  loglik[1] <- loglikCMN_DIF(X,labels,par)  
+  loglik[1]
+  
+  estep0 <- eCmn_DIF(X,labels,par)
+  par$v <- estep0$v
+  iter <- 0
+  llvalue <- 0
+  a <- 0
+  b <- 0
+  
+  while(exit == 0)
+  {
+    iter <- iter + 1  
+    cat("\n E-M Iteration: ",iter,"\n")
+    mstep1 <- mCmn_DIF_EII(X,labels,par)
+    llvalue <- loglikCMN_DIF(X,labels,par)
+    par$pig <- mstep1$pig
+    par$mu <- mstep1$mu
+    par$sigma <- mstep1$lambda * mstep1$sigma
+    par$alpha <- mstep1$alpha
+    par$eta <- mstep1$eta
+    par$lambda <- mstep1$lambda
+    
+    
+    if(iter >= Maxiterations) 
+    { 
+      exit = 1
+    }else {
+      loglik[3] = loglik[2]
+      loglik[2] = loglik[1]
+      loglik[1] = llvalue
+      if(iter > 2)
+      {
+        if(abs(loglik[2]-loglik[3]) == 0) 
+        {
+          exit = 1
+        }else{
+          a = (loglik[1]-loglik[2])/(loglik[2]-loglik[3])
+          b = loglik[2] + (1/(1-a)*(loglik[1]-loglik[2]))
+          if(abs(b-loglik[1])< threshold) exit = 1
+        }
+      }
+    }
+    estep1 <- eCmn_DIF(X,labels,par)
+    par$v <- estep1$v
+    
+  }
+  
+  output <- list(G = par$G, pig = par$pig, mu = par$mu,
+                 sigma = par$sigma/par$lambda, alpha = par$alpha, 
+                 eta = par$eta, z = par$z, v = par$v,
+                 lambda = par$lambda, iterations = iter,
+                 ll = llvalue)
+  return(output)
+}
 
 
 emCmn_DIF_EII <- function(X, labels,  Maxiterations= 10, threshold = 0.01)
@@ -502,6 +603,7 @@ emCmn_DIF_EII <- function(X, labels,  Maxiterations= 10, threshold = 0.01)
     while(exit == 0)
     {
           iter <- iter + 1  
+          cat("\n E-M Iteration: ",iter,"\n")
           mstep1 <- mCmn_DIF_EII(X,labels,par)
           llvalue <- loglikCMN_DIF(X,labels,par)
           par$pig <- mstep1$pig
@@ -514,7 +616,7 @@ emCmn_DIF_EII <- function(X, labels,  Maxiterations= 10, threshold = 0.01)
           
       if(iter >= Maxiterations) 
             { 
-              exit == 1
+              exit = 1
             }else {
                 loglik[3] = loglik[2]
                 loglik[2] = loglik[1]
@@ -702,7 +804,7 @@ eCmn_DIF<-function(X,labels,par)
         sigma1 <- array(0.0, dim = c(p,p,G))
         for (i_g in 1:G)
         {
-            eta[,,i_g] <- diag(sqrt(par$eta[,g]),p)
+            eta[,,i_g] <- diag(sqrt(par$eta[,i_g]),p)
             sigma1[,,i_g] <- t(eta) %*% sigma %*% eta
         }
       }
