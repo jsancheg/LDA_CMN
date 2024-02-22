@@ -2396,36 +2396,39 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricsFile = "Metrics")
                                                  "F1_Cont" = "Z")
     
     
+    aux_df2 <- aux_df2 %>% mutate(Model_Size = str_count(Model,"-")+1) %>%
+                            relocate(Model_Size, .after = Model)
+              
     
     aux_df2 <- aux_df2 %>% mutate(Number_Classes = 
-                                  str_split(aux_df2$File,"_",simplify = TRUE)[,2])
+                                  str_split(File,"_",simplify = TRUE)[,2])
     
     aux_df2 <- aux_df2 %>% mutate(Number_Separating_Variables = 
-                                    str_split(aux_df2$File,"_",simplify = TRUE)[,3])
+                                    str_split(File,"_",simplify = TRUE)[,3])
     
     aux_df2 <- aux_df2 %>% mutate(Number_Variables = 
-                                    str_split(aux_df2$File,"_",simplify = TRUE)[,4])
+                                    str_split(File,"_",simplify = TRUE)[,4])
   
     aux_df2 <- aux_df2 %>% mutate(Number_Observations = 
-                                    str_split(aux_df2$File,"_",simplify = TRUE)[,5])
+                                    str_split(File,"_",simplify = TRUE)[,5])
     
     aux_df2 <- aux_df2 %>% mutate(Training_Proportion = 
-                                    str_split(aux_df2$File,"_",simplify = TRUE)[,6])
+                                    str_split(File,"_",simplify = TRUE)[,6])
     
     aux_df2 <- aux_df2 %>% mutate(Class_Porportion = 
-                                    str_split(aux_df2$File,"_",simplify = TRUE)[,7])
+                                    str_split(File,"_",simplify = TRUE)[,7])
     
     aux_df2 <- aux_df2 %>% mutate(Covariance_Structure = 
-                                  str_split(aux_df2$File,"_",simplify = TRUE)[,8])
+                                  str_split(File,"_",simplify = TRUE)[,8])
     
     aux_df2 <- aux_df2 %>% mutate(Group_Mean_Distance = 
-                                    str_split(aux_df2$File,"_",simplify = TRUE)[,9])
+                                    str_split(File,"_",simplify = TRUE)[,9])
     
     aux_df2 <- aux_df2 %>% mutate(AlphaC = 
-                                    str_split(aux_df2$File,"_",simplify = TRUE)[,10])
+                                    str_split(File,"_",simplify = TRUE)[,10])
     
     aux_df2 <- aux_df2 %>% mutate(EtaC = 
-                                    str_split(aux_df2$File,"_",simplify = TRUE)[,11])
+                                    str_split(File,"_",simplify = TRUE)[,11])
     
     aux_df2 <- aux_df2 %>% mutate(Variables = recode(Variables,
                                                     '1' = "True",
@@ -2440,13 +2443,15 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricsFile = "Metrics")
                                                                  "SCBSNSV" = "SNSV",
                                                                  "SCBNSV" = "NSV",
                                                                  "IND" = "IND"))
-    Alpha1 <- rep(0,nrow(aux_df2$EtaC))
-    Alpha2 <- rep(0,nrow(aux_df2$EtaC))
-    Alpha3 <- rep(0,nrow(aux_df2$EtaC))
     
-    Eta1 <- rep(0,nrow(aux_df2$EtaC))
-    Eta2 <- rep(0,nrow(aux_df2$EtaC))
-    Eta3 <- rep(0,nrow(aux_df2$EtaC))
+    n <- nrow(aux_df2)
+    Alpha1 <- rep(0,n)
+    Alpha2 <- rep(0,n)
+    Alpha3 <- rep(0,n)
+    
+    Eta1 <- rep(0,n)
+    Eta2 <- rep(0,n)
+    Eta3 <- rep(0,n)
     
 
         
@@ -2460,7 +2465,7 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricsFile = "Metrics")
                                     Group_Mean_Distance,AlphaC,EtaC),
                                   .after = File )
     
-    
+
     saveRDS(Output,paste0(NameMetricsFile,".RDS"))
     colnames(Output)
 }
