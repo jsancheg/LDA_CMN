@@ -7,7 +7,11 @@ pc_name <- system_info['nodename']
 if(pc_name == "LAPTOP-ADR3M911")
 {
   pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+  pathScenarios1 <- "E:/University of Glasgow/Thesis/Scenarios1/"
+  
   pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+  pathSSFiles1 <- "E:/University of Glasgow/Thesis/SSFiles1/"
+  
   pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
   
 }else if(pc_name == "WildFree")
@@ -30,8 +34,10 @@ F1 <- c("VD","MD","VO") # F1 : Mean distance
 F2 <- c(2,3)            # F2 : Number of classes
 F3 <- c("BAL","INB")    # F3 : class proportion matrix with the number of columns equals to F2
 F4 <- c(3000)      # F4 : Number of observations
+#F4 <- c(4000)      # F4 : Number of observations
 F5 <- c(5,100)          # F5 : Number of variables
 F6 <- c(0.75,0.85)      # F6 : Percentage of samples used as training
+#F6 <- c(0.5)      # F6 : Percentage of samples used as training
 F7 <- c("SCBSV","SCBNSV","SCBSNSV","IND") # F7 : Correlation structure
 F8 <- c(0.8,0.9)        # F8 : Percentage of non contaminated samples (alpha)
 F9 <- c(5,30)          # F9 : Variance inflation factor

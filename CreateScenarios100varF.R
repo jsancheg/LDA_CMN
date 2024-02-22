@@ -53,7 +53,7 @@ for(i in 1:n)
 #my_ssh_session <- ssh_connect("2201449s@130.209.66.80:22")
 
 ini <- 1 
-fin <- n100
+fin <- n100.5
 
 fin-ini + 1
 
@@ -71,7 +71,7 @@ SimStatus <- mclapply((ini:fin),function(i)
   
 #  if(is_empty(intersect(FilesProcessed,file_name)))
 #  {
-    SimProgress <- SimScenario(aux[[i]],nruns,pathScenarios)
+    SimProgress <- SimScenario(aux[[i]],nruns,pathScenarios1)
     #    scp_upload(my_ssh_session,paste0(pathScenarios,file_name),"/home/pgrad1/2201449s/R/CMN/SFiles/")
     filePathScenario <- paste0(pathScenarios,file_name)
   #  scp_upload(my_ssh_session,filePathScenario,"/home/pgrad1/2201449s/R/CMN/Scenarios3/")

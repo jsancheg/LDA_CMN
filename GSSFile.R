@@ -9,7 +9,7 @@ library(stringr)
 
 #file_name <- dir(pathScenarios)[[1]]
                                                                                                                        
-GenerateSSFile <- function(file_name,pathScenarios, pathOutput)
+GenerateSSFile <- function(file_name,pathScenarios, pathOutput,Model = "EEI")
 {
   #fileScenario <- readRDS(paste0(pathScenarios,file_name))  
   
@@ -23,7 +23,7 @@ GenerateSSFile <- function(file_name,pathScenarios, pathOutput)
     variables_True_Model <- c("X2","X4","X5")
   }
   
-  CE <- "EEI"
+  CE <- Model
   Output <- SemiSupervised_HLS(file_name,pathScenarios,CE,variables_True_Model,
                            pnolabeled = 0.5, niterations = 10,
                            alpharef = 0.99, tol = 0.01, epsilon = 0)
