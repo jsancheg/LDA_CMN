@@ -2248,60 +2248,10 @@ EMContMN <- function(X_train,l_train,CE)
   
 }
 
-
-
-find_unique_labels<-function(labels)
-{  
-  filas <- length(labels) 
-  rawlabels<-unique(labels)
-  rawlabels <- sort(rawlabels)
-  nrawlabels <- length(rawlabels)
-  transformlabels<-rawlabels
-  registerchanges <- rep(0,nrawlabels)
-  
-  for(i_raw1 in 1:(nrawlabels-1) )
-  {
-    a <-  unlist(str_split(rawlabels[i_raw1],"-"))
-    
-    for(i_raw2 in 2:nrawlabels)
-    {
-      b <- unlist(str_split(rawlabels[i_raw2],"-")) 
-      # compare two list of variables without taking in account order of variables
-      if(registerchanges[i_raw2]==0)
-        if(setequal(a,b)) 
-        {
-          transformlabels[i_raw1]<-rawlabels[i_raw1]
-          transformlabels[i_raw2]<-rawlabels[i_raw1]
-          registerchanges[i_raw2]<- 1
-        } # end-if
-    }# end-for i_raw2
-  }# end-for i_raw1
-  uniquelabels<- unique(transformlabels)
-  nuniquelabels <- length(uniquelabels)
-  newlabels <- labels
-  registerchangedlabels <- rep(0,filas)
-  for(i_raw1 in 1:(nuniquelabels) )
-  {
-    a <-  unlist(str_split(uniquelabels[i_raw1],"-"))
-    
-    for(i_raw2 in 1:filas)
-    {
-      b <- unlist(str_split(labels[i_raw2],"-")) 
-      # compare two list of variables without taking in account order of variables
-      if(registerchangedlabels[i_raw2]==0)
-        if(setequal(a,b)) 
-        {
-          newlabels[i_raw1]<-uniquelabels[i_raw1]
-          newlabels[i_raw2]<-uniquelabels[i_raw1]
-          registerchangedlabels[i_raw2]<- 1
-        } # end-if
-    }# end-for i_raw2
-  }# end-for i_raw1
-  
-  #cbind.data.frame(labels,newlabels)
-  #uniquelabels<-unique(transformlabels)
-  #uniquelabels
-  return(cbind.data.frame(labels,newlabels))
+sort_labels <- function(model_string)
+{
+  sorted_model <- sort(unlist(str_split(model_string,"-")))
+  return(paste(sorted_model,collapse="-"))
 }
 
 
@@ -2396,6 +2346,8 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricsFile = "Metrics")
                                                  "F1_Cont" = "Z")
     
     
+    aux_df2 <- aux_df2 %>% mutate(Model1 = sapply(Model, sort_labels))
+    
     aux_df2 <- aux_df2 %>% mutate(Model_Size = str_count(Model,"-")+1) %>%
                             relocate(Model_Size, .after = Model)
               
@@ -2467,5 +2419,5 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricsFile = "Metrics")
     
 
     saveRDS(Output,paste0(NameMetricsFile,".RDS"))
-    colnames(Output)
+    return(Output)
 }
