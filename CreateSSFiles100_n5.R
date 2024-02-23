@@ -1,11 +1,7 @@
 # 
-
-
 source("Semisupervised.R")
 source("ListScenarios.R")
 source("GSSFile.R")
-source("GSFile.R")
-
 library(purrr)
 library(ContaminatedMixt)
 
@@ -19,33 +15,36 @@ library(googledrive)
 library(gargle)
 library(readr)
 
+# Ubunto paths
+# pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
+# pathFiles <- "/home/jsancheg/Documents/SSFiles/"
 
 
-ini <- n100.3+1
-fin <- n100.4
+
+dir(pathScenarios1)
+ini <- n100.4+1
+fin <- n100.5
 
 fin-ini+1
 Model <- "VVI"
-
-status <-mclapply(Scenarios100[ini:fin], function(x){
+status <- mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
 #  if(is_empty(intersect(FilesProcessed,SSFilename))) 
-#    {
-    tryCatch(
-      {
-        
-      GenerateSSFile(x,pathScenarios,pathSSFiles,Model) 
-        return(1)
-      }, error = function(e){
-        cat("Error fitting scenario: ",x, "\n")
-        return(NULL)
-        
-      }
+#  {
+  tryCatch(
+    {
+      
+    GenerateSSFile(x,pathScenarios1,pathSSFiles1,Model) 
+      return(1)
+    }, error = function(e){
+      cat("Error fitting scenario: ",x, "\n")
+      return(NULL)
+    }
     )
-    
- #   }else cat("\n The file ",SSFilename, " already exists in the directory. \n")
+  
+ # }  else cat("\n The file ",SSFilename, " already exists in the directory. \n")
   
 }, mc.cores = 1)
 

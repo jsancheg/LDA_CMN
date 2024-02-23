@@ -917,7 +917,14 @@ SemiSupervised_HLS_SSH <- function(file_name,pathScenarios,CE,variables_True_Mod
   
 }
 
-Create_MetricsFile <- function(filepath,ListFiles,NameMetricsFile = "Metrics")
+sort_labels <- function(model_string)
+{
+  sorted_model <- sort(unlist(str_split(model_string,"-")))
+  return(paste(sorted_model,collapse="-"))
+}
+
+
+Create_MetricsFile <- function(filepath,ListFiles,NameMetricFile = "Metrics")
 {
   filenames <- paste0(filepath,ListFiles)
   combine_df <- data.frame()
@@ -932,7 +939,7 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricsFile = "Metrics")
     
   }
   
-  return(combine_df)
+  #    return(combine_df)
   combine_df <- combine_df %>% relocate(File, .before = Nsim)
   combine_df <- mutate(combine_df, Model_Selected = Model_SM)
   
@@ -1008,9 +1015,16 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricsFile = "Metrics")
                                            "F1_Cont" = "Z")
   
   
+  aux_df2 <- aux_df2 %>% mutate(Model1 = sapply(Model, sort_labels)) %>%
+    relocate(Model1, .after = Model)
+  
   aux_df2 <- aux_df2 %>% mutate(Model_Size = str_count(Model,"-")+1) %>%
     relocate(Model_Size, .after = Model)
   
+  aux_df2 <- aux_df2 %>% mutate(IncludeX2 = as.numeric(str_detect(Model1,"X2")),
+                                IncludeX4 = as.numeric(str_detect(Model1,"X4")),
+                                IncludeX5 = as.numeric(str_detect(Model1,"X5"))) %>%
+    relocate(IncludeX2,IncludeX4,IncludeX5, .after = Model1)
   
   aux_df2 <- aux_df2 %>% mutate(Number_Classes = 
                                   str_split(File,"_",simplify = TRUE)[,2])
@@ -1042,13 +1056,13 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricsFile = "Metrics")
   aux_df2 <- aux_df2 %>% mutate(EtaC = 
                                   str_split(File,"_",simplify = TRUE)[,11])
   
+  
   aux_df2 <- aux_df2 %>% mutate(Variables = recode(Variables,
                                                    '1' = "True",
                                                    '2' = "Selected",
                                                    '3' = "All"))
   aux_df2$Covariance_Structure2 <- aux_df2$Covariance_Structure
   
-  aux_df2$Covariance_Structure2 <- aux_df2$Covariance_Structure
   
   aux_df2 <- aux_df2 %>% mutate(Covariance_Structure2 = recode(Covariance_Structure,
                                                                "SCBSV" = "SV",
@@ -1057,15 +1071,32 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricsFile = "Metrics")
                                                                "IND" = "IND"))
   
   n <- nrow(aux_df2)
-  Alpha1 <- rep(0,n)
-  Alpha2 <- rep(0,n)
-  Alpha3 <- rep(0,n)
   
-  Eta1 <- rep(0,n)
-  Eta2 <- rep(0,n)
-  Eta3 <- rep(0,n)
+  aux_alpha <- sapply(aux_df2$AlphaC, function(alpha_str)
+  {
+    if(alpha_str == "A808090"){
+      return(c(80,80,90))
+    } else if(alpha_str == "A8090") return(c(80,90,0))
+  })
   
+  Alpha_int <- matrix(aux_alpha,ncol = 3, nrow = n, byrow = TRUE)
   
+  aux_eta <- sapply(aux_df2$EtaC, function(Eta_str)
+  {
+    if(Eta_str == "E5530"){
+      return(c(5,5,30))
+    } else if(Eta_str == "E530") return(c(5,30,0))
+  })
+  
+  Eta_int <- matrix(aux_eta, ncol = 3, nrow = n, byrow = TRUE)
+  
+  aux_df2 <- aux_df2 %>% mutate(Alpha1 = Alpha_int[,1])
+  aux_df2 <- aux_df2 %>% mutate(Alpha2 = Alpha_int[,2])
+  aux_df2 <- aux_df2 %>% mutate(Alpha3 = Alpha_int[,3])
+  
+  aux_df2 <- aux_df2 %>% mutate(Eta1 = Eta_int[,1])
+  aux_df2 <- aux_df2 %>% mutate(Eta2 = Eta_int[,2])
+  aux_df2 <- aux_df2 %>% mutate(Eta3 = Eta_int[,3])
   
   
   
@@ -1074,12 +1105,13 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricsFile = "Metrics")
                                    Number_Variables,Number_Observations,
                                    Training_Proportion,Class_Porportion,
                                    Covariance_Structure,Covariance_Structure2,
-                                   Group_Mean_Distance,AlphaC,EtaC),
+                                   Group_Mean_Distance,AlphaC,EtaC,Alpha1,Alpha2,Alpha3,
+                                   Eta1,Eta2,Eta3),
                                  .after = File )
   
   
-  saveRDS(Output,paste0(NameMetricsFile,".RDS"))
-  colnames(Output)
+  saveRDS(Output,paste0(NameMetricFile,".RDS"))
+  return(Output)
 }
 
 
