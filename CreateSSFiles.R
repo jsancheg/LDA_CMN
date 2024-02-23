@@ -1,53 +1,101 @@
+# 
 source("Semisupervised.R")
 source("ListScenarios.R")
-source("GSFile.R")
 source("GSSFile.R")
+library(purrr)
+library(ContaminatedMixt)
 
-#pathScenarios <- "/home/pgrad1/2201449s/R/CMN/ScenariosNew/"
-#pathSSFiles <- "/home/pgrad1/2201449s/R/CMN/ScenariosNew/SSFiles/"
-
-
-ScenariosFiles <- dir(pathScenarios)
-SSFilesProcessed <- dir(pathSSFiles)
-nSSFilesProcessed <- 0
-nssFilesToProcessed <- 0
-nFiles <- 0
-timeFile <- list()
-
-nFiles <- length(ScenariosFiles)
-nFiles
-
-
-nSSFilesProcessed <- length(SSFilesProcessed)
-
-if(nSSFilesProcessed == 0 )
-{
-  SSFilesToProcess <- paste0(pathScenarios,ScenariosFiles)
-  
-  nSSFilesToProcess <- nFiles
-  
-}else {
-  nSSFilesToProcess <- nFiles - nSSFilesProcessed
-  SSFilesToProcess <- paste0(pathScenarios,setdiff(ScenariosFiles,str_replace(SSFilesProcessed,"SSV_","S_") ) )
-
+if (!requireNamespace("googledrive", quietly = TRUE)) {
+  install.packages("googledrive")
 }
+if (!requireNamespace("readr", quietly = TRUE)) {
+  install.packages("readr")
+}
+library(googledrive)
+library(gargle)
+library(readr)
 
-SimFiles <- mclapply(1:nSSFilesToProcess, function(i){
-  nameFile <- str_split(SSFilesToProcess[i],"/")[[1]][7]  
-  Number_Variables <- str_split_1(nameFile,"_")[[3]]
-  if(Number_Variables == 2)
-  {
-    variables_True_Model <- c("X2","X4")
-  }else if(Number_Variables == 3)
-  {
-    variables_True_Model <- c("X2","X4","X5")
-  }
-  Output <- SemiSupervised_HLS(SSFilesToProcess[[i]],CE,variables_True_Model, 
-                               pnolabeled = 0.5, niterations = 10,
-                               alpharef = 0.99, tol = 0.01, epsilon = 0)
-  SSfile_name <- str_replace(str_split_1(SSFilesToProcess[[i]],"/")[7],"S_","SSV_")
-  paste0(pathSSFiles,SSfile_name)
-  saveRDS(Output,paste0(pathSSFiles,SSfile_name))
+# Ubunto paths
+# pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
+# pathFiles <- "/home/jsancheg/Documents/SSFiles/"
+
+
+
+ini <- n100.4+1
+fin <- n100.5
+
+fin-ini+1
+Model <- "VVI"
+
+ScenariosToRun <- c("S_3_3_5_3000_85_INB_SCBSV_VO_A808090_E5530_10.RDS",
+                    "S_3_3_5_3000_85_INB_SCBSV_VD_A808090_E5530_10.RDS",
+                    "S_3_3_5_3000_85_INB_SCBSV_MD_A808090_E5530_10.RDS",
+                    "S_3_3_5_3000_85_INB_SCBSNSV_VO_A808090_E5530_10.RDS",
+                    "S_3_3_5_3000_85_INB_SCBNSV_VO_A808090_E5530_10.RDS",
+                    "S_3_3_5_3000_85_INB_IND_VO_A808090_E5530_10.RDS",
+                    "S_3_3_5_3000_75_INB_SCBSV_VO_A808090_E5530_10.RDS",
+                    "S_3_3_5_3000_75_INB_SCBSV_VD_A808090_E5530_10.RDS",
+                    "S_3_3_5_3000_75_INB_SCBSV_MD_A808090_E5530_10.RDS",
+                    "S_3_3_5_3000_75_INB_SCBSNSV_VO_A808090_E5530_10.RDS",
+                    "S_3_3_5_3000_75_INB_SCBNSV_VO_A808090_E5530_10.RDS",
+                    "S_3_3_5_3000_75_INB_IND_VO_A808090_E5530_10.RDS",
+                    "S_3_2_5_3000_85_INB_SCBSV_VO_A808090_E5530_10.RDS",
+                    "S_3_2_5_3000_85_INB_SCBSNSV_VO_A808090_E5530_10.RDS",
+                    "S_3_2_5_3000_85_INB_SCBNSV_VO_A808090_E5530_10.RDS",
+                    "S_3_2_5_3000_85_INB_IND_VO_A808090_E5530_10.RDS",
+                    "S_3_2_5_3000_75_INB_SCBSV_VO_A808090_E5530_10.RDS",
+                    "S_3_2_5_3000_75_INB_SCBSNSV_VO_A808090_E5530_10.RDS",
+                    "S_3_2_5_3000_75_INB_SCBNSV_VO_A808090_E5530_10.RDS",
+                    "S_3_2_5_3000_75_INB_IND_VO_A808090_E5530_10.RDS",
+                    "S_2_3_5_3000_85_INB_SCBSV_VO_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_85_INB_SCBSV_VD_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_85_INB_SCBSV_MD_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_85_INB_SCBSNSV_VO_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_85_INB_SCBSNSV_VD_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_85_INB_SCBNSV_VO_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_85_INB_SCBNSV_VD_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_85_INB_IND_VO_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_85_INB_IND_MD_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_85_BAL_SCBSV_VD_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_85_BAL_SCBSV_MD_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_85_BAL_SCBSNSV_VD_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_75_INB_SCBSV_VO_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_75_INB_SCBSV_VD_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_75_INB_SCBSNSV_VO_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_75_INB_SCBSNSV_VD_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_75_INB_SCBNSV_VO_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_75_INB_SCBNSV_VD_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_75_INB_IND_VO_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_75_BAL_SCBSV_VD_A8090_E530_10.RDS",
+                    "S_2_3_5_3000_75_BAL_SCBSV_MD_A8090_E530_10.RDS",
+                    "S_2_2_5_3000_85_INB_SCBSV_VO_A8090_E530_10.RDS",
+                    "S_2_2_5_3000_85_INB_SCBSNSV_VO_A8090_E530_10.RDS",
+                    "S_2_2_5_3000_85_INB_SCBNSV_VO_A8090_E530_10.RDS",
+                    "S_2_2_5_3000_75_INB_SCBSV_VO_A8090_E530_10.RDS",
+                    "S_2_2_5_3000_75_INB_SCBSV_MD_A8090_E530_10.RDS",
+                    "S_2_2_5_3000_75_INB_SCBSNSV_VO_A8090_E530_10.RDS",
+                    "S_2_2_5_3000_75_INB_SCBNSV_VO_A8090_E530_10.RDS",
+                    "S_2_2_5_3000_75_INB_IND_VO_A8090_E530_10.RDS")
+
+
+status <- mclapply(ScenariosToRun, function(x){
   
-},mc.cores = 2) 
+  SSFilename <- str_replace(x,"S_","SSV_")
+  FilesProcessed <- dir(pathSSFiles)
+#  if(is_empty(intersect(FilesProcessed,SSFilename))) 
+#  {
+  tryCatch(
+    {
+      
+    GenerateSSFile(x,pathScenarios,pathSSFiles,Model) 
+      return(1)
+    }, error = function(e){
+      cat("Error fitting scenario: ",x, "\n")
+      return(NULL)
+    }
+    )
+  
+ # }  else cat("\n The file ",SSFilename, " already exists in the directory. \n")
+  
+}, mc.cores = 1)
 

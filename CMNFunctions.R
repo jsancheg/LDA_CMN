@@ -2357,6 +2357,12 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricFile = "Metrics")
                                   IncludeX5 = as.numeric(str_detect(Model1,"X5"))) %>%
                                   relocate(IncludeX2,IncludeX4,IncludeX5, .after = Model1)
     
+    aux_df2 <- aux_df2 %>% mutate(Variables_Correctly_Included = IncludeX2 + IncludeX4 + IncludeX5) %>%
+                                  relocate(Variables_Correctly_Included, .after = IncludeX5)
+
+    aux_df2 <- aux_df2 %>% mutate(Variables_Incorrectly_Included = Model_Size - Variables_Correctly_Included) %>%
+                                  relocate(Variables_Incorrectly_Included, .after = Variables_Correctly_Included)
+    
     aux_df2 <- aux_df2 %>% mutate(Number_Classes = 
                                   str_split(File,"_",simplify = TRUE)[,2])
     
@@ -2372,7 +2378,7 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricFile = "Metrics")
     aux_df2 <- aux_df2 %>% mutate(Training_Proportion = 
                                     str_split(File,"_",simplify = TRUE)[,6])
     
-    aux_df2 <- aux_df2 %>% mutate(Class_Porportion = 
+    aux_df2 <- aux_df2 %>% mutate(Class_Proportion = 
                                     str_split(File,"_",simplify = TRUE)[,7])
     
     aux_df2 <- aux_df2 %>% mutate(Covariance_Structure = 
@@ -2434,7 +2440,7 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricFile = "Metrics")
     
     Output <- aux_df2 %>% relocate(c(Number_Classes,Number_Separating_Variables,
                                      Number_Variables,Number_Observations,
-                                     Training_Proportion,Class_Porportion,
+                                     Training_Proportion,Class_Proportion,
                                     Covariance_Structure,Covariance_Structure2,
                                     Group_Mean_Distance,AlphaC,EtaC,Alpha1,Alpha2,Alpha3,
                                     Eta1,Eta2,Eta3),
