@@ -6,7 +6,6 @@
 
 
 
-SSmetrics <- readRDS("Metrics_SSFiles.RDS")
 
 library(dplyr)
 library(lme4)
@@ -18,7 +17,9 @@ library(gridExtra)
 library(cowplot)
 library(patchwork)
 library(ggpubr)
+library(nlme)
 
+SSmetrics <- readRDS("Metrics_SSFiles.RDS")
 
 
 # Plot Model Size Selected Variables --------------------------------------
@@ -199,3 +200,14 @@ g100.4 <- ggplot(data100, aes(x = Group_Mean_Distance, y = CCR, color = Variable
 combine <- g100.1 + g100.2 + g100.3 + g100.4 & theme(legend.position = "bottom")
 combine + plot_layout(guides = "collect")
 
+
+
+# GLS models --------------------------------------------------------------
+
+mod5.1 <- gls(CCR ~ Variables, data = data5,
+              correlation  = corSymm(form = ~1|Nsim))
+
+mod5.20 <- gls(CCR ~ Variables + Class_Proportion + Number_Classes +
+                 Covariance_Structure + Group_Mean_Distance ,
+               data = data5,
+               correlation = corSymm(form = ))

@@ -23,17 +23,46 @@ A contaminated normal distribution is simulated with parameters $\mu_{1} = (0,0,
 
 ```{r load_data, echo = FALSE, message = FALSE, warning = FALSE}
 library(ContaminatedMixt)
+source("CMNFunctionsV2.R")
+
 pathWd <-"/home/jsancheg/git_environment/LDA_CMN/"
 setwd(pathWd)
 
+system_info <- Sys.info()
+#OS_name <- system_info("")
+pc_name <- system_info['nodename'] 
+
 # dir(pathWd)
-source("CMNFunctionsV2.R")
+
+if(pc_name == "LAPTOP-ADR3M911")
+{
+  pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
+  pathScenarios1 <- "E:/University of Glasgow/Thesis/Scenarios1/"
+  
+  pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
+  pathSSFiles1 <- "E:/University of Glasgow/Thesis/SSFiles1/"
+  
+  pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
+  
+}else if(pc_name == "WildFree")
+{
+  pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
+  pathSSFiles <- "/home/jsancheg/Documents/SSFiles/"
+  pathSFiles <- "/home/jsancheg/Documents/SFiles/"
+  
+} else
+{
+  pathScenarios <- "M:/Scenarios/"
+  pathSSFiles <- "M:/SSFiles/"
+  pathSFiles <- "M:/SFiles/"
+}
+
 
 pathOutput <- "/home/jsancheg/git_environment/LDA_CMN/Scenarios/"
 
 # dir(pathOutput)
 
-fileRDS<- readRDS(paste0(pathOutput,"S_2_2_5_3000_75_BAL_SCBSV_VD_A8080_E2020_10.RDS"))
+fileRDS<- readRDS(paste0(pathScenarios,"S_2_2_5_4000_85_INB_SCBSV_VO_A9080_E3020_10.RDS"))
 GenData <-fileRDS$GenData[[1]]
 par <- fileRDS$par
 
@@ -47,7 +76,6 @@ vtest <- GenData$vtest
 
 ```{r mstep}
 # ContaminatedMixt::m step
-
 estimates <- ContaminatedMixt::m.step(Xtrain,modelname = "VVV",z = unmap(ltrain), mmax = 10)
 estimates$mu
 estimates$Sigma
@@ -62,6 +90,20 @@ It is possible to obtain parameter estimates using **CNmixt** function for the s
 fitCMN <- CNmixt(Xtrain,G,contamination = TRUE,model = "VVV", 
                  initialization = "mixt",label = ltrain, 
                  iter.max = 10)
+
+Models <- c("EEI","VVI","VVV")
+fitCMN1 <- CNmixt(Xtrain,G,model = Models, 
+                 initialization = "mixt",label = ltrain, 
+                 iter.max = 10)
+length(fitCMN1$models)
+
+cbind(fitCMN1$models[[1]]$model,fitCMN1$models[[1]]$contamination)
+cbind(fitCMN1$models[[2]]$model,fitCMN1$models[[2]]$contamination)
+cbind(fitCMN1$models[[3]]$model,fitCMN1$models[[3]]$contamination)
+cbind(fitCMN1$models[[4]]$model,fitCMN1$models[[4]]$contamination)
+cbind(fitCMN1$models[[5]]$model,fitCMN1$models[[5]]$contamination)
+cbind(fitCMN1$models[[6]]$model,fitCMN1$models[[6]]$contamination)
+
 
 fitCMN$models[[1]]$mu
 fitCMN$models[[1]]$Sigma

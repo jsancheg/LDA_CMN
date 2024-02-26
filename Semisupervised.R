@@ -139,43 +139,56 @@ SemiSupervisedFitting <- function(Xtrain, Xtest, ltrain, ltest,
   
   if(ncol(Xtrain) == 1) 
   {
-    res <- CNmixt(Xtrain,G,  model = model, 
+    modelNonCont <- CNmixt(Xtrain,G, contamination = FALSE,model = model,
+                   initialization = "random.post",alphamin = alpharef,
+                   label = latrain1, iter.max = iterations)
+    ModelCont <- CNmixt(Xtrain,G, contamination = FALSE,model = model,
+                        initialization = "random.post",alphamin = alpharef,
+                        label = latrain1, iter.max = iterations)
+    resNC <- getBestModel(ModelNonCont, criterion = "BIC")
+    resC <- getBestModel(ModelCont,criterion = "BIC")
+    res1 <- CNmixt(Xtrain,G,  model = model, 
                   initialization = "random.post", alphamin = alpharef,
                   label = ltrain1,iter.max = iterations)
     
   }else if(ncol(Xtrain > 1))
   {
-    res <- CNmixt(Xtrain,G,  model = model, 
-                  initialization = "mixt", alphamin = alpharef,
-                  label = ltrain1,iter.max = iterations)
+    modelNonCont <- CNmixt(Xtrain,G, contamination = FALSE,model = model,
+                           initialization = "mixt",alphamin = alpharef,
+                           label = latrain1, iter.max = iterations)
+    ModelCont <- CNmixt(Xtrain,G, contamination = FALSE,model = model,
+                        initialization = "mixt",alphamin = alpharef,
+                        label = latrain1, iter.max = iterations)
+    resNC <- getBestModel(ModelNonCont, criterion = "BIC")
+    resC <- getBestModel(ModelCont,criterion = "BIC")
   }
         
   #res1 <- ModelAccuracy2(Xtrain,Xtest,ltrain,ltest,"EEI")
   
-  logl_nc <- res$models[[2]]$loglik
-  obslll_nc <- res$models[[2]]$obslll
+  logl_nc <- resNC$models[[1]]$loglik
+  obslll_nc <- resNC$models[[1]]$obslll
   
-  logl_c <- res$models[[1]]$loglik
-  obslll_c <- res$models[[1]]$obslll
+  logl_c <- resC$models[[1]]$loglik
+  obslll_c <- resC$models[[1]]$obslll
   
-  parameters_C$G <- res$models[[1]]$G
-  parameters_C$pig <- res$models[[1]]$prior
-  parameters_C$mu <- res$models[[1]]$mu
-  parameters_C$Sigma <-res$models[[1]]$Sigma
-  parameters_C$InvSigma <- res$models[[1]]$invSigma
-  parameters_C$alpha <-res$models[[1]]$alpha
-  parameters_C$eta <- res$models[[1]]$eta
+  parameters_C$G <- resC$models[[1]]$G
+  parameters_C$pig <- resC$models[[1]]$prior
+  parameters_C$mu <- resC$models[[1]]$mu
+  parameters_C$Sigma <-resC$models[[1]]$Sigma
+  parameters_C$InvSigma <- resC$models[[1]]$invSigma
+  parameters_C$alpha <-resC$models[[1]]$alpha
+  parameters_C$eta <- resC$models[[1]]$eta
   
   # estimate contaminated model  
-  estimate$ztrain_hat <- res$models[[1]]$posterior
+  estimate$ztrain_hat <- resC$models[[1]]$posterior
   # estimated class labels
-  estimate$ltrain_hat <- res$models[[1]]$group
-  estimate$vtrain_hat <- res$models[[1]]$v
-  estimate$badPoints <- res$models[[1]]$detection
+  estimate$ltrain_hat <- resC$models[[1]]$group
+  estimate$vtrain_hat <- resC$models[[1]]$v
+  estimate$badPoints <- resC$models[[1]]$detection
 
-  parameters_Nc$pro <- res$models[[2]]$prior
-  parameters_Nc$mean <- res$models[[2]]$mean
-  parameters_Nc$variance <- res$models[[2]]$Sigma
+  parameters_Nc$pro <- resNC$models[[1]]$prior
+  parameters_Nc$mean <- resNC$models[[1]]$mean
+  parameters_Nc$variance <- resNC$models[[1]]$Sigma
   
   table(ltrain1,res$models[[1]]$group)
   
@@ -395,17 +408,21 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
                           Recall_SM = numeric(), F1_SM = numeric(),
                           CCRCont_SM = numeric(), CCRNoCont_SM = numeric(),
                           PrecisionV_SM = numeric(), RecallV_SM = numeric(),
-                          F1V_SM = numeric(),Model_TM = character(), Nvars_TM = numeric(), 
+                         Specificity_SM = numeric(), 
+                         F1V_SM = numeric(),Model_TM = character(), Nvars_TM = numeric(), 
                           CCR_TM  = numeric(), Precision_TM = numeric(),
                           Recall_TM = numeric(), F1_TM = numeric(),
                           CCRCont_TM = numeric(), CCRNoCont_TM = numeric(),
                           PrecisionV_TM = numeric(), RecallV_TM = numeric(),
+                         Specificiy_TM = numeric(),
                           F1V_TM = numeric(), Model_SaturatedM = character(),
                           Nvars_SaturatedM = numeric(),
                           CCR_SaturatedM = numeric(),Precision_SaturatedM = numeric(),
-                          Recall_SaturatedM = numeric(), F1_SaturatedM = numeric(),
+                          Recall_SaturatedM = numeric(), Specificity_SaturatedM = numeric(), 
+                         F1_SaturatedM = numeric(),
                           CCRCont_SaturatedM = numeric(), CCRNoCont_SaturatedM = numeric(),
                           PrecisionV_SaturatedM = numeric(), RecallV_SaturatedM = numeric(),
+                         Specificity_SaturatedM = numeric(),
                           F1V_SaturatedM = numeric(), stringsAsFactors = FALSE)
 #                          ltesthat_SM = numeric(), ltesthat_TM = numeric(), 
 #                          ltesthat_SaturatedM = numeric(),
@@ -432,11 +449,14 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
       
       
       MmetricsSaturatedM[[i_sim]] <- data.frame(Group = 1:G, Precision = rep(0,G), 
-                                       Recall = rep(0,G), F1 = rep(0,G)) 
+                                       Recall = rep(0,G), Specificity = rep(0,G),
+                                       F1 = rep(0,G)) 
       MmetricsTM[[i_sim]] <- data.frame(Group = 1:G, Precision = rep(0,G), 
-                               Recall = rep(0,G), F1 = rep(0,G)) 
+                               Recall = rep(0,G), Specificity = rep(00,G),
+                               F1 = rep(0,G)) 
       MmetricsSM[[i_sim]] <- data.frame(Group = 1:G, Precision = rep(0,G), 
-                               Recall = rep(0,G), F1 = rep(0,G)) 
+                               Recall = rep(0,G), Specificity = rep(0,G),
+                               F1 = rep(0,G)) 
       
       
       dfRW[[i_sim]] <- getOW(Xtrain,ltrain)
@@ -498,6 +518,10 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
         MmetricsSaturatedM[[i_sim]][i_g,3] <- Recall(ltest,saturated_mod$ltest_hat_C,positive = i_g)
         MmetricsTM[[i_sim]][i_g,3] <- Recall(ltest,TrueModel$ltest_hat_C,positive = i_g)
         MmetricsSM[[i_sim]][i_g,3] <-Recall(ltest,selectedVar_mod$models[[pos]]$ltest_hat_C,positive = i_g)
+        MmetricsSaturatedM[[i_sim]][i_g,4] <- Specificity(ltest,saturated_mod$ltest_hat_C,positive = i_g)
+        MmetricsTM[[i_sim]][i_g,4] <- Specificity(ltest,TrueModel$ltest_hat_C,positive = i_g)
+        MmetricsSM[[i_sim]][i_g,4] <-Specificity(ltest,selectedVar_mod$models[[pos]]$ltest_hat_C,positive = i_g)
+        
       }
       MmetricsSaturatedM[[i_sim]]$F1 <- 2*(MmetricsSaturatedM[[i_sim]]$Precision*MmetricsSaturatedM[[i_sim]]$Recall)/(MmetricsSaturatedM[[i_sim]]$Precision+MmetricsSaturatedM[[i_sim]]$Recall)
       MmetricsTM[[i_sim]]$F1 <- 2*(MmetricsTM[[i_sim]]$Precision*MmetricsTM[[i_sim]]$Recall)/(MmetricsTM[[i_sim]]$Precision+MmetricsTM[[i_sim]]$Recall)
@@ -533,7 +557,11 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
       recall_saturated_V <- Recall(vtest,saturated_vtest,positive = 0)
       recall_TM_V <- Recall(vtest,TM_vtest,positive = 0)
       recall_SM_V <- Recall(vtest,SM_vtest,positive = 0)
-      
+
+      specificity_saturated_V <- Specificity(vtest,saturated_vtest,positive = 0)
+      specificity_TM_V <- Specificity(vtest,TM_vtest,positive = 0)
+      specificity_SM_V <- Specificity(vtest,SM_vtest,positive = 0)
+        
       F1_Saturated_V <- 2*(precision_saturated_V * recall_saturated_V)/(precision_saturated_V+recall_saturated_V) 
       F1_TM_V <- 2*(precision_TM_V * recall_TM_V)/(precision_TM_V + recall_TM_V)
       F1_SM_V <- 2*(precision_SM_V * recall_SM_V)/(precision_SM_V + recall_SM_V)
@@ -579,33 +607,39 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
       Metrics[i_sim,"CCR_SM"] <-CCRltesthatSM
       Metrics[i_sim,"Precision_SM"] <- mean(MmetricsSM[[i_sim]]$Precision)
       Metrics[i_sim,"Recall_SM"] <- mean(MmetricsSM[[i_sim]]$Recall)
+      Metrics[i_sim,"Specificity_SM"] <- mean(MmetricsSM[[i_sim]]$Specificity)
       Metrics[i_sim,"F1_SM"] <- mean(MmetricsSM[[i_sim]]$F1)
       Metrics[i_sim,"CCRCont_SM"] <- CCRSM_cont_samples
       Metrics[i_sim,"CCRNoCont_SM"] <- CCRSM_no_cont_samples
       Metrics[i_sim,"PrecisionV_SM"] <- precision_SM_V
       Metrics[i_sim,"RecallV_SM"] <- recall_SM_V
+      Metrics[i_sim,"SpecificityV_SM"] <- specificity_SM_V
       Metrics[i_sim,"F1V_SM"] <- F1_SM_V
       Metrics[i_sim,"Model_TM"] <- paste(TrueModel$PM,collapse = "-")
       Metrics[i_sim,"Nvars_TM"] <-length(TrueModel$PM)
       Metrics[i_sim,"CCR_TM"] <- TrueModel$CCRTestC
       Metrics[i_sim,"Precision_TM"] <- mean(MmetricsTM[[i_sim]]$Precision)
       Metrics[i_sim,"Recall_TM"] <- mean(MmetricsTM[[i_sim]]$Recall)
+      Metrics[i_sim,"Specificity_TM"] <- mean(MmetricsTM[[i_sim]]$Specificity)
       Metrics[i_sim,"F1_TM"] <- mean(MmetricsTM[[i_sim]]$F1)
       Metrics[i_sim,"CCRCont_TM"] <-CCRTM_cont_samples
       Metrics[i_sim,"CCRNoCont_TM"] <- CCRTM_no_cont_samples
       Metrics[i_sim,"PrecisionV_TM"] <- precision_TM_V
       Metrics[i_sim,"RecallV_TM"] <- recall_TM_V
+      Metrics[i_sim,"SpecificityV_TM"] <- specificity_TM_V
       Metrics[i_sim,"F1V_TM"] <- F1_TM_V
       Metrics[i_sim,"Model_SaturatedM"] <- paste(RW,collapse = "-")
       Metrics[i_sim,"Nvars_SaturatedM"] <- length(RW)
       Metrics[i_sim,"CCR_SaturatedM"] <- saturated_mod$CCRTestC
       Metrics[i_sim,"Precision_SaturatedM"] <- mean(MmetricsSaturatedM[[i_sim]]$Precision)
       Metrics[i_sim,"Recall_SaturatedM"] <- mean(MmetricsSaturatedM[[i_sim]]$Recall)
+      Metrics[i_sim,"Specificity_SaturatedM"]<-mean(MetricsSaturatedM[[i_sim]]$Specificity)
       Metrics[i_sim,"F1_SaturatedM"] <- mean(MmetricsSaturatedM[[i_sim]]$F1)
       Metrics[i_sim,"CCRCont_SaturatedM"] <- CCRSaturated_cont_samples
       Metrics[i_sim,"CCRNoCont_SaturatedM"] <- CCRSaturated_no_cont_samples
       Metrics[i_sim,"PrecisionV_SaturatedM"] <- precision_saturated_V
       Metrics[i_sim,"RecallV_SaturatedM"] <- recall_saturated_V
+      Metrics[i_sim,"SpecificityV_SaturatedM"] <- specificity_saturated_V
       Metrics[i_sim,"F1V_SaturatedM"] <- F1_Saturated_V
       estimates[[i_sim]]$models <- selectedVar_mod$models
       estimates[[i_sim]]$posSM <- pos
