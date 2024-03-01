@@ -6,6 +6,7 @@ E_StepCMN <- function(X,l,par)
   # calculate z'ij
   # calculate v wheter the observation is contaminated or not
     m <- nrow(X)
+    p <- ncol(X)
     G <- par$G
     pig <- par$pig
     mu <- par$mu
@@ -27,22 +28,27 @@ E_StepCMN <- function(X,l,par)
     {
       for(i in 1:m)
       {
-        if(ncol(X) == 1 & is.vector(sigma) & length(sigma)==1)
-        {
-          # thetaig : matrix containing the probability of i-th observation in group g 
-          # is not contaminated
-          thetaig[i,g] <- dnorm(X[i,],mu[g],sigma)
-          # fxig: matrix containing the probability of contaminated normal distribution for
-          # observation i in group g
-          fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dnorm(X[i,],mu[g],eta[g]*sigma)
+        
+        if(p == 1 )
+        { 
+          if(is.vector(sigma))
+          { 
+            if(length(sigma)==1)
+            {
+              # thetaig : matrix containing the probability of i-th observation in group g 
+              # is not contaminated
+              thetaig[i,g] <- dnorm(X[i,],mu[g],sigma)
+              # fxig: matrix containing the probability of contaminated normal distribution for
+              # observation i in group g
+              fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dnorm(X[i,],mu[g],eta[g]*sigma)
           
-        } else if(length(dim(sigma))==2)
-        {
+            } else if(length(dim(sigma))==2)
+            {
           thetaig[i,g] <- dMVNorm(X[i,],mu[,g],sigma)
           fxig[i,g] <- alpha[g]*thethaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],eta[g]*sigma)
           
         } else if(length(dim(sigma)) > 2)
-        {
+            {
           if(ncol(X)>1)
           {
             thetaig[i,g] <-  dMVNorm(X[i,],mu[,g],sigma[,,g])
@@ -67,7 +73,26 @@ E_StepCMN <- function(X,l,par)
             
           }
           
-        } #End-f
+        } 
+          } #End-if Sigma is vector
+          if(is.array(sigma))
+          {
+              if(length(sigma) == G)
+              {
+                thetaig[i,g] <- dnorm(X[i,],mu[g],sigma[,,g])
+                fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dnorm(X[i,],mu[g],eta[g]*sigma[,,g])
+                
+              }
+          }
+        }#End-f ncol(X) == 1
+        
+        if(p > 1)
+        {
+          thetaig[i,g] <- dMVNorm(X[i,],mu[,g],sigma[,,g])
+          fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],eta[g]*sigma[,,g])
+          
+        }
+        
         numz[i,g] <- pig[g] * fxig[i,g]
         numv[i,g] <- alpha[g] * thetaig[i,g]
         denv[i,g] <- fxig[i,g]
@@ -98,13 +123,13 @@ E_StepCMN <- function(X,l,par)
 }
 
 
-SemiSupervisedFitting <- function(Xtrain, Xtest, ltrain, ltest,
+SemiSupervisedFitting <- function(X_train, X_test, ltrain, ltest,
                                  vtest, model = "EEI",
                                  pnolabeled = 0.5,
                                  iterations = 10, 
                                  alpharef = 0.75, tol = 0.01)
-# Xtrain:       matrix with the observations used in training
-# Xtest:        matrix with the observations used in testing
+# X_train:       matrix with the observations used in training
+# X_test:        matrix with the observations used in testing
 # ltrain:       labels used in training
 # ltest:        labels used in test
 # pnolabeled:   percentage of no labeled observations in ltrain 
@@ -137,33 +162,33 @@ SemiSupervisedFitting <- function(Xtrain, Xtest, ltrain, ltest,
   ltrain1[ind_nolabeled] <- 0
   #table(ltrain1)
   
-  if(ncol(Xtrain) == 1) 
+  if(ncol(X_train) == 1) 
   {
-    modelNonCont <- CNmixt(Xtrain,G, contamination = FALSE,model = model,
+    ModelNonCont <- CNmixt(X_train,G, contamination = FALSE,model = model,
                    initialization = "random.post",alphamin = alpharef,
-                   label = latrain1, iter.max = iterations)
-    ModelCont <- CNmixt(Xtrain,G, contamination = FALSE,model = model,
+                   label = ltrain1, iter.max = iterations)
+    ModelCont <- CNmixt(X_train,G, contamination = TRUE,model = model,
                         initialization = "random.post",alphamin = alpharef,
-                        label = latrain1, iter.max = iterations)
+                        label = ltrain1, iter.max = iterations)
     resNC <- getBestModel(ModelNonCont, criterion = "BIC")
     resC <- getBestModel(ModelCont,criterion = "BIC")
-    res1 <- CNmixt(Xtrain,G,  model = model, 
-                  initialization = "random.post", alphamin = alpharef,
-                  label = ltrain1,iter.max = iterations)
+#    res1 <- CNmixt(X_train,G,  model = model, 
+#                  initialization = "random.post", alphamin = alpharef,
+#                  label = ltrain1,iter.max = iterations)
     
-  }else if(ncol(Xtrain > 1))
+  }else if(ncol(X_train) > 1)
   {
-    modelNonCont <- CNmixt(Xtrain,G, contamination = FALSE,model = model,
+    ModelNonCont <- CNmixt(X_train,G, contamination = FALSE,model = model,
                            initialization = "mixt",alphamin = alpharef,
-                           label = latrain1, iter.max = iterations)
-    ModelCont <- CNmixt(Xtrain,G, contamination = FALSE,model = model,
+                           label = ltrain1, iter.max = iterations)
+    ModelCont <- CNmixt(X_train,G, contamination = TRUE,model = model,
                         initialization = "mixt",alphamin = alpharef,
-                        label = latrain1, iter.max = iterations)
+                        label = ltrain1, iter.max = iterations)
     resNC <- getBestModel(ModelNonCont, criterion = "BIC")
     resC <- getBestModel(ModelCont,criterion = "BIC")
   }
         
-  #res1 <- ModelAccuracy2(Xtrain,Xtest,ltrain,ltest,"EEI")
+  #res1 <- ModelAccuracy2(X_train,X_test,ltrain,ltest,"EEI")
   
   logl_nc <- resNC$models[[1]]$loglik
   obslll_nc <- resNC$models[[1]]$obslll
@@ -190,20 +215,20 @@ SemiSupervisedFitting <- function(Xtrain, Xtest, ltrain, ltest,
   parameters_Nc$mean <- resNC$models[[1]]$mean
   parameters_Nc$variance <- resNC$models[[1]]$Sigma
   
-  table(ltrain1,res$models[[1]]$group)
+  table(ltrain1,resC$models[[1]]$group)
   
-  if(ncol(Xtrain) == 1)
+  if(ncol(X_train) == 1)
   {
-    mstep_nc <- mclust::mstep( data = as.matrix(Xtrain), modelName = model, z = unmap(estimate$ltrain_hat) )
-    estep_nc <- mclust::estep(data =as.matrix(Xtest), modelName =  mstep_nc$modelName, 
+    mstep_nc <- mclust::mstep( data = as.matrix(X_train), modelName = resNC$models[[1]]$model, z = unmap(estimate$ltrain_hat) )
+    estep_nc <- mclust::estep(data =as.matrix(X_test), modelName =  mstep_nc$modelName, 
                               parameters = mstep_nc$parameters)
     
-  }else if(ncol(Xtrain) > 1)
+  }else if(ncol(X_train) > 1)
   {
-    mstep_nc <- mclust::mstep( data = Xtrain, modelName = model, z = unmap(estimate$ltrain_hat) )
-    estep_nc <- mclust::estep(data =Xtest, modelName =  mstep_nc$modelName, 
+    mstep_nc <- mclust::mstep( data = X_train, modelName = resNC$models[[1]]$model, z = unmap(estimate$ltrain_hat) )
+    estep_nc <- mclust::estep(data =X_test, modelName =  mstep_nc$modelName, 
                               parameters = mstep_nc$parameters)
-  
+    
   }
   mstep_nc$modelName
   mstep_nc$parameters
@@ -212,7 +237,8 @@ SemiSupervisedFitting <- function(Xtrain, Xtest, ltrain, ltest,
   CCRTest_Nc <- sum((ltest_hat_nc == ltest)) / length(ltest)
   CCRTest_Nc
 
-  ExpectedValues_C <- E_StepCMN(Xtest,ltest,parameters_C)
+  ExpectedValues_C <- E_StepCMN(X_test,ltest,parameters_C)
+  
   if (length(ExpectedValues_C$lhat)==length(ltest)){
     CCRTest_C <- sum((ExpectedValues_C$lhat == ltest)) / length(ltest)
   }  else CCRTest_C = -1 
@@ -222,16 +248,16 @@ SemiSupervisedFitting <- function(Xtrain, Xtest, ltrain, ltest,
     AccTest_C <- sum((ExpectedValues_C$vhat == vtest)) / length(vtest)
   } else AccTest_C =  - 1
   
-  res$models[[1]]$v
+  resC$models[[1]]$v
   
-  res$models[[1]]$label
-  res$models[[1]]$entropy
-  res$models[[1]]$IC
+  resC$models[[1]]$label
+  resC$models[[1]]$entropy
+  resC$models[[1]]$IC
   
-  table(res$models[[1]]$label,res$models[[1]]$group)
-  table(ltrain,res$models[[1]]$group)
+  table(resC$models[[1]]$label,resC$models[[1]]$group)
+  table(ltrain,resC$models[[1]]$group)
   table(ltrain1,ltrain)
-  length(res$models[[1]]$group)
+  length(resC$models[[1]]$group)
 
   
   Output <- list(CCRTestNc = CCRTest_Nc,CCRTestC = CCRTest_C,
@@ -241,7 +267,10 @@ SemiSupervisedFitting <- function(Xtrain, Xtest, ltrain, ltest,
                  ltest_hat_C = ExpectedValues_C$lhat,
                  Expected_v = ExpectedValues_C$v,
                  vtest_hat = ExpectedValues_C$vhat,
-                 niterations = iterations, par = parameters_C)
+                 niterations = iterations, 
+                 fitted_NC_model = resNC$models[[1]]$model,
+                 fitted_C_model = resC$models[[1]]$model,                 
+                 par = parameters_C)
     return(Output)  
 }
 
@@ -295,7 +324,7 @@ HeadLongSearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
     cat("\n Model ",unlist(PM))
       
     models[[cont]] <- SemiSupervisedFitting(X_train,X_test,ltrain,ltest,
-                                            vtest,model = "E", pnolabeled, 
+                                            vtest,model = c("E","V"), pnolabeled, 
                                            iterations = iterations, 
                                            alpharef = alpharef )
     
@@ -372,10 +401,12 @@ HeadLongSearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
   # non-contaminated samples for the first 20
   # iterations of the EM algorithm
   
-  return(list(Selectedmodel = CM, CCRCM = CCRCM, 
+  return(list(fitted_NC_model = models[[posCM]]$fitted_NC_model,
+              fitted_C_model = models[[posCM]]$fitted_NC_model,
+              Selectedmodel = CM,CCRCM = CCRCM, 
               Classprediction = models[[posCM]]$ltest_hat_C,
               ContaminatedSamplesprediction = models[[posCM]]$vtest_hat,
-              posCM = posCM,  models = models))             
+              posCM = posCM,  iterations = cont ,models = models))             
 }
 
 
@@ -402,6 +433,9 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
 #                          )
  
     Metrics = data.frame(Nsim = numeric(),
+                          FittedContModel_SM = character(),
+                          FittedNoContModel_SM = character(),
+                          Iterations_SM = numeric(),
                           Model_SM = character(),
                           Nvars_SM = numeric(),
                           CCR_SM = numeric(),Precision_SM = numeric(),
@@ -409,20 +443,27 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
                           CCRCont_SM = numeric(), CCRNoCont_SM = numeric(),
                           PrecisionV_SM = numeric(), RecallV_SM = numeric(),
                          Specificity_SM = numeric(), 
-                         F1V_SM = numeric(),Model_TM = character(), Nvars_TM = numeric(), 
+                         F1V_SM = numeric(),
+                         FittedContModel_TM = character(),
+                         FittedNoContModel_TM = character(),
+                         Iterations_TM = numeric(),
+                         Model_TM = character(), Nvars_TM = numeric(), 
                           CCR_TM  = numeric(), Precision_TM = numeric(),
                           Recall_TM = numeric(), F1_TM = numeric(),
                           CCRCont_TM = numeric(), CCRNoCont_TM = numeric(),
                           PrecisionV_TM = numeric(), RecallV_TM = numeric(),
                          Specificiy_TM = numeric(),
-                          F1V_TM = numeric(), Model_SaturatedM = character(),
+                          F1V_TM = numeric(), 
+                         FittedContModel_SaturatedM = character(),
+                         FittedNoContModel_SaturatedM = character(),
+                         Iterations_SaturatedM = numeric(),
+                         Model_SaturatedM = character(),
                           Nvars_SaturatedM = numeric(),
                           CCR_SaturatedM = numeric(),Precision_SaturatedM = numeric(),
                           Recall_SaturatedM = numeric(), Specificity_SaturatedM = numeric(), 
                          F1_SaturatedM = numeric(),
                           CCRCont_SaturatedM = numeric(), CCRNoCont_SaturatedM = numeric(),
                           PrecisionV_SaturatedM = numeric(), RecallV_SaturatedM = numeric(),
-                         Specificity_SaturatedM = numeric(),
                           F1V_SaturatedM = numeric(), stringsAsFactors = FALSE)
 #                          ltesthat_SM = numeric(), ltesthat_TM = numeric(), 
 #                          ltesthat_SaturatedM = numeric(),
@@ -441,6 +482,7 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
       #                       alphag = c(0.8,0.8),
       #                       etag = c(20,20))
       G = length(unique(GenData[[i_sim]]$l))
+
       Xtrain <- GenData[[i_sim]]$Xtrain
       Xtest <- GenData[[i_sim]]$Xtest
       ltrain <- GenData[[i_sim]]$ltrain
@@ -487,6 +529,7 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
                                             iterations = niterations,
                                             alpharef = 0.75, 
                                             tol = 0.01)
+        TrueModel$PM <- variables_True_Model
   } 
       
       # pos: position model obtained by variable selection
@@ -602,6 +645,9 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
       CCRSaturated_no_cont_samples <- (sum(no_cont_samples == Saturated_nocont_lhat)/length(no_cont_samples))
       CCRSaturated_cont_samples <-     (sum(cont_samples == Saturated_cont_lhat)/length(cont_samples))
       Metrics[i_sim,"Nsim"] <- i_sim
+      Metrics[i_sim,"FittedContModel_SM"] <- selectedVar_mod$fitted_C_model
+      Metrics[i_sim,"FittedNoContModel_SM"] <- selectedVar_mod$fitted_NC_model
+      Metrics[i_sim,"Iterations_SM"] <- selectedVar_mod$iterations
       Metrics[i_sim,"Model_SM"] <- paste(PM,collapse = "-")
       Metrics[i_sim,"Nvars_SM"] <- nVarSel
       Metrics[i_sim,"CCR_SM"] <-CCRltesthatSM
@@ -615,6 +661,9 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
       Metrics[i_sim,"RecallV_SM"] <- recall_SM_V
       Metrics[i_sim,"SpecificityV_SM"] <- specificity_SM_V
       Metrics[i_sim,"F1V_SM"] <- F1_SM_V
+      Metrics[i_sim,"FittedContModel_TM"] <- TrueModel$fitted_C_model
+      Metrics[i_sim,"FittedNoContModel_TM"] <- TrueModel$fitted_NC_model
+      Metrics[i_sim,"Iterations_TM"] <- TrueModel$niterations
       Metrics[i_sim,"Model_TM"] <- paste(TrueModel$PM,collapse = "-")
       Metrics[i_sim,"Nvars_TM"] <-length(TrueModel$PM)
       Metrics[i_sim,"CCR_TM"] <- TrueModel$CCRTestC
@@ -628,12 +677,15 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
       Metrics[i_sim,"RecallV_TM"] <- recall_TM_V
       Metrics[i_sim,"SpecificityV_TM"] <- specificity_TM_V
       Metrics[i_sim,"F1V_TM"] <- F1_TM_V
+      Metrics[i_sim,"FittedContModel_SaturatedM"] <- saturated_mod$fitted_C_model
+      Metrics[i_sim,"FittedNoContModel_SaturatedM"] <- saturated_mod$fitted_NC_model
+      Metrics[i_sim,"Iterations_SaturatedM"] <- saturated_mod$niterations
       Metrics[i_sim,"Model_SaturatedM"] <- paste(RW,collapse = "-")
       Metrics[i_sim,"Nvars_SaturatedM"] <- length(RW)
       Metrics[i_sim,"CCR_SaturatedM"] <- saturated_mod$CCRTestC
       Metrics[i_sim,"Precision_SaturatedM"] <- mean(MmetricsSaturatedM[[i_sim]]$Precision)
       Metrics[i_sim,"Recall_SaturatedM"] <- mean(MmetricsSaturatedM[[i_sim]]$Recall)
-      Metrics[i_sim,"Specificity_SaturatedM"]<-mean(MetricsSaturatedM[[i_sim]]$Specificity)
+      Metrics[i_sim,"Specificity_SaturatedM"]<-mean(MmetricsSaturatedM[[i_sim]]$Specificity)
       Metrics[i_sim,"F1_SaturatedM"] <- mean(MmetricsSaturatedM[[i_sim]]$F1)
       Metrics[i_sim,"CCRCont_SaturatedM"] <- CCRSaturated_cont_samples
       Metrics[i_sim,"CCRNoCont_SaturatedM"] <- CCRSaturated_no_cont_samples

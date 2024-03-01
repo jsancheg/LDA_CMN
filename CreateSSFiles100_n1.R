@@ -1,6 +1,7 @@
 # 
 source("Semisupervised.R")
 source("ListScenarios.R")
+source("GSFile.R")
 source("GSSFile.R")
 library(purrr)
 library(ContaminatedMixt)
@@ -21,12 +22,12 @@ library(readr)
 
 
 
-dir(pathScenarios1)
 ini <- 1
 fin <- n100.1
 
 fin-ini+1
-Model <- "VVI"
+Model <- c("EII","VII","EEI","VEI","EVI","VVI","EEE","VVV")
+
 status <- mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
@@ -36,7 +37,7 @@ status <- mclapply(Scenarios100[ini:fin], function(x){
   tryCatch(
     {
       
-    GenerateSSFile(x,pathScenarios,pathSSFiles,Model) 
+      GenerateSSFile(x,pathScenarios,pathSSFiles,Model) 
       return(1)
     }, error = function(e){
       cat("Error fitting scenario: ",x, "\n")

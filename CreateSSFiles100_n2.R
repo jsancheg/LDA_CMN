@@ -2,6 +2,8 @@
 source("Semisupervised.R")
 source("ListScenarios.R")
 source("GSSFile.R")
+source("GSFile.R")
+
 library(purrr)
 library(ContaminatedMixt)
 

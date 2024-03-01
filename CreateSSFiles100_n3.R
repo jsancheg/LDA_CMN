@@ -1,6 +1,7 @@
 # 
 source("Semisupervised.R")
 source("ListScenarios.R")
+source("GSFile.R")
 source("GSSFile.R")
 library(purrr)
 library(ContaminatedMixt)
@@ -21,12 +22,13 @@ library(readr)
 
 
 
-dir(pathScenarios1)
 ini <- n100.2+1
 fin <- n100.3
 
 fin-ini+1
-Model <- "VVI"
+
+Model <- c("EII","VII","VEI","EEI","EVI","VVI","EEE","VVV")
+
 status <- mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")

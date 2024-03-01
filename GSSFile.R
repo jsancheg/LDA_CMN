@@ -9,7 +9,7 @@ library(stringr)
 
 #file_name <- dir(pathScenarios)[[1]]
                                                                                                                        
-GenerateSSFile <- function(file_name,pathScenarios, pathOutput,Model = "EEI")
+GenerateSSFile <- function(file_name,pathScenarios, pathOutput,Model = "VVV")
 {
   #fileScenario <- readRDS(paste0(pathScenarios,file_name))  
   
