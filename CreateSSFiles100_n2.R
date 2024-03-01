@@ -23,22 +23,25 @@ library(readr)
 
 
 
-dir(pathScenarios1)
 ini <- n100.1+1
 fin <- n100.2
 
 fin-ini+1
-Model <- "VVI"
+Model <- c("EII","VII","VEI","EEI","EVI","VVI","EEE","VVV")
+
 status <- mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
-#  if(is_empty(intersect(FilesProcessed,SSFilename))) 
-#  {
   tryCatch(
     {
+     
+      if(is_empty(intersect(FilesProcessed,SSFilename))) 
+      {
       
-    GenerateSSFile(x,pathScenarios1,pathSSFiles1,Model) 
+        GenerateSSFile(x,pathScenarios1,pathSSFiles1,Model) 
+      }  else cat("\n The file ",SSFilename, " already exists in the directory. \n")
+      
       return(1)
     }, error = function(e){
       cat("Error fitting scenario: ",x, "\n")
@@ -46,7 +49,6 @@ status <- mclapply(Scenarios100[ini:fin], function(x){
     }
     )
   
- # }  else cat("\n The file ",SSFilename, " already exists in the directory. \n")
   
 }, mc.cores = 1)
 

@@ -25,14 +25,16 @@ ini <- n100.3+1
 fin <- n100.4
 
 fin-ini+1
-Model <- "VVI"
+Model <- c("EII","VII","VEI","EEI","EVI","VVI","EEE","VVV")
+Model <- c("EII","VII","EEI","VEI","EEE","VVV")
+
 
 status <-mclapply(Scenarios100[ini:fin], function(x){
   
   SSFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSSFiles)
-#  if(is_empty(intersect(FilesProcessed,SSFilename))) 
-#    {
+  if(is_empty(intersect(FilesProcessed,SSFilename))) 
+    {
     tryCatch(
       {
         
@@ -45,7 +47,7 @@ status <-mclapply(Scenarios100[ini:fin], function(x){
       }
     )
     
- #   }else cat("\n The file ",SSFilename, " already exists in the directory. \n")
+   }else cat("\n The file ",SSFilename, " already exists in the directory. \n")
   
 }, mc.cores = 1)
 

@@ -24,6 +24,10 @@ SSmetrics <- readRDS("Metrics_SSFiles.RDS")
 
 # Plot Model Size Selected Variables --------------------------------------
 
+SSmetrics$Model[SSmetrics$Number_Separating_Variables == 2 & is.na(SSmetrics$Model)] <- "X2-X4"
+SSmetrics$Model[SSmetrics$Number_Separating_Variables == 3 & is.na(SSmetrics$Model)] <- "X2-X4-X5"
+
+
 
 data <- SSmetrics %>% filter(Model != "")
 data <- data %>% mutate(IncludeX1 = as.numeric(str_detect(Model1,"X1")),
