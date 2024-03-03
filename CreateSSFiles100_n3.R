@@ -28,6 +28,7 @@ fin <- n100.3
 fin-ini+1
 
 Model <- c("EII","VII","VEI","EEI","EVI","VVI","EEE","VVV")
+Model <- c("EII","VII","EEI","VEI","EEE","VVV")
 
 status <- mclapply(Scenarios100[ini:fin], function(x){
   

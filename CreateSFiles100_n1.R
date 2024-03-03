@@ -33,16 +33,23 @@ ini <- 1
 fin <- n100.1
 fin-ini + 1
 
-tic("SFiles n100.2+1 to n100.3")
+Model <- c("EII","VII","VEI","EEI","EVI","VVI","EEE","VVV")
+Model <- c("EII","VII","EEI","VEI","EEE","VVV")
+
+
+tic("SFiles 1 to n100.1")
 status<-mclapply(Scenarios100[ini:fin], function(x){
   
   SFilename <- str_replace(x,"S_","SV_")
   FilesProcessed <- dir(pathSFiles)
-#  if(is_empty(intersect(FilesProcessed,SFilename)))
-#  {
     tryCatch(
       {
-        GenerateSFile(x,pathScenarios,pathSFiles) 
+        #  if(is_empty(intersect(FilesProcessed,SFilename)))
+        #  {
+        
+        GenerateSFile(x,pathScenarios,pathSFiles, Model) 
+        #  }else cat("\n The file ",SFilename, " already exists in the directory. \n")
+        
         return(1)
       }, error = function(e){
         cat("Error fitting scenario: ",x, "\n")
@@ -51,7 +58,6 @@ status<-mclapply(Scenarios100[ini:fin], function(x){
       }
     )
     
-#  }else cat("\n The file ",SFilename, " already exists in the directory. \n")
   
 }, mc.cores = 1)
 toc()

@@ -29,20 +29,27 @@ library(readr)
 
 
 dir(pathScenarios)
-ini <- n100.3+1 
+ini <- n100.3 + 1 
 fin <- n100.4
 fin-ini + 1
 
-tic("SFiles n100.8+1 to n100.9")
-mclapply(Scenarios100[ini:fin], function(x){
+Model <- c("EII","VII","VEI","EEI","EVI","VVI","EEE","VVV")
+Model <- c("EII","VII","EEI","VEI","EEE","VVV")
+
+
+tic("SFiles n100.3 to n100.4")
+status<-mclapply(Scenarios100[ini:fin], function(x){
   
   SFilename <- str_replace(x,"S_","SV_")
   FilesProcessed <- dir(pathSFiles)
-#  if(is_empty(intersect(FilesProcessed,SFilename)))
-#  {
     tryCatch(
       {
-        GenerateSFile(x,pathScenarios,pathSFiles) 
+        #  if(is_empty(intersect(FilesProcessed,SFilename)))
+        #  {
+        
+        GenerateSFile(x,pathScenarios,pathSFiles, Model) 
+        #  }else cat("\n The file ",SFilename, " already exists in the directory. \n")
+        
         return(1)
       }, error = function(e){
         cat("Error fitting scenario: ",x, "\n")
@@ -51,7 +58,6 @@ mclapply(Scenarios100[ini:fin], function(x){
       }
     )
     
-#  }else cat("\n The file ",SFilename, " already exists in the directory. \n")
   
 }, mc.cores = 1)
 toc()
