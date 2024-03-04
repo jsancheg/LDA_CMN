@@ -1,3 +1,23 @@
+
+
+getOW_vectorize <- function(df_train, l_train) {
+  if (!is.data.frame(df_train)) df_train <- data.frame(df_train)
+  
+  NumVar <- colnames(df_train)[sapply(df_train, is.numeric)]
+  if (length(NumVar) == 0) stop('Hey, the input data frame should contain numeric variables')
+  
+  fvalue <- rep(0.0, length(NumVar))
+  
+  for (i in seq_along(NumVar)) {
+    aov_result <- aov(as.formula(paste(NumVar[i], '~', 'factor(l_train)')), data = df_train)
+    fvalue[i] <- summary(aov_result)[[1]]$`F value`[1]
+  }
+  
+  output <- data.frame(Var = NumVar, Ftest = fvalue)
+  output <- output[order(-output$Ftest), ]
+  return(output)
+}
+
 E_StepCMN_vectorize <- function(X, l, par) {
   m <- nrow(X)
   p <- ncol(X)
@@ -60,11 +80,11 @@ SemiSupervisedFitting_vectorize <- function(X_train, X_test, ltrain, ltest,
   ind_nolabeled <- sample(1:ntrain, nolabeled, replace = FALSE)
   ltrain1[ind_nolabeled] <- 0
   
-  ModelNonCont <- CNmixt(X_train, G, contamination = FALSE, model = model,
+  ModelNonCont <- CNmixt(as.matrix(X_train), G, contamination = FALSE, model = model,
                          initialization = "mixt", alphamin = alpharef,
                          label = ltrain1, iter.max = iterations)
   
-  ModelCont <- CNmixt(X_train, G, contamination = TRUE, model = model,
+  ModelCont <- CNmixt(as.matrix(X_train), G, contamination = TRUE, model = model,
                       initialization = "mixt", alphamin = alpharef,
                       label = ltrain1, iter.max = iterations)
   
@@ -100,6 +120,12 @@ SemiSupervisedFitting_vectorize <- function(X_train, X_test, ltrain, ltest,
     variance = resNC$models[[1]]$Sigma
   )
   
+  mstep_nc <- mclust::mstep( data = as.matrix(X_train), modelName = resNC$models[[1]]$model, 
+                             z = unmap(estimate$ltrain_hat) )
+  estep_nc <- mclust::estep(data =as.matrix(X_test), modelName =  mstep_nc$modelName, 
+                            parameters = mstep_nc$parameters)
+  
+  
   ltest_hat_nc <- apply(estep_nc$z, 1, which.max)
   CCRTest_Nc <- sum((ltest_hat_nc == ltest)) / length(ltest)
   
@@ -134,7 +160,7 @@ SemiSupervisedFitting_vectorize <- function(X_train, X_test, ltrain, ltest,
 
 HeadLongSearch_vectorize <- function(Xtrain, Xtest, RW, ltrain, ltest, vtest, CE,
                                      i_sim,file_name,pnolabeled = 0.5, iterations = 10,
-                                     alpharef = 0.75, tol = 0.01, epsilon = 0,) 
+                                     alpharef = 0.75, tol = 0.01, epsilon = 0) 
 {
   
   p <- length(RW)
@@ -255,7 +281,7 @@ SemiSupervised_HLS_vectorize <- function(file_name, pathScenarios, CE, variables
                                                                  Recall = rep(0, G), Specificity = rep(0, G),
                                                                  F1 = rep(0, G))
     
-    dfRW <- getOW(Xtrain, ltrain)
+    dfRW <- getOW_vectorize(Xtrain, ltrain)
     RW <- dfRW$Var
     variables_saturated_model <- RW
     

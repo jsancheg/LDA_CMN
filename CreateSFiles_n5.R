@@ -22,7 +22,7 @@ library(readr)
 
 
 
-ini <- n100.5+1
+ini <- n100.4
 fin <- n100.5+1
 
 fin-ini+1
