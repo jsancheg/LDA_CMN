@@ -1,0 +1,1245 @@
+---
+title: 'Mixture of contaminated normal distributions with different variables inflation
+  factor within classes '
+author: "Jorge Sanchez"
+date: "2024-02-01"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+header-includes:
+  - \usepackage{fancyhdr}
+  - \pagestyle{fancy}
+  - \fancyhf{}
+  - \rfoot{\thepage}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(mclust) # unmmap function
+library(DIRECT) #
+library(MLmetrics)
+library(xtable)
+library(kableExtra)
+library(knitr)
+library(dplyr)
+library(insight)
+library(caret)
+source("CMNFunctionsV2.R")
+source("DifIFunctions.R")
+
+
+
+write_matex <- function(x) {
+  begin <- "$$\\begin{bmatrix}"
+  end <- "\\end{bmatrix}$$"
+  X <-
+    apply(x, 1, function(x) {
+      paste(
+        paste(x, collapse = "&"),
+        "\\\\"
+      )
+    })
+  writeLines(c(begin, X, end))
+}
+
+write_matex2 <- function(x) {
+  begin <- "\\begin{bmatrix}"
+  end <- "\\end{bmatrix}"
+  X <-
+    apply(x, 1, function(x) {
+      paste(
+        paste(x, collapse = "&"),
+        "\\\\"
+      )
+    })
+  paste(c(begin, X, end), collapse = "")
+}
+# Dataset a
+G_a <- 1
+p_a <- 3 # 3 variables
+nobs_a <- 300
+ptraining <- 0.75
+pig_a <- 1
+mu_a <- matrix(c(0,0,0), nrow = p_a, ncol = G_a, byrow = TRUE)
+sigma_a <- array(0,dim = c(p_a,p_a,G_a))
+sigma_a[,,1] <- diag(c(1.5,3,3),p_a)
+alpha_a <- 0.8
+eta_a <- 5
+DatasetA10 <- SimGClasses(mu_a,sigma_a,pig_a,nobs_a,ptraining,alpha_a,eta_a)
+saveRDS(DatasetA10,"DatasetA10.RDS")
+DatasetA <- readRDS("DatasetA10.RDS")
+Model <- c("EEI","VEI")
+fit_AEq <- CNmixt(X = DatasetA$Xtrain,G = G_a, contamination = TRUE, model = Model,
+                  initialization = "mixt", label = DatasetA$ltrain)
+
+mu_AEq <- fit_AEq$models[[1]]$mu
+sigma_AEq <- fit_AEq$models[[1]]$Sigma
+alpha_AEq <- fit_AEq$models[[1]]$alpha
+eta_AEq <- fit_AEq$models[[1]]$eta
+
+par_AEq <- list(G = 1, pig = 1, mu = mu_AEq, 
+                sigma = sigma_AEq, 
+                alpha = alpha_AEq,
+                eta = eta_AEq)
+
+mu_AEqr <- round(mu_AEq,2)
+sigma_AEqr <- round(sigma_AEq,2)
+alpha_AEqr <- round(alpha_AEq,2)
+eta_AEqr <-round(eta_AEq,2)
+
+fit_AEqTrain <- ifelse(fit_AEq$models[[1]]$v>0.5,1,0)
+pred_AEqTrain <- factor(fit_AEqTrain, levels = c("0","1"),
+                        labels = c("Cont","Non-cont"))
+
+
+
+Accuracy_AEqTrain <- Accuracy(fit_AEqTrain,DatasetA$vtrain)
+Sensitivity_AEqTrain <- Sensitivity(DatasetA$vtrain, fit_AEqTrain,positive = 0)
+Specificity_AEqTrain <- Specificity(DatasetA$vtrain,fit_AEqTrain,positive = 0) 
+Recall_AEqTrain <- Recall(DatasetA$vtrain, fit_AEqTrain,positive = 0) 
+Precision_AEqTrain <- Precision(DatasetA$vtrain,fit_AEqTrain,positive = 0) 
+ConfusionMatrix_AEqTrain <- ConfusionMatrix(fit_AEqTrain,DatasetA$vtrain )
+ConfusionDF_AEqTrain <- ConfusionDF(fit_AEqTrain,DatasetA$vtrain)
+F1_Score_AEqTrain <- F1_Score(DatasetA$vtrain,fit_AEqTrain,positive = 0)
+
+
+fit_AeqTest <- eCmn(DatasetA$Xtest,DatasetA$ltest,par_AEq)
+
+pred_AEqTest <- factor(fit_AeqTest$vhat, levels = c("0","1"),
+                         labels=c("Cont","Non-cont"))
+
+
+Accuracy_AEq <- Accuracy(fit_AeqTest$vhat,DatasetA$vtest)
+Sensitivity_AEq <- Sensitivity(DatasetA$vtest, fit_AeqTest$vhat,positive = 0)
+Specificity_AEq <- Specificity(DatasetA$vtest,fit_AeqTest$vhat,positive = 0) 
+Recall_AEq <- Recall(DatasetA$vtest, fit_AeqTest$vhat,positive = 0) 
+Precision_AEq <- Precision(DatasetA$vtest,fit_AeqTest$vhat,positive = 0) 
+ConfusionMatrix_AEq <- ConfusionMatrix(fit_AeqTest$vhat,DatasetA$vtest )
+ConfusionDF_AEq <- ConfusionDF(fit_AeqTest$vhat,DatasetA$vtest)
+F1_Score_AEq <- F1_Score(DatasetA$vtest,fit_AeqTest$vhat,positive = 0)
+
+
+mu_AEqr <- round(mu_AEq,2)
+sigma_AEqr <- round(sigma_AEq,2)
+alpha_AEqr <- round(alpha_AEq,2)
+eta_AEqr <-round(eta_AEq,2)
+
+
+#ConfusionMatrix_AEq <- confusionMatrix(factor(DatasetA$vtest),factor(fit_AeqTest$vhat) )
+
+
+
+#ConfusionMatrix_AEq <- confusionMatrix(factor(DatasetA$vtest),factor(fit_AeqTest$vhat) )
+
+#  Running the E-step when the parameters are the true parameters and 
+#  estimate the labels
+
+par_Areal <- list(G = 1, pig = 1, mu = mu_a,
+                 sigma = sigma_a,
+                 alpha = alpha_a,
+                 eta = eta_a)
+
+pred_ArealTrainv <- eCmn_DIF(X = DatasetA$Xtrain,labels = DatasetA$ltrain, par = par_Areal)
+pred_ArealTestv <- eCmn_DIF(X = DatasetA$Xtest,labels = DatasetA$ltest, par = par_Areal)
+
+predArealTrainv <- ifelse(pred_ArealTrainv$vhat>0.5,1,0)
+
+FactpredArealTrainv <- factor(predArealTrainv, levels = c("0","1"),
+                         labels=c("Cont","Non-cont"))
+
+FactArealTrainv <- factor(DatasetA$vtrain, levels = c("0","1"),
+                     labels = c("Cont","Non-cont"))
+
+CM_ArealTrainv <- ConfusionMatrix(FactpredArealTrainv,FactArealTrainv)
+
+CompArealTrainv <- cbind(True = DatasetA$vtrain, Pred = predArealTrainv)
+
+
+Accuracy_ArealTrain <- Accuracy(predArealTrainv,DatasetA$vtrain)
+Sensitivity_ArealTrain <- Sensitivity(DatasetA$vtrain, predArealTrainv,positive = 0)
+Specificity_ArealTrain <- Specificity(DatasetA$vtrain,predArealTrainv,positive = 0) 
+Recall_ArealTrain <- Recall(DatasetA$vtrain, predArealTrainv,positive = 0) 
+Precision_ArealTrain <- Precision(DatasetA$vtrain,predArealTrainv,positive = 0) 
+ConfusionMatrix_ArealTrain <- ConfusionMatrix(predArealTrainv,DatasetA$vtrain)
+ConfusionDF_ArealTrain <- ConfusionDF(predArealTrainv,DatasetA$vtrain)
+F1_Score_ArealTrain <- F1_Score(DatasetA$vtrain,predArealTrainv,positive = 0)
+
+df_ArealTrain <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","Sensitivity","Specificity",
+             "F1 score"),
+  Equal_IF = c(round(Accuracy_AEqTrain,2),round(Precision_AEqTrain,2),
+               round(Recall_AEqTrain,2),round(Sensitivity_AEqTrain,2),
+               round(Specificity_AEqTrain,2),
+            round(F1_Score_AEqTrain,2)),
+  Different_IF = c(round(Accuracy_ArealTrain,2),round(Precision_ArealTrain,2),
+                   round(Recall_ArealTrain,2),round(Sensitivity_ArealTrain,2),
+                   round(Specificity_ArealTrain,2),
+            round(F1_Score_ArealTrain,2))
+)
+
+
+
+predArealTestv <- ifelse(pred_ArealTestv$vhat>0.5,1,0)
+FactpredArealTestv <- factor(predArealTestv, levels = c("0","1"),
+                         labels=c("Cont","Non-cont"))
+FactArealTestv <- factor(DatasetA$vtest, levels = c("0","1"),
+                     labels = c("Cont","Non-cont"))
+
+CM_ArealTestv <- ConfusionMatrix(FactpredArealTestv,FactArealTestv)
+
+CompArealTestv <- cbind(True = DatasetA$vtest, Pred = predArealTestv)
+
+Accuracy_ArealTest <- Accuracy(predArealTestv,DatasetA$vtest)
+Sensitivity_ArealTest <- Sensitivity(DatasetA$vtest, predArealTestv,positive = 0)
+Specificity_ArealTest <- Specificity(DatasetA$vtest,predArealTestv,positive = 0) 
+Recall_ArealTest <- Recall(DatasetA$vtest, predArealTestv,positive = 0) 
+Precision_ArealTest <- Precision(DatasetA$vtest,predArealTestv,positive = 0) 
+ConfusionMatrix_ArealTest <- ConfusionMatrix(predArealTestv,DatasetA$vtest)
+ConfusionDF_ArealTest <- ConfusionDF(predArealTestv,DatasetA$vtest)
+F1_Score_ArealTest <- F1_Score(DatasetA$vtest,predArealTestv,positive = 0)
+
+df_ArealTest <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","Sensitivity","Specificity",
+             "F1 score"),
+  Equal_IF = c(round(Accuracy_AEq,2),round(Precision_AEq,2),
+               round(Recall_AEq,2),round(Sensitivity_AEq,2),
+               round(Specificity_AEq,2),
+            round(F1_Score_AEq,2)),
+  Different_IF = c(round(Accuracy_ArealTest,2),round(Precision_ArealTest,2),
+                   round(Recall_ArealTest,2),round(Sensitivity_ArealTest,2),
+                   round(Specificity_ArealTest,2),
+            round(F1_Score_ArealTest,2))
+)
+
+# condition 1 True contaminated samples
+
+condTrueAreal_0Trainv <- CompArealTrainv[,1] == 0
+condPredAreal_1Trainv <- CompArealTrainv[,2] == 1
+condPredAreal_0Trainv <- CompArealTrainv[,2] == 0
+
+condAreal_01Trainv <- condTrueAreal_0Trainv & condPredAreal_1Trainv
+condAreal_00Trainv <- condTrueAreal_0Trainv & condPredAreal_0Trainv
+
+indAreal_T0_P1_Trainv <- which(condAreal_01Trainv == TRUE)
+indAreal_T0_P0_Trainv <- which(condAreal_00Trainv == TRUE)
+CompArealTrainv[indAreal_T0_P1_Trainv,]
+
+cond1Areal_trainv <- paste0(DatasetA$vtrain,predArealTrainv)
+
+condTrueAreal_0Testv <- CompArealTestv[,1] == 0
+condPredAreal_1Testv <- CompArealTestv[,2] == 1
+condPredAreal_0Testv <- CompArealTestv[,2] == 0
+
+condAreal_01Testv <- condTrueAreal_0Testv & condPredAreal_1Testv
+condAreal_00Testv <- condTrueAreal_0Testv & condPredAreal_0Testv
+
+indAreal_T0_P1_Testv <- which(condAreal_01Testv == TRUE)
+indAreal_T0_P0_Testv <- which(condAreal_00Testv == TRUE)
+
+CompArealTestv[indAreal_T0_P1_Testv,]
+
+cond1Areal_testv <- paste0(DatasetA$vtest,predArealTestv)
+
+#  Running the M-step when the labels are the true and estimate the parameters
+
+par_Areal$v <-as.matrix( DatasetA$vtrain )
+
+ms_ADifrealv <- mCmn_DIF_VVV(Xtrain = DatasetA$Xtrain,ltrain = DatasetA$ltrain, par = par_Areal)
+
+
+ms_ADifrealv$mu
+ms_ADifrealv$sigma
+ms_ADifrealv$alpha
+ms_ADifrealv$eta
+
+# round estimated parameters  
+mu_ArealDifr <- round(ms_ADifrealv$mu,2)
+#sigma_ArealDif <- as.vector(ms_ADifrealv$lambda)*ms_ADifrealv$sigma
+sigma_ArealDifr<- round(matrix(unlist(ms_ADifrealv$sigma),ncol=p_a,nrow=p_a,byrow = TRUE ),2)
+alpha_ArealDifr <- round(ms_ADifrealv$alpha,2)
+eta_ArealDifr <- round(ms_ADifrealv$eta,2)
+
+# fit the data with model allowing different variable inflation factor within group
+# passing the parameters obtained by the equal inflation factor model as initial parameters
+
+par0 <- list(G = G_a, pig = pig_a, mu = fit_AEq$models[[1]]$mu,
+             sigma = fit_AEq$models[[1]]$Sigma, alpha = fit_AEq$models[[1]]$alpha,
+             eta = fit_AEq$models[[1]]$eta, z = DatasetA$ltrain,
+             v = fit_AEq$models[[1]]$v)
+
+fit_ADif <- emCmn_DIF _VVV(X = DatasetA$Xtrain,labels = DatasetA$ltrain, par0, 
+                           Maxiterations = 1000,threshold = 0.001)
+
+
+
+# without passing initial parameters
+#fit_ADif <- emCmn_DIF_EII(X = DatasetA$Xtrain,labels = DatasetA$ltrain)
+
+
+
+par_ADif <- NULL
+par_ADif <- list(G = fit_ADif$G, pig = fit_ADif$pig, mu = fit_ADif$mu,
+                 sigma = fit_ADif$sigma,
+                 alpha = fit_ADif$alpha,
+                 eta = fit_ADif$eta)
+
+predADifTrainv <- fit_ADif
+
+predADifTestv <- eCmn_DIF(X = DatasetA$Xtest,labels = DatasetA$ltest, par = par_ADif)
+
+
+pred_ADifTrainv <- ifelse(predADifTrainv$v>0.5,1,0)
+Factpred_ADifTrainv <- factor(pred_ADifTrainv, levels = c("0","1"),
+                         labels=c("Cont","Non-cont"))
+Fact_ATrainv <- factor(DatasetA$vtrain, levels = c("0","1"),
+                     labels = c("Cont","Non-cont"))
+
+CM_ADifTrainv <- ConfusionMatrix(Factpred_ADifTrainv,Fact_ATrainv)
+
+CompADifTrainv <- cbind(True = DatasetA$vtrain, Pred = pred_ADifTrainv)
+
+
+pred_ADifTestv <- ifelse(predADifTestv$vhat>0.5,1,0)
+Factpred_ADifTestv <- factor(pred_ADifTestv, levels = c("0","1"),
+                         labels=c("Cont","Non-cont"))
+Fact_ATestv <- factor(DatasetA$vtest, levels = c("0","1"),
+                     labels = c("Cont","Non-cont"))
+
+CM_ADifTestv <- ConfusionMatrix(Factpred_ADifTestv,Fact_ATestv)
+
+CompADifTestv <- cbind(True = DatasetA$vtest, Pred = pred_ADifTestv)
+
+# condition 1 True contaminated samples
+
+condTrueADif_0Trainv <- CompADifTrainv[,1] == 0
+condPredADif_1Trainv <- CompADifTrainv[,2] == 1
+condPredADif_0Trainv <- CompADifTrainv[,2] == 0
+
+condADif_01Trainv <- condTrueADif_0Trainv & condPredADif_1Trainv
+condADif_00Trainv <- condTrueADif_0Trainv & condPredADif_0Trainv
+
+indADif_T0_P1_Trainv <- which(condADif_01Trainv == TRUE)
+indADif_T0_P0_Trainv <- which(condADif_01Trainv == TRUE)
+
+CompADifTrainv[indADif_T0_P1_Trainv,]
+cond1ADif_trainv <- paste0(DatasetA$vtrain,pred_ADifTrainv)
+
+
+condTrueADif_0Testv <- CompADifTestv[,1] == 0
+condPredADif_1Testv <- CompADifTestv[,2] == 1
+condPredADif_0Testv <- CompADifTestv[,2] == 0
+
+condADif_01Testv <- condTrueADif_0Testv & condPredADif_1Testv
+condADif_00Testv <- condTrueADif_0Testv & condPredADif_0Testv
+
+indADif_T0_P1_Testv <- which(condADif_01Testv == TRUE)
+indADif_T0_P0_Testv <- which(condADif_00Testv == TRUE)
+
+CompADifTestv[indADif_T0_P1_Testv,]
+cond1ADif_testv <- paste0(DatasetA$vtest,pred_ADifTestv)
+
+
+# round estimated parameters  
+mu_ADifr <- round(fit_ADif$mu,2)
+sigma_ADifr<- round(fit_ADif$sigma,2)
+alpha_ADifr <- round(fit_ADif$alpha,2)
+eta_ADifr <- round(fit_ADif$eta,2)
+
+
+Accuracy_ADifTrain <- Accuracy(pred_ADifTrainv,DatasetA$vtrain)
+Sensitivity_ADifTrain <- Sensitivity(DatasetA$vtrain, pred_ADifTrainv,positive = 0)
+Specificity_ADifTrain <- Specificity(DatasetA$vtrain,pred_ADifTrainv,positive = 0) 
+Recall_ADifTrain <- Recall(DatasetA$vtrain,pred_ADifTrainv,positive = 0) 
+Precision_ADifTrain <- Precision(DatasetA$vtrain,pred_ADifTrainv,positive = 0) 
+ConfusionMatrix_ADifTrain <- ConfusionMatrix(pred_ADifTrainv,DatasetA$vtrain)
+ConfusionDF_ADifTrain <- ConfusionDF(pred_ADifTrainv,DatasetA$vtrain)
+F1_Score_ADifTrain <- F1_Score(DatasetA$vtrain,pred_ADifTrainv,positive = 0)
+
+
+pred_ADifTest <-predADifTestv 
+
+
+Accuracy_ADifTest <- Accuracy(pred_ADifTest$vhat,DatasetA$vtest)
+Sensitivity_ADifTest <- Sensitivity(DatasetA$vtest, pred_ADifTest$vhat,positive = 0)
+Specificity_ADifTest <- Specificity(DatasetA$vtest,pred_ADifTest$vhat,positive = 0) 
+Recall_ADifTest <- Recall(DatasetA$vtest, pred_ADifTest$vhat,positive = 0) 
+Precision_ADifTest <- Precision(DatasetA$vtest,pred_ADifTest$vhat,positive = 0) 
+ConfusionMatrix_ADifTest <- ConfusionMatrix(pred_ADifTest$vhat,DatasetA$vtest)
+ConfusionDF_ADifTest <- ConfusionDF(pred_ADifTest$vhat,DatasetA$vtest)
+F1_Score_ADifTest <- F1_Score(DatasetA$vtest,pred_ADifTest$vhat,positive = 0)
+
+CM_ADifTestv
+ConfusionMatrix_AEq
+
+
+t_AEqTest <- as.data.frame.matrix(ConfusionMatrix_AEq)
+
+t_ADifTest <-as.data.frame.matrix(ConfusionMatrix_ADifTest)
+
+t_ATest <- cbind(t_AEqTest,t_ADifTest)
+
+df_ACompTrain <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","Sensitivity","Specificity",
+             "F1 score"),
+  Equal_IF = c(round(Accuracy_AEqTrain,2),round(Precision_AEqTrain,2),
+               round(Recall_AEqTrain,2),round(Sensitivity_AEqTrain,2),
+               round(Specificity_AEqTrain,2),
+            round(F1_Score_AEqTrain,2)),
+  Different_IF = c(round(Accuracy_ADifTrain,2),round(Precision_ADifTrain,2),
+                   round(Recall_ADifTrain,2),round(Sensitivity_ADifTrain,2),
+                   round(Specificity_ADifTrain,2),
+            round(F1_Score_ADifTrain,2))
+)
+
+df_ACompTest <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","Sensitivity","Specificity",
+             "F1 score"),
+  Equal_IF = c(round(Accuracy_AEq,2),round(Precision_AEq,2),
+               round(Recall_AEq,2),round(Sensitivity_AEq,2),
+               round(Specificity_AEq,2),
+            round(F1_Score_AEq,2)),
+  Different_IF = c(round(Accuracy_ADifTest,2),round(Precision_ADifTest,2),
+                   round(Recall_ADifTest,2),round(Sensitivity_ADifTest,2),
+                   round(Specificity_ADifTest,2),
+            round(F1_Score_ADifTest,2))
+)
+
+
+# DatasetB
+G_b <- 1
+p_b <- 3 # 3 variables
+nobs_b <- 300
+ptraining <- 0.6
+pig_b <- 1
+mu_b <- matrix(c(0,0,0), nrow = p_b, ncol = G_b, byrow = TRUE)
+sigma_b <- array(0,dim = c(p_b,p_b,G_b))
+sigma_b[,,1] <- diag(c(2,5,5),p_b)
+alpha_b <- 0.70
+eta_b <- c(1,25,1)
+#DatasetB <- Sim_DIF(mu_b,sigma_b,pig_b,nobs_b,ptraining,alpha_b,eta_b)
+#saveRDS(DatasetB,"DatasetB.RDS")
+DatasetB <- readRDS("DatasetB.RDS")
+
+fit_BEq <- CNmixt(X = DatasetB$Xtrain,G = G_b, contamination = TRUE, model = "EII",
+                  initialization = "mixt", label = DatasetB$ltrain)
+
+mu_BEq <- fit_BEq$models[[1]]$mu
+sigma_BEq <- fit_BEq$models[[1]]$Sigma
+alpha_BEq <- fit_BEq$models[[1]]$alpha
+eta_BEq <- fit_BEq$models[[1]]$eta
+
+par_BEq <- list(G = 1, pig = 1, mu = mu_BEq, 
+                sigma = sigma_BEq, 
+                alpha = alpha_BEq,
+                eta = eta_BEq)
+
+mu_BEqr <- round(mu_BEq,2)
+sigma_BEqr <- round(sigma_BEq,2)
+alpha_BEqr <- round(alpha_BEq,2)
+eta_BEqr <-round(eta_BEq,2)
+
+fit_BEqTrain <- ifelse(fit_BEq$models[[1]]$v > 0.5, 1, 0)
+pred_BEqTrain <- factor(fit_BEqTrain, levels = c("0","1"),
+                        labels = c("Cont","Non-cont"))
+
+Accuracy_BEqTrain <- Accuracy(fit_BEqTrain,DatasetB$vtrain)
+Sensitivity_BEqTrain <- Sensitivity(DatasetB$vtrain, fit_BEqTrain,positive = 0)
+Specificity_BEqTrain <- Specificity(DatasetB$vtrain,fit_BEqTrain,positive = 0) 
+Recall_BEqTrain <- Recall(DatasetB$vtrain, fit_BEqTrain,positive = 0) 
+Precision_BEqTrain <- Precision(DatasetB$vtrain,fit_BEqTrain,positive = 0) 
+ConfusionMatrix_BEqTrain <- ConfusionMatrix(fit_BEqTrain,DatasetB$vtrain )
+ConfusionDF_BEqTrain <- ConfusionDF(fit_BEqTrain,DatasetB$vtrain)
+F1_Score_BEqTrain <- F1_Score(DatasetB$vtrain,fit_BEqTrain,positive = 0)
+
+
+
+
+fit_BeqTest <- eCmn(DatasetB$Xtest,DatasetB$ltest,par_BEq)
+pred_BEqTest <- factor(fit_BeqTest$vhat, levels = c("0","1"),
+                       labels = c("Cont","Non-cont"))
+
+
+Accuracy_BEq <- Accuracy(fit_BeqTest$vhat,DatasetB$vtest)
+Sensitivity_BEq <- Sensitivity(DatasetB$vtest, fit_BeqTest$vhat,positive = 0)
+Specificity_BEq <- Specificity(DatasetB$vtest,fit_BeqTest$vhat,positive = 0) 
+Recall_BEq <- Recall(DatasetB$vtest, fit_BeqTest$vhat,positive = 0) 
+Precision_BEq <- Precision(DatasetB$vtest,fit_BeqTest$vhat,positive = 0) 
+ConfusionMatrix_BEq <- ConfusionMatrix(fit_BeqTest$vhat,DatasetB$vtest )
+ConfusionDF_BEq <- ConfusionDF(fit_BeqTest$vhat,DatasetB$vtest)
+F1_Score_BEq <- F1_Score(DatasetB$vtest,fit_BeqTest$vhat,positive = 0)
+
+mu_BEqr <- round(mu_BEq,2)
+sigma_BEqr <- round(sigma_BEq,2)
+alpha_BEqr <- round(alpha_BEq,2)
+eta_BEqr <-round(eta_BEq,2)
+
+
+#ConfusionMatrix_AEq <- confusionMatrix(factor(DatasetA$vtest),factor(fit_AeqTest$vhat) )
+
+#  Running the E-step when the parameters are the true parameters and 
+#  estimate the labels
+
+par_Breal <- list(G_b = 1, pig = pig_b, mu = mu_b,
+                 sigma = sigma_b,
+                 alpha = alpha_b,
+                 eta = eta_b)
+
+pred_BrealTrainv <- eCmn_DIF(X = DatasetB$Xtrain,labels = DatasetB$ltrain, par = par_Breal)
+pred_BrealTestv <- eCmn_DIF(X = DatasetB$Xtest,labels = DatasetB$ltest, par = par_Breal)
+
+predBrealTrainv <- ifelse(pred_BrealTrainv$vhat>0.5,1,0)
+FactpredBrealTrainv <- factor(predBrealTrainv, levels = c("0","1"),
+                         labels=c("Cont","Non-cont"))
+FactBrealTrainv <- factor(DatasetB$vtrain, levels = c("0","1"),
+                     labels = c("Cont","Non-cont"))
+
+CM_BrealTrainv <- ConfusionMatrix(FactpredBrealTrainv,FactBrealTrainv)
+
+CompBrealTrainv <- cbind(True = DatasetB$vtrain, Pred = predBrealTrainv)
+
+Accuracy_BrealTrain <- Accuracy(predBrealTrainv,DatasetB$vtrain)
+Sensitivity_BrealTrain <- Sensitivity(DatasetB$vtrain, predBrealTrainv,positive = 0)
+Specificity_BrealTrain <- Specificity(DatasetB$vtrain,predBrealTrainv,positive = 0) 
+Recall_BrealTrain <- Recall(DatasetB$vtrain, predBrealTrainv,positive = 0) 
+Precision_BrealTrain <- Precision(DatasetB$vtrain,predBrealTrainv,positive = 0) 
+ConfusionMatrix_BrealTrain <- ConfusionMatrix(predBrealTrainv,DatasetB$vtrain)
+ConfusionDF_BrealTrain <- ConfusionDF(predBrealTrainv,DatasetB$vtrain)
+F1_Score_BrealTrain <- F1_Score(DatasetB$vtrain,predBrealTrainv,positive = 0)
+
+df_BrealTrain <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","Sensitivity","Specificity",
+             "F1 score"),
+  Equal_IF = c(round(Accuracy_BEqTrain,2),round(Precision_BEqTrain,2),
+               round(Recall_BEqTrain,2),round(Sensitivity_BEqTrain,2),
+               round(Specificity_BEqTrain,2),
+            round(F1_Score_BEqTrain,2)),
+  Different_IF = c(round(Accuracy_BrealTrain,2),round(Precision_BrealTrain,2),
+                   round(Recall_BrealTrain,2),round(Sensitivity_BrealTrain,2),
+                   round(Specificity_BrealTrain,2),
+            round(F1_Score_BrealTrain,2))
+)
+
+
+
+predBrealTestv <- ifelse(pred_BrealTestv$vhat>0.5,1,0)
+FactpredBrealTestv <- factor(predBrealTestv, levels = c("0","1"),
+                         labels=c("Cont","Non-cont"))
+FactBrealTestv <- factor(DatasetB$vtest, levels = c("0","1"),
+                     labels = c("Cont","Non-cont"))
+
+CM_BrealTestv <- ConfusionMatrix(FactpredBrealTestv,FactBrealTestv)
+
+CompBrealTestv <- cbind(True = DatasetB$vtest, Pred = predBrealTestv)
+
+Accuracy_BrealTest <- Accuracy(predBrealTestv,DatasetB$vtest)
+Sensitivity_BrealTest <- Sensitivity(DatasetB$vtest, predBrealTestv,positive = 0)
+Specificity_BrealTest <- Specificity(DatasetB$vtest,predBrealTestv,positive = 0) 
+Recall_BrealTest <- Recall(DatasetB$vtest, predBrealTestv,positive = 0) 
+Precision_BrealTest <- Precision(DatasetB$vtest,predBrealTestv,positive = 0) 
+ConfusionMatrix_BrealTest <- ConfusionMatrix(predBrealTestv,DatasetB$vtest)
+ConfusionDF_BrealTest <- ConfusionDF(predBrealTestv,DatasetB$vtest)
+F1_Score_BrealTest <- F1_Score(DatasetB$vtest,predBrealTestv,positive = 0)
+
+df_BrealTest <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","Sensitivity","Specificity",
+             "F1 score"),
+  Equal_IF = c(round(Accuracy_BEq,2),round(Precision_BEq,2),
+               round(Recall_BEq,2),round(Sensitivity_BEq,2),
+               round(Specificity_BEq,2),
+            round(F1_Score_BEq,2)),
+  Different_IF = c(round(Accuracy_BrealTest,2),round(Precision_BrealTest,2),
+                   round(Recall_BrealTest,2),round(Sensitivity_BrealTest,2),
+                   round(Specificity_BrealTest,2),
+            round(F1_Score_BrealTest,2))
+)
+
+
+
+# condition 1 True contaminated samples
+
+condTrueBreal_0Trainv <- CompBrealTrainv[,1] == 0
+condPredBreal_1Trainv <- CompBrealTrainv[,2] == 1
+condPredBreal_0Trainv <- CompBrealTrainv[,2] == 0
+
+condBreal_01Trainv <- condTrueBreal_0Trainv & condPredBreal_1Trainv
+condBreal_00Trainv <- condTrueBreal_0Trainv & condPredBreal_0Trainv
+
+indBreal_T0_P1_Trainv <- which(condBreal_01Trainv == TRUE)
+indBreal_T0_P0_Trainv <- which(condBreal_00Trainv == TRUE)
+
+CompBrealTrainv[indBreal_T0_P1_Trainv,]
+cond1Breal_trainv <- paste0(DatasetB$vtrain,predBrealTrainv)
+
+
+condTrueBreal_0Testv <- CompBrealTestv[,1] == 0
+condPredBreal_1Testv <- CompBrealTestv[,2] == 1
+condPredBreal_0Testv <- CompBrealTestv[,2] == 0
+
+condBreal_01Testv <- condTrueBreal_0Testv & condPredBreal_1Testv
+condBreal_00Testv <- condTrueBreal_0Testv & condPredBreal_0Testv
+
+indBreal_T0_P1_Testv <- which(condBreal_01Testv == TRUE)
+indBreal_T0_P0_Testv <- which(condBreal_00Testv == TRUE)
+
+CompBrealTestv[indBreal_T0_P1_Testv,]
+cond1Breal_testv <- paste0(DatasetB$vtest,predBrealTestv)
+
+
+#  Running the M-step when the labels are the true and estimate the parameters
+
+par_Breal$v <-as.matrix( DatasetB$vtrain )
+
+ms_BDifrealv <- mCmn_DIF_VVV(Xtrain = DatasetB$Xtrain,ltrain = DatasetB$ltrain, par = par_Breal)
+
+ms_BDifrealv$mu
+ms_BDifrealv$sigma
+ms_BDifrealv$lambda
+ms_BDifrealv$alpha
+ms_BDifrealv$eta
+
+
+# round estimated parameters  
+mu_BrealDifr <- round(ms_BDifrealv$mu,2)
+#sigma_ArealDif <- as.vector(ms_ADifrealv$lambda)*ms_ADifrealv$sigma
+sigma_BrealDifr<- round(ms_BDifrealv$sigma,2)
+alpha_BrealDifr <- round(ms_BDifrealv$alpha,2)
+eta_BrealDifr <- round(ms_BDifrealv$eta,2)
+
+
+# fit the data with model allowing different variable inflation factor within group
+# without passing initial parameters
+
+
+# fit_BDif <- emCmn_DIF_EII(X = DatasetB$Xtrain,labels = DatasetB$ltrain, Maxiterations = 1000)
+
+# fit the data with model allowing different variable inflation factor within group
+# passing the equal inflation factor as initial parameters
+
+par0 <- list(G = G_b, pig = pig_b, mu = fit_BEq$models[[1]]$mu,
+             sigma =fit_BEq$models[[1]]$Sigma, alpha = fit_BEq$models[[1]]$alpha,
+             eta = fit_BEq$models[[1]]$eta, z = DatasetB$ltrain,
+             v = fit_BEq$models[[1]]$v)
+
+fit_BDif <- emCmn_DIF_VVV(X = DatasetB$Xtrain,labels = DatasetB$ltrain, par0,
+                           Maxiterations = 1000, threshold = 0.01)
+
+par_BDif <- NULL
+par_BDif <- list(G = fit_BDif$G, pig = fit_BDif$pig, mu = fit_BDif$mu,
+                 sigma = fit_BDif$sigma,
+                 alpha = fit_BDif$alpha,
+                 eta = fit_BDif$eta)
+
+predBDifTrainv <- fit_BDif
+
+predBDifTestv <- eCmn_DIF(X = DatasetB$Xtest,labels = DatasetB$ltest, par = par_BDif)
+
+
+pred_BDifTrainv <- ifelse(predBDifTrainv$v>0.5,1,0)
+Factpred_BDifTrainv <- factor(pred_BDifTrainv, levels = c("0","1"),
+                         labels=c("Cont","Non-cont"))
+Fact_BTrainv <- factor(DatasetB$vtrain, levels = c("0","1"),
+                     labels = c("Cont","Non-cont"))
+
+CM_BDifTrainv <- ConfusionMatrix(Factpred_BDifTrainv,Fact_BTrainv)
+
+CompBDifTrainv <- cbind(True = DatasetB$vtrain, Pred = pred_BDifTrainv)
+
+
+pred_BDifTestv <- ifelse(predBDifTestv$vhat>0.5,1,0)
+Factpred_BDifTestv <- factor(pred_BDifTestv, levels = c("0","1"),
+                         labels=c("Cont","Non-cont"))
+Fact_BTestv <- factor(DatasetB$vtest, levels = c("0","1"),
+                     labels = c("Cont","Non-cont"))
+
+CM_BDifTestv <- ConfusionMatrix(Factpred_BDifTestv,Fact_BTestv)
+
+CompBDifTestv <- cbind(True = DatasetB$vtest, Pred = pred_BDifTestv)
+
+# condition 1 True contaminated samples
+
+condTrueBDif_0Trainv <- CompBDifTrainv[,1] == 0
+condPredBDif_1Trainv <- CompBDifTrainv[,2] == 1
+condPredBDif_0Trainv <- CompBDifTrainv[,2] == 0
+
+condBDif_01Trainv <- condTrueBDif_0Trainv & condPredBDif_1Trainv
+condBDif_00Trainv <- condTrueBDif_0Trainv & condPredBDif_0Trainv
+
+indBDif_T0_P1_Trainv <- which(condBDif_01Trainv == TRUE)
+indBDif_T0_P0_Trainv <- which(condBDif_00Trainv == TRUE)
+
+CompBDifTrainv[indBDif_T0_P1_Trainv,]
+cond1BDif_trainv <- paste0(DatasetB$vtrain,pred_BDifTrainv)
+
+
+condTrueBDif_0Testv <- CompBDifTestv[,1] == 0
+condPredBDif_1Testv <- CompBDifTestv[,2] == 1
+condPredBDif_0Testv <- CompBDifTestv[,2] == 0
+
+condBDif_01Testv <- condTrueBDif_0Testv & condPredBDif_1Testv
+condBDif_00Testv <- condTrueBDif_0Testv & condPredBDif_0Testv
+
+indBDif_T0_P1_Testv <- which(condBDif_01Testv == TRUE)
+indBDif_T0_P0_Testv <- which(condBDif_00Testv == TRUE)
+CompBDifTestv[indBDif_T0_P1_Testv,]
+cond1BDif_testv <- paste0(DatasetB$vtest,pred_BDifTestv)
+
+
+# round estimated parameters  
+mu_BDifr <- round(fit_BDif$mu,2)
+sigma_BDif <- fit_BDif$sigma
+sigma_BDifr<- round(fit_BDif$sigma,2)
+alpha_BDifr <- round(fit_BDif$alpha,2)
+eta_BDifr <- round(fit_BDif$eta,2)
+
+
+pred_BDifTrainv
+
+Accuracy_BDifTrain <- Accuracy(pred_BDifTrainv,DatasetB$vtrain)
+Sensitivity_BDifTrain <- Sensitivity(DatasetB$vtrain, pred_BDifTrainv,positive = 0)
+Specificity_BDifTrain <- Specificity(DatasetB$vtrain,pred_BDifTrainv,positive = 0) 
+Recall_BDifTrain <- Recall(DatasetB$vtrain, pred_BDifTrainv,positive = 0) 
+Precision_BDifTrain <- Precision(DatasetB$vtrain,pred_BDifTrainv,positive = 0) 
+ConfusionMatrix_BDifTrain <- ConfusionMatrix(pred_BDifTrainv,DatasetB$vtrain)
+ConfusionDF_BDifTrain <- ConfusionDF(pred_BDifTrainv,DatasetB$vtrain)
+F1_Score_BDifTrain <- F1_Score(DatasetB$vtrain,pred_BDifTrainv,positive = 0)
+
+pred_BDifTest <-predBDifTestv 
+
+Accuracy_BDifTest <- Accuracy(pred_BDifTest$vhat,DatasetB$vtest)
+Sensitivity_BDifTest <- Sensitivity(DatasetB$vtest, pred_BDifTest$vhat,positive = 0)
+Specificity_BDifTest <- Specificity(DatasetB$vtest,pred_BDifTest$vhat,positive = 0) 
+Recall_BDifTest <- Recall(DatasetB$vtest, pred_BDifTest$vhat,positive = 0) 
+Precision_BDifTest <- Precision(DatasetB$vtest,pred_BDifTest$vhat,positive = 0) 
+ConfusionMatrix_BDifTest <- ConfusionMatrix(pred_BDifTest$vhat,DatasetB$vtest)
+ConfusionDF_BDifTest <- ConfusionDF(pred_BDifTest$vhat,DatasetB$vtest)
+F1_Score_BDifTest <- F1_Score(DatasetB$vtest,pred_BDifTest$vhat,positive = 0)
+
+
+
+CM_BDifTestv
+ConfusionMatrix_BEq
+
+
+t_BEqTest <- as.data.frame.matrix(ConfusionMatrix_BEq)
+
+t_BDifTest <-as.data.frame.matrix(ConfusionMatrix_BDifTest)
+
+t_BTest <- cbind(t_BEqTest,t_BDifTest)
+
+df_BCompTrain <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","Sensitivity","Specificity",
+             "F1 score"),
+  Equal_IF = c(round(Accuracy_BEqTrain,2),round(Precision_BEqTrain,2),
+               round(Recall_BEqTrain,2),round(Sensitivity_BEqTrain,2),
+               round(Specificity_BEqTrain,2),
+            round(F1_Score_BEqTrain,2)),
+  Different_IF = c(round(Accuracy_BDifTrain,2),round(Precision_BDifTrain,2),
+                   round(Recall_BDifTrain,2),round(Sensitivity_BDifTrain,2),
+                   round(Specificity_BDifTrain,2),
+            round(F1_Score_BDifTrain,2))
+)
+
+
+df_BCompTest <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","Sensitivity","Specificity",
+             "F1 score"),
+  Equal_IF = c(round(Accuracy_BEq,2),round(Precision_BEq,2),
+               round(Recall_BEq,2),round(Sensitivity_BEq,2),
+               round(Specificity_BEq,2),
+            round(F1_Score_BEq,2)),
+  Different_IF = c(round(Accuracy_BDifTest,2),round(Precision_BDifTest,2),
+                   round(Recall_BDifTest,2),round(Sensitivity_BDifTest,2),
+                   round(Specificity_BDifTest,2),
+            round(F1_Score_BDifTest,2))
+)
+
+
+
+
+
+
+
+# DatasetC
+G_c <- 2
+p_c <- 3 # 3 variables
+nobs_c <- 100
+ptraining <- 0.75
+pig_c <- c(0.5,0.5)
+mu_c <- matrix(c(0,0,0,3,0,0), nrow = p_c, ncol = G_c, byrow = TRUE)
+sigma_c <- array(0,dim = c(p_c,p_c,G_c))
+sigma_c[,,1] <- diag(1,p_c)
+sigma_c[,,2] <- diag(1,p_c)
+alpha_c <- c(0.8,0.9)
+eta_c <- matrix(c(5,1,5,10,5,1), nrow = p_c, ncol = G_c, byrow = TRUE )
+#DatasetC <- Sim_DIF(mu_c,sigma_c,pig_c,nobs_c,ptraining,alpha_c,eta_c)
+#saveRDS(DatasetC,"DatasetC.RDS")
+
+DatasetC <- readRDS("DatasetC.RDS")
+
+
+fit_CEq <- CNmixt(X = DatasetC$Xtrain,G = G_c, contamination = TRUE, model = "EII",
+                  initialization = "mixt", label = DatasetC$ltrain)
+
+mu_CEq <- fit_CEq$models[[1]]$mu
+sigma_CEq <- fit_CEq$models[[1]]$Sigma
+alpha_CEq <- fit_CEq$models[[1]]$alpha
+eta_CEq <- fit_CEq$models[[1]]$eta
+pig_CEq <- fit_CEq$models[[1]]$prior
+  
+
+par_CEq <- list(G = 1, pig = 1, mu = mu_CEq, 
+                sigma = sigma_CEq, 
+                alpha = alpha_CEq,
+                eta = eta_CEq,
+                pig <- pig_CEq)
+
+mu_CEqr <- round(mu_CEq,2)
+sigma_CEqr <- round(sigma_CEq,2)
+alpha_CEqr <- round(alpha_CEq,2)
+eta_CEqr <-round(eta_CEq,2)
+pig_CEqr <- round(pig_CEq,2)
+
+fit_CeqTest <- eCmn_DIF(DatasetC$Xtest,DatasetC$ltest,par_CEq)
+
+
+Accuracy_CEq <- Accuracy(fit_CeqTest$vhat,DatasetC$vtest)
+Sensitivity_CEq <- Sensitivity(DatasetC$vtest, fit_CeqTest$vhat,positive = 0)
+Specificity_CEq <- Specificity(DatasetC$vtest,fit_CeqTest$vhat,positive = 0) 
+Recall_CEq <- Recall(DatasetC$vtest, fit_CeqTest$vhat,positive = 0) 
+Precision_CEq <- Precision(DatasetC$vtest,fit_CeqTest$vhat,positive = 0) 
+ConfusionMatrix_CEq <- ConfusionMatrix(fit_CeqTest$vhat,DatasetC$vtest )
+ConfusionDF_CEq <- ConfusionDF(fit_CeqTest$vhat,DatasetC$vtest)
+F1_Score_CEq <- F1_Score(DatasetC$vtest,fit_CeqTest$vhat,positive = 0)
+
+#ConfusionMatrix_AEq <- confusionMatrix(factor(DatasetA$vtest),factor(fit_AeqTest$vhat) )
+par_CDif0 <- par_CEq
+eta0 <- array(0.0, dim = c(3,3,1))
+eta0[,,1]  <- diag(sqrt(par_CEq$eta),3)
+par_CDif0$eta <- eta0[,,1]
+par_CDif0$lambda <- 1
+
+
+
+set.seed(123)
+par_CDif0$v <- matrix(runif(nrow(DatasetC$Xtrain)*G_c), 
+                      nrow = nrow(DatasetC$Xtrain),ncol = G_c, byrow = TRUE)
+
+
+
+fit_CDif <- mCmn_DIF_EII(Xtrain = DatasetC$Xtrain,ltrain = DatasetC$ltrain, par = par_CDif0)
+
+mu_CDifr <- round(fit_CDif$mu,2)
+sigma_CDif <- as.vector(fit_CDif$lambda)*fit_CDif$sigma
+sigma_CDifr<- round(as.vector(fit_CDif$lambda)*fit_CDif$sigma,2)
+alpha_CDifr <- round(fit_CDif$alpha,2)
+eta_CDifr <- round(fit_CDif$eta,2)
+
+#fit_CDif$lambda
+#fit_CDif$eta
+    eta_CDif <- array(0.0, dim = c(p_c,p_c,G_c))
+
+if(is.array(fit_CDif$eta) )
+  if(all(dim(fit_CDif$eta)==c(p_c,p_c,G_c)) == TRUE )
+  {
+    for(g in 1:G_c)
+        eta_CDif[,,g] <- (matrix(unlist(fit_CDif$eta[,,g]),ncol = p_c,nrow =p_c,byrow = TRUE )) 
+  }
+  
+     par_CDif <- list(G = 1, pig = 1, mu = fit_CDif$mu,
+                 sigma = sigma_CDif,
+                 alpha = fit_CDif$alpha,
+                 eta = eta_CDif )
+
+
+      
+
+
+pred_CDif <- eCmn_DIF(X = DatasetC$Xtest,labels = DatasetC$ltest, par = par_CDif)
+
+Accuracy_CDif <- Accuracy(pred_CDif$vhat,DatasetC$vtest)
+Sensitivity_CDif <- Sensitivity(DatasetC$vtest, pred_CDif$vhat,positive = 0)
+Specificity_CDif <- Specificity(DatasetC$vtest,pred_CDif$vhat,positive = 0) 
+Recall_CDif <- Recall(DatasetC$vtest, pred_CDif$vhat,positive = 0) 
+Precision_CDif <- Precision(DatasetC$vtest,pred_CDif$vhat,positive = 0) 
+ConfusionMatrix_CDif <- ConfusionMatrix(pred_CDif$vhat,DatasetC$vtest)
+ConfusionDF_CDif <- ConfusionDF(pred_CDif$vhat,DatasetC$vtest)
+F1_Score_CDif <- F1_Score(DatasetC$vtest,pred_CDif$vhat,positive = 0)
+
+#ConfusionMatrix_CDif
+#ConfusionMatrix_CEq
+
+
+t_CEq <- as.data.frame.matrix(ConfusionMatrix_CEq)
+colnames(t_CEq)
+
+t_CDif <-as.data.frame.matrix(ConfusionMatrix_CDif)
+
+t_C <- cbind(t_CEq,t_CDif)
+
+df_c <- data.frame(
+  Metric = c("Accuracy","Precision","Recall","Sensitivity","Specificity",
+             "F1 score"),
+  Equal_IF = c(round(Accuracy_CEq,2),round(Precision_CEq,2),
+               round(Recall_CEq,2),round(Sensitivity_CEq,2),
+               round(Specificity_CEq,2),
+            round(F1_Score_CEq,2)),
+  Different_IF = c(round(Accuracy_CDif,2),round(Precision_CDif,2),
+                   round(Recall_CDif,2),round(Sensitivity_CDif,2),
+                   round(Specificity_CDif,2),
+            round(F1_Score_CDif,2))
+)
+```
+
+## Introduction
+ The traditional contaminated mixture model assumed that the contamination is the same for all variables within groups. The contaminated mixture model each group with a mixture of two normal distributions with two components. The first normal distribution models the non-contaminated samples while the second component models the contaminated samples. The contamination is control by two parameters which are the proportion of non-contaminated samples in each group $\alpha_{g}$ and the inflation factor $\eta_{g}$ that is the same for all variables within group.
+
+$$
+    f(\mathbf{x}|\vartheta) = \sum^{G}_{g=1} \pi_{g} \left[\alpha_{g} \mathcal{N}(x|\boldsymbol{\mu}_{g},\boldsymbol{\Sigma}_{g})  + (1-\alpha_{g})\mathcal{N}(x|\boldsymbol{\mu}_{g},\eta_{g}\boldsymbol{\Sigma}_{g}) \right]
+$$
+There are cases where the assumption that the inflation factor is the same for all variables  measured in an observation within groups might be unrealistic. It is possible that the characteristics or variables being contaminated are a few instead of a all variables. To model this scenario the previous equation can be modified by replacing the scalar $\eta_{g}$ that is the inflation factor for all variables within group $g$ by a matrix $N_{g}$ which is a diagonal matrix where each element of the diagonal $\eta_{gj}$ for $j = 1,\dots,p$ represent the inflation factor for the corresponding variable.
+
+$$
+    f(\mathbf{x}|\vartheta) = \sum^{G}_{g=1} \pi_{g} \left[\alpha_{g} \mathcal{N}(x|\boldsymbol{\mu}_{g},\boldsymbol{\Sigma}_{g})  + (1-\alpha_{g})\mathcal{N}(x|\boldsymbol{\mu}_{g},\dot{N}_{g}\boldsymbol{\Sigma}_{g}\dot{N}^{T}_{g}) \right]
+$$
+$$
+\dot{N}_{g} = \begin{bmatrix}
+\sqrt{\eta_{g1}} &     0     & \dots     & 0         \\
+0         & \sqrt{\eta_{g2}} & \dots     & 0         \\      
+\dots     & \dots     & \dots     & \dots     \\
+0         &     0     & \dots     & \sqrt{\eta_{gp}} \\   
+\end{bmatrix}
+$$
+
+
+The models considered assume independence among the observed variables. Therefore $\Sigma_{g}$ is diagonal matrix.
+
+$$
+\dot{N}_{g} = \begin{bmatrix}
+\sigma_{11} &     0     & \dots     & 0         \\
+0         & \sigma_{22} & \dots     & 0         \\      
+\dots     & \dots     & \dots     & \dots     \\
+0         &     0     & \dots     & \sigma_{pp} \\   
+\end{bmatrix}
+$$
+
+
+## Simulation study: Comparison between mixtures with equal and different inflation factors within group
+
+
+### Overview
+In this section, the behavior of contaminated mixture normal models assuming equal and different variables inflation factor within group is investigated. To generate the data the following process is conducted to generate three datasets where $75\%$ of the samples composed the training subset and the remaining are part of the test subset.
+
+a) A contaminated dataset of $100$ samples in $p=3$ dimensions and same variable inflation factor within group and $G=1$; 
+b) A contaminated dataset of $300$ samples in $p=3$ dimensions with different variable inflation factor within group and $G=1$;
+
+
+
+### Dataset A
+The parameters for dataset A are
+
+$$
+\mu = `r write_matex2(mu_a)` , \Sigma = `r write_matex2(sigma_a)`, \alpha = `r format(alpha_a,digits = 2)` , \eta = `r format(eta_a,digits = 2)`
+$$
+
+
+<p>
+  <span style="color:blue;">&#9679;</span> True positive (true contaminated predicted as contaminated)
+  <br>
+  <span style="color:blue;">&#9650;</span> True negative (true non-contaminated predicted as non-contaminated)
+  <br>
+  <span style="color:red;">+</span> False positive (true non-contaminated predicted as contaminated)
+  <br>
+  <span style="color:red;">X</span> False negative (true contaminated predicted as non-contaminated)
+</p>
+
+```{r plotA_training, echo = FALSE}
+#pairs(DatasetA$Xtrain, col = c("red","blue")[DatasetA$vtrain + 1],
+#      pch = ifelse(DatasetA$vtrain == 0,24,19), cex = 1)
+
+pairs(DatasetA$Xtrain, panel = function(x,y, ...) {
+  points(x,y, 
+         col = ifelse(cond1Areal_trainv == "11"|
+                        cond1Areal_trainv == "00","blue","red"), 
+#           c("red","blue")[DatasetA$vtrain + 1],
+         pch = ifelse(cond1Areal_trainv == "11",19,
+                      ifelse(cond1Areal_trainv == "00",17,
+                        ifelse(cond1Areal_trainv=="10",3,4)) ),
+         cex = 1,
+         ...)
+  #11   real non-contaminated and predicted non-contaminated with filled circle
+  #00   real contaminated and predicted non-contaminated triangle with filled triangle
+  #10   real non-contaminated and predicted contaminated
+  #    text(x[indAreal_T0_P0_Trainv],y[indAreal_T0_P0_Trainv],
+  #         labels=c(indAreal_T0_P0_Trainv),pos = 4)
+
+} )
+```
+
+```{r plotA_test, echo = FALSE}
+#pairs(DatasetA$Xtest, col = c("red","blue")[DatasetA$vtest + 1],
+#      pch = ifelse(DatasetA$vtest == 0,24,19), cex = 1)
+pairs(DatasetA$Xtest, panel = function(x,y, ...) {
+  points(x,y, 
+         col = ifelse(cond1Areal_trainv == "11"|
+                        cond1Areal_trainv == "00","blue","red"), 
+         pch = ifelse(cond1Areal_testv == "11",19,
+                      ifelse(cond1Areal_testv == "00",17,
+                        ifelse(cond1Areal_testv=="10",3,4)) ),
+         cex = 1,
+         ...)
+})
+```
+
+
+Looking at the training data above, it is clear that the inflation factor is the same across all variables with a few contaminated samples further than the contaminated samples cloud. This dataset is fitted firstly with the contaminated mixture of normals model assuming equal variable inflation factor within group and secondly with the model assuming different variable inflation factor within group.
+
+
+### Fitting a model with same variable inflation factor within group for dataset A.
+
+The parameter estimates were obtained by using the command Cnmixt until covergence from the library ContaminatedMixt. Next, the self-coded E-step was used to obtain the labels whether a sample is non-contaminated or contaminated.  The function Cnmixt assumes equal variable inflation factor within group and their estimated parameters are shown below.
+
+
+
+$$
+\mu = `r write_matex2(mu_AEqr)` , \Sigma = `r write_matex2(sigma_AEqr)`, \alpha = `r alpha_AEqr` , \eta = `r eta_AEqr`
+$$
+<div style="display: flex; flex-direction: row; justify-content: space-between;">
+```{r CM_A_Eqtrain, echo = FALSE}
+#knitr::kable(t_AEq, format = "markdown")
+knitr::kable(table(Fact_ATrainv,pred_AEqTrain), caption = "Equal IF Train")
+```
+```{r CM_A_Eqtest, echo = FALSE}
+#knitr::kable(t_AEq, format = "markdown")
+knitr::kable(table(Fact_ATestv,pred_AEqTest), caption = "Equal IF Test")
+```
+</div>
+
+
+
+### Fitting a model with different variables inflation factor within group using the real parameters as initial values and running an e-step to predict $\nu$ values for dataset A.
+
+It is assumed the real parameter estimates are known and they are plug-in the self-coded E-step function to predict samples contamination in both training and test sets.
+The confusion matrix where the rows are the real values and the columns are the predicted ones shows that `r 100*round(Sensitivity_AEqTrain,2)`$\%$, and `r 100*round(Sensitivity_AEq,2)`$\%$ of the contaminated samples are correctly identified in the training and test set respectively.
+
+<div style="display: flex; flex-direction: row; justify-content: space-between;">
+```{r CM_ArealTrain, echo=FALSE}
+knitr::kable(table(FactArealTrainv,FactpredArealTrainv),caption = "Train set")
+```
+```{r CM_ArealTest, echo = FALSE}
+knitr::kable(table(FactArealTestv,FactpredArealTestv),caption = "Test set")
+```
+</div>
+
+
+
+<div style="display: flex; flex-direction: row; justify-content: space-between;">
+```{r Df_ArealTrain,echo= FALSE}
+knitr::kable(df_ArealTrain, caption = "Train")
+#format_table(df_ArealTrain)
+```
+```{r Df_ArealTest, echo = FALSE}
+knitr::kable(df_ArealTest, caption = "Test")
+#format_table(df_ArealTest)
+```
+</div>
+
+
+### Using the real contamination information $\nu$'s and running m-step for a model allowing different variable inflation factor within group to obtain parameter estimates for dataset A.
+
+The parameter estimates obtained by using the real contamination information are
+
+$$
+\mu = `r write_matex2(mu_ArealDifr)` , \Sigma = `r write_matex2(sigma_ArealDifr)` , \alpha = `r alpha_ArealDifr`, \dot{N} * \dot{N}^{T} = N = `r write_matex2(eta_ArealDifr)`
+$$
+
+### Fitting a model with different variable inflation factor within group using the one obtained in an equal variable inflation factor within group model as initial parameters for dataset A.
+
+The initial values for the parameters of the model were taken from the contaminated mixture model produced by the function Cnmixt from the ContaminatedMixt package that assumes same variable inflation factor within group. Next, the E-M algorithm with a self-coded m-step that assumes different variable inflation factor within group for EII model is run until convergence that was reached after `r format(fit_ADif$iterations,digits = 2)` steps. The estimated parameters are shown below. 
+
+$$
+\mu = `r write_matex2(mu_ADifr)` , \Sigma = `r write_matex2(sigma_ADifr)` , \alpha = `r alpha_ADifr`, \dot{N} * \dot{N}^{T} = N = `r write_matex2(eta_ADifr)`
+$$
+
+It is possible to see that there are some differences between the estimates obtained for both models. The main difference between the estimates is observed in the values that the model with different variables inflation factor take for $\alpha$ which suggest a `r format(fit_ADif$alpha,digits=2)` of non-contaminated samples and implies a greater contamination that the equal variable inflation factor model `r format(fit_AEq$models[[1]]$alpha,digits = 2)`. Also, the inflation factors in the diagonal of the matrix $\dot{N}$ are different and much bigger than the estimated by the equal inflation factor model `r format(fit_AEq$models[[1]]$eta,digits = 2)`.
+
+It can be seen that the estimate for $\alpha$ is far from to the true parameter value. Moreover, the estimates for $\eta$ assuming different inflation factor are all different from the true parameter value that is `r format(eta_a,digits = 2)`. Also, it is possible to see in the diagonal of matrix $N$ that $X_{1}$ and $X_{2}$ are the variables with inflation factors further from the true value, while $X_{3}$ is closer to the true value. 
+
+
+
+Next, a self-coded function E-step was used to obtain the estimates of labels corresponding whether the observations are non-contaminated or contaminated in the test set. It was observed that the estimates for $\alpha$ and $N$ were affected for the choose of the initial values of $\nu_{i}$ which denotes if the $i^{th}$ sample is non-contaminated if $\nu_{i}=1$ otherwise is $0$. The pairs plot of the samples in the test subset shows a little more dispersion for the pair $X_{2}$ and $X_{3}$ than for the pair $X_{1}$ and $X_{3}$.
+
+
+<div style="display: flex; flex-direction: row; justify-content: space-between;">
+```{r CM_A_Diftrain, echo = FALSE}
+#knitr::kable(t_AEq, format = "markdown")
+knitr::kable(table(Fact_ATrainv,Factpred_ADifTrainv), caption = "Different IF Train")
+```
+```{r CM_A_Diftest, echo = FALSE}
+#knitr::kable(t_AEq, format = "markdown")
+knitr::kable(table(Fact_ATestv,Factpred_ADifTestv), caption = "Different IF Test")
+```
+</div>
+
+### Comparison between model that assume equal variable and different variable inflation factor within group for dataset A.
+
+The confusion matrix where the rows are the actual values and the columns the predicted values for the model assuming same variable inflation factor within group , shows that it was possible to identify half of the contaminated observations and all the non-contaminated observations correctly.
+
+
+However, taking a look of the performance of the model assuming different variables inflation factor within group is also able to identify half of the non-contaminated samples and misclassified $3$ non-contaminated samples as contaminated. As the data is generated for a model with same variable inflation factor within group, there is not surprise that it overcame their counterpart that assume different variable inflation factors within group. It is possible to confirm this result taking a look to the other metrics specially F1_Score.
+
+<div style="display: flex; flex-direction: row; justify-content: space-between;">
+```{r Df_CompATrain, echo = FALSE}
+#knitr::kable(df_A, format = "markdown")
+knitr::kable(df_ACompTrain, caption = "Train")
+```
+```{r Df_CompATest, echo = FALSE}
+#knitr::kable(df_A, format = "markdown")
+knitr::kable(df_ACompTest, caption = "Test")
+```
+</div>
+
+### Dataset B
+The parameters for dataset B are
+
+$$
+\mu = \begin{pmatrix} 0 \\ 0 \\ 0\\  \end{pmatrix} , \Sigma = I_{3} = \begin{pmatrix} 1 & 0 & 0  \\ 0 & 1 & 0  \\ 0 & 0 & 1   \\ \end{pmatrix}, \alpha = `r format(alpha_b,digits=2)`, \dot{N}_{g} = \begin{pmatrix} 1 & 0 & 0 \\ 0 & 5 & 0  \\ 0 & 0 & 1  \\  \end{pmatrix}, {N}_{g} = \begin{pmatrix} 1 & 0 & 0 \\ 0 & 25 & 0  \\ 0 & 0 & 1  \\  \end{pmatrix}
+$$
+The main different between the second dataset versus the previous one is that the data is generated from allowing different variables inflation factor within the group. It is possible to see that $X_{2}$ has an inflation factor higher than $X_{1}$ and $X_{3}$. The experiment consist of fitting first the variable assuming the same variable inflation factor in the group and next allowing different variable inflation factor within the group and comparing the results obtained.
+
+<p>
+  <span style="color:blue;">&#9679;</span> True positive (true contaminated predicted as contaminated)
+  <br>
+  <span style="color:blue;">&#9650;</span> True negative (true non-contaminated predicted as non-contaminated)
+  <br>
+  <span style="color:red;">+</span> False positive (true non-contaminated predicted as contaminated)
+  <br>
+  <span style="color:red;">X</span> False negative (true contaminated predicted as non-contaminated)
+</p>
+
+```{r plotB_training, echo = FALSE}
+pairs(DatasetB$Xtrain, panel = function(x,y, ...) {
+  points(x,y, 
+         col = ifelse(cond1Areal_trainv == "11"|
+                        cond1Areal_trainv == "00","blue","red"), 
+          pch = ifelse(cond1Breal_trainv == "11",19,
+                      ifelse(cond1Breal_trainv == "00",17,
+                        ifelse(cond1Breal_trainv=="10",3,4)) ),
+         cex = 1,
+         ...)
+#           text(x[indBreal_T0_P1_Testv],y[indBreal_T0_P1_Testv],
+#           labels=c(indBreal_T0_P1_Testv),pos = 4)
+})
+```
+```{r plotB_test, echo= FALSE}
+#pairs(DatasetB$Xtest, col = c("red","blue")[DatasetB$vtest + 1],
+#      pch = ifelse(DatasetB$vtest == 0,24,19), cex = 1)
+pairs(DatasetB$Xtest, panel = function(x,y, ...) {
+  points(x,y, 
+         col = ifelse(cond1Areal_trainv == "11"|
+                        cond1Areal_trainv == "00","blue","red"), 
+          pch = ifelse(cond1Breal_testv == "11",19,
+                      ifelse(cond1Breal_testv == "00",17,
+                        ifelse(cond1Breal_testv=="10",3,4)) ),
+         cex = 1,
+         ...)
+#           text(x[indBreal_T0_P1_Testv],y[indBreal_T0_P1_Testv],
+#           labels=c(indBreal_T0_P1_Testv),pos = 4)
+})
+```
+
+
+It is possible to observe that in the training and test subset there is a much higher dispersion in the variable $X2$ with values from $-10$ to $8$ in comparison with $X_{1}$ and $X_{3}$.
+
+### Fitting a model with same variable inflation factor within group for dataset B.
+
+Similar procedure is carry out fitting the data using Cnmixt function for model EII and assuming same variable inflation factor in the group and the parameters obtained are:
+
+
+$$
+\mu = `r write_matex2(mu_BEqr)` , \Sigma = `r write_matex2(sigma_BEqr)`, \alpha = `r alpha_BEqr` , \eta = `r eta_BEqr`
+$$
+
+<div style="display: flex; flex-direction: row; justify-content: space-between;">
+```{r CM_B_Eqtrain, echo = FALSE}
+#knitr::kable(t_AEq, format = "markdown")
+knitr::kable(table(Fact_BTrainv,pred_BEqTrain), caption = "Equal IF Train")
+```
+```{r CM_B_Eqtest, echo = FALSE}
+#knitr::kable(t_AEq, format = "markdown")
+knitr::kable(table(Fact_BTestv,pred_BEqTest), caption = "Equal IF Test")
+```
+</div>
+
+
+### Fitting a model with different variables inflation factor within group using the real parameters as initial values and running an e-step to predict $\nu$ values for dataset B.
+
+It is assumed that the real parameters are known and they are used as an input for a self-coded E-step as it was done previously to produce estimates for $\nu$'s. 
+From the tables below it is possible to see that half of the contaminated samples and any of them were identified in the train and test subsets respectively.
+
+<div style="display: flex; flex-direction: row; justify-content: space-between;">
+```{r CM_BrealTrain, echo = FALSE}
+knitr::kable(table(FactBrealTrainv,FactpredBrealTrainv), format = "markdown")
+```
+```{r CM_BrealTest,echo = FALSE}
+knitr::kable(table(FactBrealTestv,FactpredBrealTestv), format = "markdown")
+```
+</div>
+
+
+<div style="display: flex; flex-direction: row; justify-content: space-between;">
+```{r Df_BrealTrain, echo = FALSE}
+#knitr::kable(df_A, format = "markdown")
+knitr::kable(df_BrealTrain, caption = "Metrics train set")
+```
+```{r Df_BrealTest, echo = FALSE}
+#knitr::kable(df_A, format = "markdown")
+knitr::kable(df_BrealTest, caption = "Metrics test set")
+```
+</div>
+
+### Using the real contamination information $\nu$'s to run a m-step for a model allowing different variable inflation factor within group to obtain parameter estimates for dataset B.
+
+The parameter estimates for $\mu,\Sigma$ are quite close to the true parameter values. The parameter estimates for $\Sigma$ assume an EII structure $\lambda*I$. There is a noticeable different in the estimate for $\alpha$ with respect to its true value. The estimation for $\alpha$ assumes that there are more contaminated samples than what the true parameter states. The estimation for $\eta$ for each variable is visible in the diagonal of the  matrix $N$. The model reaches convergence after `r format(fit_BDif$iterations,digits = 2)` steps and the parameter estimates are:
+
+$$
+\mu = `r write_matex2(mu_BrealDifr)` , \Sigma = `r write_matex2(sigma_BrealDifr)` , \alpha = `r alpha_BrealDifr`, \dot{N} * \dot{N}^{T} = N = `r write_matex2(eta_BrealDifr)`
+$$
+
+
+### Fitting a model with different variable inflation factor within group using the one obtained in an equal variable inflation factor within group model as initial parameters for dataset B.
+
+The parameters obtained for $\mu,\Sigma,$ and $\lambda$ are very similar to their true values. The main difference between the estimates produced by a model assuming equal variable inflation factors and different variable inflation factors lies in the estimates for $\alpha$. For the former model $\alpha$ is equal to `r format(ms_BDifrealv$alpha,digits = 2)` while the latter is equal to `r format(fit_BDif$alpha,digits = 2)` which means that it overestimated the percentage of non-contaminated samples. Also, the variable inflation factors estimates are different for all the variables as the elements of the diagonal of matrix $N$ shows. Moreover, the estimate for the variable inflation factor corresponding to $X_{2}$ is greater than its true value.
+
+
+
+$$
+\mu = `r write_matex2(mu_BDifr)` , \Sigma = `r write_matex2(sigma_BDifr)` , \alpha = `r alpha_BDifr`, \dot{N} * \dot{N}^{T} = N = `r write_matex2(eta_BDifr)`
+$$
+Taking a look of the performance of the model assuming same variable inflation factor within group we can see that it is able to identify `r format(100*Sensitivity_BDifTrain,digits=2)` and `r format(100*Sensitivity_BDifTest,digits=2)` contaminated samples in the training and test sets. 
+
+<div style="display: flex; flex-direction: row; justify-content: space-between;">
+```{r CM_B_Diftrain, echo = FALSE}
+knitr::kable(table(Fact_BTrainv,Factpred_BDifTrainv), caption = "Different IF Train")
+```
+```{r CM_B_Diftest, echo = FALSE}
+knitr::kable(table(Fact_BTestv,Factpred_BDifTestv), caption = "Different IF Test")
+```
+</div>
+
+
+### Comparison between model that assume equal variable and different variable inflation factor within group for dataset B.
+
+The rest of the metrics confirms that when the data was coming from different variables inflation factors the model allowing different inflation factor seems to be more appropriate than assuming equal inflation factor within group as long as the initial parameters values are close to the true values. 
+
+<div style="display: flex; flex-direction: row; justify-content: space-between;">
+```{r Df_CompBTrain, echo = FALSE}
+#knitr::kable(df_A, format = "markdown")
+knitr::kable(df_BCompTrain, caption = "Train")
+```
+```{r Df_CompBTest, echo = FALSE}
+#knitr::kable(df_A, format = "markdown")
+knitr::kable(df_BCompTest, caption = "Test")
+```
+</div>
+

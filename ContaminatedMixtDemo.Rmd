@@ -87,6 +87,7 @@ It is possible to obtain parameter estimates using **CNmixt** function for the s
 ```{r Cnmixt}
 # predict using the function fitCMN from ContaminatedMixt packages
 # supervised version
+
 fitCMN <- CNmixt(Xtrain,G,contamination = TRUE,model = "VVV", 
                  initialization = "mixt",label = ltrain, 
                  iter.max = 10)
@@ -103,6 +104,20 @@ cbind(fitCMN1$models[[3]]$model,fitCMN1$models[[3]]$contamination)
 cbind(fitCMN1$models[[4]]$model,fitCMN1$models[[4]]$contamination)
 cbind(fitCMN1$models[[5]]$model,fitCMN1$models[[5]]$contamination)
 cbind(fitCMN1$models[[6]]$model,fitCMN1$models[[6]]$contamination)
+
+fitCMN10 <- CNmixt(Xtrain,G,model = "VVV", 
+                 initialization = "mixt",label = ltrain, 
+                 iter.max = 10)
+length(fitCMN10$models)
+cbind(fitCMN10$models[[1]]$model,fitCMN10$models[[1]]$contamination)
+cbind(fitCMN10$models[[2]]$model,fitCMN10$models[[2]]$contamination)
+
+
+fitCMN20 <- ContaminatedMixt::getBestModel(fitCMN1,criterion ="BIC", contamination = FALSE)
+fitCMN30 <- ContaminatedMixt::getBestModel(fitCMN1,criterion ="BIC", contamination = TRUE)
+
+cbind(fitCMN20$models[[1]]$model,fitCMN20$models[[1]]$contamination)
+length(fitCMN20$models)
 
 
 fitCMN$models[[1]]$mu

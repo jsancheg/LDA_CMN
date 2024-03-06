@@ -448,6 +448,107 @@ loglikCMN_DIF<-function(X,labels, par)
   return(loglik)
 }
 
+emCmn_DIF_VVV <- function(X, labels,  initpar = NULL, Maxiterations= 10, threshold = 0.01)
+{
+  if(!is.matrix(X)) X <- as.matrix(X)
+  
+  p <- ncol(X)
+  m <- nrow(X)
+  G <- length(unique(labels))
+  
+  v0 <- matrix(runif(m*G), nrow = m, ncol = G, byrow = TRUE)
+  exit <- 0
+  loglik <- c(0.0,0.0,0.0)   
+  
+  #if(is.null(par$G))  G <- length(unique(labels)) else  G <- par$G
+  
+  alpha0 <- rep(0.9,G)
+  eta0 <- array(0.0, dim = c(p,p,G))
+  pig <- numeric(G)
+  mu <- matrix(0.0, nrow = p , ncol = G)
+  sigma <- array(0.0, dim = c(p,p,G))
+  
+  l <- unmap(labels)
+  mg <- apply(l,2,sum)
+  pig0 <-mg/length(labels)
+  
+  if(is.null(initpar))
+  {
+    mu0 <-sapply(1:G,function(g){
+      apply(X[which(labels==g),],2,mean)
+    })
+    sigma0 <- array(0.0, dim = c(p,p,G))
+    for(g in 1:G)
+    {
+      sigma0[,,g] <- diag(1,p)
+      eta0[,,g] <- diag(1.10,p) 
+    }
+    
+    par <- list(G = G, pig = pig0, mu = mu0,
+                sigma = sigma0, alpha = alpha0,
+                eta = eta0, z = l, v =  v0)
+    
+  }else par <- list(G = initpar$G, pig = initpar$pig,
+                    mu = initpar$mu, sigma = initpar$sigma,
+                    alpha = initpar$alpha, eta = initpar$eta,
+                    z =l, v = initpar$v)
+  
+  loglik[1] <- loglikCMN_DIF(X,labels,par)  
+  loglik[1]
+  
+  estep0 <- eCmn_DIF(X,labels,par)
+  par$v <- estep0$v
+  iter <- 0
+  llvalue <- 0
+  a <- 0
+  b <- 0
+  
+  while(exit == 0)
+  {
+    iter <- iter + 1  
+    cat("\n E-M Iteration: ",iter,"\n")
+    mstep1 <- mCmn_DIF_VVV(X,labels,par)
+    llvalue <- loglikCMN_DIF(X,labels,par)
+    par$pig <- mstep1$pig
+    par$mu <- mstep1$mu
+    par$sigma <- mstep1$sigma
+    par$alpha <- mstep1$alpha
+    par$eta <- mstep1$eta
+    
+    
+    if(iter >= Maxiterations) 
+    { 
+      exit = 1
+    }else {
+      loglik[3] = loglik[2]
+      loglik[2] = loglik[1]
+      loglik[1] = llvalue
+      if(iter > 2)
+      {
+        if(abs(loglik[2]-loglik[3]) == 0) 
+        {
+          exit = 1
+        }else{
+          a = (loglik[1]-loglik[2])/(loglik[2]-loglik[3])
+          b = loglik[2] + (1/(1-a)*(loglik[1]-loglik[2]))
+          if(abs(b-loglik[1])< threshold) exit = 1
+        }
+      }
+    }
+    estep1 <- eCmn_DIF(X,labels,par)
+    par$v <- estep1$v
+    
+  }
+  
+  output <- list(G = par$G, pig = par$pig, mu = par$mu,
+                 sigma = par$sigma, alpha = par$alpha, 
+                 eta = par$eta, z = par$z, v = par$v,
+                iterations = iter,
+                 ll = llvalue)
+  return(output)
+}
+
+
 emCmn1_DIF_EII <- function(X, labels,  initpar = NULL, Maxiterations= 10, threshold = 0.01)
 {
   if(!is.matrix(X)) X <- as.matrix(X)
@@ -853,7 +954,54 @@ eCmn_DIF<-function(X,labels,par)
           for (i_g in 1:G) sigma1[,,i_g] <- t(eta[,,i_g]) %*% sigma[,,i_g] %*% eta[,,i_g]
         }
       }
-    }else if(is.list(par$sigma) & length((par$sigma))==G & G > 1)
+    }else if(is.list(par$sigma) & length(par$sigma) == G & G == 1)
+    {
+      if(is.vector(par$eta) & length(par$eta) == 1)
+      {
+        eta <- par$eta
+        sigma <- par$sigma
+        sigma1 <- array(0.0, dim =c(p,p,G))
+        for(i_g in 1:G) sigma1[,,i_g] <- eta * sigma[,,i_g]
+      }else if(is.vector(par$eta) & length(par$eta) == p)
+      {
+        eta <- diag(sqrt(par$eta),p)
+        sigma <- par$sigma
+        sigma1 <- array(0.0, dim = c(p,p,G))
+        for(i_g in 1:G) sigma1[,,i_g] <- t(eta) %*% sigma[,,i_g] %*% eta
+      }else if(is.vector(par$eta) & length(par$eta) == G)
+      {
+        sigma <- par$sigma
+        eta <- par$eta
+        sigma1 <- array(0.0, dim = c(p,p,G))
+        for(i_g in 1:G) 
+        {
+          sigma1[,,i_g] <- eta[i_g] * sigma[,,i_g]
+        }
+      }else if(is.matrix(par$eta) & nrow(par$eta)== p & ncol(par$eta) == G)
+      {
+        sigma <- par$sigma
+        eta <- array(0.0, dim = c(p,p,G))
+        sigma1 <- array(0.0, dim = c(p,p,G))
+        for(i_g in 1:G)
+        {
+          eta[,,i_g] <- diag(sqrt(par$eta[,i_g]),p)
+          sigma1[,,i_g] <- t(eta[,,i_g]) %*% sigma[,,i_g] %*% eta[,,i_g]
+        }
+      }else if( is.array(par$eta) ) 
+      {
+        if( all( dim(par$eta) == c(p,p,G) ) == TRUE  ) 
+        {
+          sigma <- array(0.0,dim = c(p,p,G))
+          sigma1 <- array(0.0,dim = c(p,p,G))
+          eta <- par$eta
+          for (i_g in 1:G) 
+          {
+            sigma[,,i_g] <- par$sigma[[i_g]]
+            sigma1[,,i_g] <- t(eta[,,i_g]) %*% sigma[,,i_g] %*% eta[,,i_g]
+          }  
+        }
+      }
+    }else if(is.list(par$sigma) & length(par$sigma)==G & G > 1)
     {
       if(is.vector(par$eta) & length(par$eta) == 1)
       {
@@ -953,7 +1101,14 @@ eCmn_DIF<-function(X,labels,par)
           # observation i in group g
           fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],sigma1[,,g])
           
-        }else if(G>=1 & (is.array(par$sigma)|is.list(par$sigma) ) )
+        }else if(G>=1 & is.array(par$sigma)  )
+        {
+          thetaig[i,g] <- dMVNorm(X[i,],mu[,g],sigma[,,g])
+          # fxig: matrix containing the probability of contaminated normal distribution for
+          # observation i in group g
+          fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],sigma1[,,g])
+          
+        }else if(G>=1 & is.list(par$sigma) )
         {
           thetaig[i,g] <- dMVNorm(X[i,],mu[,g],sigma[,,g])
           # fxig: matrix containing the probability of contaminated normal distribution for
@@ -1667,7 +1822,7 @@ mCmn_DIF_VVV <- function(Xtrain,ltrain,par,eta_max = 1000)
   term2 <- vector("list",m)
   sumTerms<- vector("list",m)
   sumSigma <-vector("list",G)
-  est_sigma <- vector("list",G)
+  est_sigma <- array(0.0,dim = c(p,p,G) )
   est_alpha <- numeric(length(alpha))
   est_mu <- matrix(0.0,nrow=p,ncol=G) 
   
@@ -1719,8 +1874,8 @@ mCmn_DIF_VVV <- function(Xtrain,ltrain,par,eta_max = 1000)
         sumSigma[[g]] <- sumSigma[[g]] + sumTerms[[i]]
       }# end-for i
       est_mu[,g] <- t(sum_sig_xi[[g]]) %*% solve(sum_sig[[g]])
-      if(G==1) est_sigma[[g]] <- sumSigma[[g]]/mg
-      if(G>1) est_sigma[[g]] <- sumSigma[[g]]/mg[g]
+      if(G==1) est_sigma[,,g] <- sumSigma[[g]]/mg
+      if(G>1) est_sigma[,,g] <- sumSigma[[g]]/mg[g]
     }# end-for g          
     
   }# end-if
@@ -1752,7 +1907,8 @@ mCmn_DIF_VVV <- function(Xtrain,ltrain,par,eta_max = 1000)
   
   
   
-  output <- list(mu = est_mu, sigma = est_sigma,inv_Sigma = est_invSigma,
+  output <- list(mu = est_mu, sigma = est_sigma,
+                 inv_Sigma = est_invSigma,
                  alpha = est_alpha ,eta = est_eta, pig = pig, G = G)
   
   return(output)

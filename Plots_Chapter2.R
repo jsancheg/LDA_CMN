@@ -1,4 +1,218 @@
 source("SimClassEM20steps")
+#source("DifIFunctions.R")
+
+loglikCMN<-function(X,l, par)
+{
+  
+  mu <- as.matrix(par$mu)
+  if(is.matrix(X) & ncol(X)==1) 
+  { 
+    if(length(dim(par$sigma))>2)
+    {
+      sg <- as.vector(par$sigma)
+    }else if(!is.matrix(par$sigma))
+    {
+      sg <- rep(par$sigma,par$G)
+    }
+  }else  sg <- par$sigma
+  
+  G <- par$G
+  pig <- par$pig
+  alpha <- par$alpha
+  eta <- par$eta
+  v <- par$v
+  
+  m <- nrow(X)
+  p <- ncol(X)
+  
+  l <- unmap(l)
+  M <- matrix(0.0, nrow = m, ncol = G)
+  
+  
+  
+  for (g in 1:G)
+  {
+    for(i in 1:m)
+    {
+      term1 <- log(pig[g])
+      if(length(dim(sg)) > 2)
+      {
+        term2 <- v[i,g] * (log(alpha[g]) + dMVNorm(X[i,],mu[,g],sg[,,g],log = TRUE) )
+        term3<-(1-v[i,g]) * (log(1-alpha[g]) + dMVNorm(X[i,],mu[,g],eta[g]*sg[,,g], log = TRUE) )
+        
+      }else if(length(dim(sg))<=2)
+      {
+        if(ncol(X)>1)
+        {
+          s <- matrix(sg, ncol = p, nrow = p)
+          term2 <- v[i,g] * ( log(alpha[g])+ dMVNorm(X[i,],mu[,g],data.matrix(s),log = TRUE ) )
+          term3 <-(1-v[i,g]) * ( log (1-alpha[g]) + dMVNorm(X[i,],mu[,g],eta[g]*s,log = TRUE ) )
+        } else if(ncol(X)==1)
+        {
+          mu <- as.vector(mu)
+          term2 <- v[i,g] * log(alpha[g]*dnorm(X[i,],mu[g],sg[g] ) )
+          term3<-(1-v[i,g]) * log( (1-alpha[g]) * dnorm(X[i,],mu[g],eta[g]*sg[g] ) )
+        }
+      }
+      
+      if(ncol(l)> 1)
+        M[i,g] <- l[i,g]*(term1 + term2 + term3)   
+      else  M[i,g] <- l[i]*(term1 + term2 + term3)   
+      
+      
+    }
+  }
+  
+  loglik <- sum(M)
+  
+  return(loglik)
+}
+
+CalculateMetrics <- function(Xtrain,Xtest,ltrain,ltest,
+                             vtrain, vtest,
+                             Model= c("EII","VII"),nsteps= 20)
+{
+  res1 <- vector("list",nsteps)
+  ressd1 <-vector("list",nsteps)
+  par1 <- vector("list",nsteps)
+  logliked1 <- vector("list",nsteps)
+  obsllld1 <- vector("list",nsteps)
+  estmud1 <- vector("list",nsteps)
+  estsigmad1 <-vector("list",nsteps)
+  estalphad1 <- vector("list",nsteps)
+  estetad1 <- vector("list",nsteps)
+  
+  par1s <- vector("list",nsteps)
+  logliked1s <- vector("list",nsteps)
+  obsllld1s <- vector("list",nsteps)
+  estmud1s <- vector("list",nsteps)
+  estsigmad1s <-vector("list",nsteps)
+  Metricsd1 <- data.frame()
+  estalphad1s <- vector("list",nsteps)
+  estetad1s <-  vector("list",nsteps)
+
+    
+  cfd1_Train <- vector("list",nsteps)
+  cfd1_Test <- vector("list",nsteps)
+  
+  for(i in 1:nsteps)
+  {
+    res1[[i]] <- CNmixt(Xtrain, G = 1, contamination = TRUE, model = Model ,iter.max = i)
+    ressd1[[i]] <- CNmixt(Xtrain, G = 1, label = ltrain ,contamination = TRUE, model = Model ,iter.max = i)
+    par1[[i]] <- ContaminatedMixt::getPar(res1[[i]])
+    par1[[i]]$pig <- par1[[i]]$prior
+    par1[[i]]$G <- length(unique(ltrain))
+    
+    
+    logliked1[[i]] <- res1[[1]]$models[[1]]$loglik    
+    
+    obsllld1[[i]] <- res1[[1]]$models[[1]]$obslll
+    estmud1[[i]] <-par1[[i]]$mu
+    estsigmad1[[i]] <- par1[[i]]$Sigma
+    estalphad1[[i]] <- par1[[i]]$alpha
+    estetad1[[i]] <- par1[[i]]$eta
+    
+    par1s[[i]] <- ContaminatedMixt::getPar(ressd1[[i]])
+    
+    par_fittedModel <- list(pig = par1s[[i]]$prior, G = length(unique(ltrain)), mu = par1s[[i]]$mu,
+                sigma = par1s[[i]]$Sigma, alpha = par1s[[i]]$alpha,
+                eta = par1s[[i]]$eta, v = ressd1[[i]]$models[[1]]$v)
+    
+    
+    logliked1s[[i]] <- loglikCMN(Xtrain,ltrain,par_fittedModel)
+    
+    
+#    logliked1s[[i]] <- ressd1[[1]]$models[[1]]$loglik    
+    obsllld1s[[i]] <- ressd1[[1]]$models[[1]]$obslll
+    estmud1s[[i]] <-par1s[[i]]$mu
+    estsigmad1s[[i]] <- par1s[[i]]$Sigma
+    estalphad1s[[i]] <- par1s[[i]]$alpha
+    estetad1s[[i]] <- par1s[[i]]$eta
+    
+    pred_class_train <- ressd1[[i]]$models[[1]]$group
+    pred_v_train <- ifelse(ressd1[[i]]$models[[1]]$v>0.5,1,0)
+    
+    aux_train <- data.frame(Actual_v = vtrain, Pred_v = as.vector(pred_v_train) )
+    
+    Metricsd1[i,"Iteration"] <- i
+    Metricsd1[i,"CCR_class_Train"]  <-  MLmetrics::Accuracy(pred_class_train,ltrain)
+    Metricsd1[i,"TP_train"] <- nrow(aux_train[aux_train$Actual_v == 1 & aux_train$Pred_v == 1,])
+    Metricsd1[i,"TN_train"] <- nrow(aux_train[aux_train$Actual_v == 0 & aux_train$Pred_v == 0,])
+    Metricsd1[i,"FP_train"] <- nrow(aux_train[aux_train$Actual_v == 1 & aux_train$Pred_v == 0,])
+    Metricsd1[i,"FN_train"] <- nrow(aux_train[aux_train$Actual_v == 0 & aux_train$Pred_v == 1,])
+    
+    Metricsd1[i,"Sensitivity_vTrain"] <- MLmetrics::Sensitivity(vtrain,pred_v_train,positive = 0 )
+    Metricsd1[i,"Specificity_vTrain"] <- MLmetrics::Specificity( vtrain,pred_v_train, positive = 0)
+    Metricsd1[i,"Precision_vTrain"] <- MLmetrics::Precision(vtrain,pred_v_train, positive = 0)
+    Metricsd1[i,"F1_Train"] <- MLmetrics::F1_Score(vtrain,pred_v_train,positive = 0)
+    
+    cfd1_Train[[i]] <- MLmetrics::ConfusionMatrix(pred_v_train,vtrain)    
+    
+    par_fittedModel <- list(G = 1 ,pig = par1s[[i]]$prior,
+                mu = par1s[[i]]$mu,
+                sigma = par1s[[i]]$Sigma,
+                alpha = par1s[[i]]$alpha,
+                eta = par1s[[i]]$eta)
+    
+    output <- eCmn(Xtest, par_fittedModel)
+    pred_class_test <- output$lhat
+    
+    
+    pred_v_test <- ifelse(output$v>0.5,1,0)
+    aux_test <- data.frame(Actual_v = vtest, Pred_v = as.vector(pred_v_test) )
+    
+    Metricsd1[i,"CCR_class_Test"]  <-  MLmetrics::Accuracy(pred_class_test,ltest)
+    Metricsd1[i,"TP_Test"] <- nrow(aux_test[aux_test$Actual_v == 1 & aux_test$Pred_v == 1,])
+    Metricsd1[i,"TN_Test"] <- nrow(aux_test[aux_test$Actual_v == 0 & aux_test$Pred_v == 0,])
+    Metricsd1[i,"FP_Test"] <- nrow(aux_test[aux_test$Actual_v == 1 & aux_test$Pred_v == 0,])
+    Metricsd1[i,"FN_Test"] <- nrow(aux_test[aux_test$Actual_v == 0 & aux_test$Pred_v == 1,])
+    
+    Metricsd1[i,"Sensitivity_vTest"] <- MLmetrics::Sensitivity(vtest,pred_v_test,positive = 0 )
+    Metricsd1[i,"Specificity_vTest"] <- MLmetrics::Specificity( vtest,pred_v_test, positive = 0)
+    Metricsd1[i,"Precision_vTest"] <- MLmetrics::Precision(vtest,pred_v_test, positive = 0)
+    Metricsd1[i,"F1_Test"] <- MLmetrics::F1_Score(vtest,pred_v_test,positive = 0)
+    cfd1_Test[[i]] <- MLmetrics::ConfusionMatrix(pred_v_test,vtest)    
+    
+  }
+  
+  Output <- list(Metrics = Metricsd1,cf_train = cfd1_Train,cf_test = cfd1_Test,
+                 parameters = par1s, res_clustering = res1, res_da = ressd1,
+                 loglikelihood_clustering = logliked1, loglikelihood_da = logliked1s,
+                 muhat_da = estmud1s, Sigmahat_da = estsigmad1s,
+                 alpha_da = estalphad1s, eta_da = estetad1s)
+  
+  return(Output)
+}
+
+
+# actual values for mu sigma and pi in the training set
+#---------------------------------------------
+actual_mean = apply(GenDataD.1$Xtrain,2,mean)
+actual_var = var(GenDataD.1$Xtrain)
+mg <- sum(GenDataD.1$vtrain)
+ntrain <- length(GenDataD.1$vtrain)
+
+actual_pi = mg/ntrain
+actual_alpha <- 0
+actual_eta <-0
+aux1<-0
+aux2 <- 0
+aux3 <- 0
+a <-0
+b<-0
+for (i in 1:ntrain)
+{
+  aux1 <- GenDataD.1$ltrain[i]*(GenDataD.1$vtrain[i])
+  actual_alpha <- actual_alpha  + aux1 
+  aux2 <- GenDataD.1$ltrain[i]*(1-GenDataD.1$vtrain[i])
+  
+  a <- a + aux2
+  aux3 <- aux2* mahalanobis(GenDataD.1$Xtrain[i,],actual_mean,actual_var)
+  b <- b + aux3
+}
+actual_alpha <- actual_alpha/ntrain
+actual_eta <- b/(2*a)
+
 
 # Dataset D.1 (contaminated) ----------------------------------------------
 
@@ -13,11 +227,124 @@ etag <- 30
 set.seed(123)
 GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
 GenDataD.1$vtrain
+length(GenDataD.1$vtrain)
 
+nsteps <- 20
+
+
+metrics_d1 <- CalculateMetrics(GenDataD.1$Xtrain,GenDataD.1$Xtest,GenDataD.1$ltrain,
+                               GenDataD.1$ltest,GenDataD.1$vtrain, GenDataD.1$vtest,
+                               Model = c("EII","VII"), nsteps = 20 )
+mu <- metrics_d1$muhat_da
+sigma <- metrics_d1$Sigmahat_da
+alpha <- metrics_d1$alpha_da
+eta <- metrics_d1$eta_da
+loglikelihood <- metrics_d1$loglikelihood_da
+
+round(metrics_d1$Metrics[,c("Sensitivity_vTest","Specificity_vTest","Precision_vTest","F1_Test")],2)
+
+# Unsupervised
+# mu
+lapply(list(mu[[3]],mu[[5]],mu[[10]],mu[[15]],mu[[17]],mu[[20]]),round,2)
+# sigma
+lapply(list(sigma[[3]],sigma[[5]],sigma[[10]],sigma[[15]],sigma[[17]],sigma[[20]]),round,2)
+# alpha
+round(c(alpha[[3]],alpha[[5]],alpha[[10]],alpha[[15]],alpha[[17]],alpha[[20]]),2)
+# eta
+round(c(eta[[3]],eta[[5]],eta[[10]],eta[[15]],eta[[17]],eta[[20]]),2)
+# log-likelihood
+round(c(loglikelihood[[3]],loglikelihood[[5]],loglikelihood[[10]],loglikelihood[[15]],loglikelihood[[17]],loglikelihood[[20]]),2)
+
+
+actual_mean = apply(GenDataD.1$Xtrain,2,mean)
+actual_var = var(GenDataD.1$Xtrain)
+mg <- sum(GenDataD.1$vtrain)
+ntrain <- length(GenDataD.1$vtrain)
+
+actual_pi = apply(unmap(GenDataD.1$ltrain),2,sum)/ntrain
+actual_alpha <- sum(GenDataD.1$vtrain==0)/ntrain
+
+aux_eta <- optimize(f_eta,c(1,10000),tol=0.01, 
+                    z = GenDataD.1$ltrain, v = GenDataD.1$v, X = GenDataD.1$Xtrain,
+                    mu = mu1, sigma = sg, maximum = TRUE)
+
+
+actual_eta <- aux_eta$maximum
+
+actual_eta 
+
+
+par_actual <- list()
+par_actual$mu <-matrix(mu1,nrow = length(mu1),ncol = 1) 
+par_actual$sigma <- sg
+par_actual$alpha <- alphag
+par_actual$eta <- etag
+par_actual$G <- 1
+par_actual$pig <- 1
+par_actual$v <- matrix(GenDataD.1$vtrain,nrow = nrow(GenDataD.1$Xtrain), 
+                       ncol = 1)
+
+logLikActual <-loglikCMN(GenDataD.1$Xtrain, GenDataD.1$ltrain, par_actual)
+logLikActual
+
+
+par_actual <- list()
+par_actual$mu <- mu
+par_actual$sigma <- sg
+par_actual$alpha <- alphag
+par_actual$eta <-etag
+par_actual$z <- GenDataD.1$ltrain
+par_actual$v <- GenDataD.1$vtrain
+  
+loglikCMN(GenDataD.1$Xtrain,l = GenDataD.1$ltrain,par_actual)
 
 resD1<-ModelAccuracy3(GenDataD.1$Xtrain, GenDataD.1$Xtest,
                       GenDataD.1$ltrain, GenDataD.1$ltest,
                       CE = "EII", alpharef = 0.90, tol = 0.0001)
+
+# mu at selected ECM steps
+round(resD1$mu[[1]],2)
+round(resD1$mu[[3]],2)
+round(resD1$mu[[5]],2)
+round(resD1$mu[[10]],2)
+round(resD1$mu[[15]],2)
+round(resD1$mu[[17]],2)
+round(resD1$mu[[20]],2)
+
+# sigma at selected ECM steps
+round(resD1$sigma[[1]],2)
+round(resD1$sigma[[3]],2)
+round(resD1$sigma[[5]],2)
+round(resD1$sigma[[10]],2)
+round(resD1$sigma[[15]],2)
+round(resD1$sigma[[17]],2)
+round(resD1$sigma[[1]],2)
+
+
+# alpha at selected ECM steps
+round(resD1$alpha[[3]],2)
+round(resD1$alpha[[5]],2)
+round(resD1$alpha[[10]],2)
+round(resD1$alpha[[15]],2)
+round(resD1$alpha[[17]],2)
+round(resD1$alpha[[20]],2)
+
+# eta at selected ECM steps
+round(resD1$eta[[3]],2)
+round(resD1$eta[[5]],2)
+round(resD1$eta[[10]],2)
+round(resD1$eta[[17]],2)
+round(resD1$eta[[20]],2)
+
+
+# likelihood at selected ECM steps
+resD1$loglikelihod[[1]]
+resD1$loglikelihod[[3]]
+resD1$loglikelihod[[5]]
+resD1$loglikelihod[[10]]
+resD1$loglikelihod[[15]]
+resD1$loglikelihod[[17]]
+resD1$loglikelihod[[20]]
 
 
 # Prediction at iteration 5 10  15 20  Training set 
@@ -29,6 +356,7 @@ vD1_5 <- ifelse(resD1$v[[5]]<0.5,0,1)
 vD1_10 <- ifelse(resD1$v[[10]]<0.5,0,1)
 vD1_15 <- ifelse(resD1$v[[15]]<0.5,0,1)
 vD1_20 <- ifelse(resD1$v[[20]]<0.5,0,1)
+
 
 
 cond1_train_5iteracion <- paste0(GenDataD.1$vtrain,vD1_5)
@@ -44,10 +372,10 @@ plot(GenDataD.1$Xtrain,
                          ifelse(cond1_train_5iteracion=="10",3,4)) ),
      xlab = "X1", ylab = "X2")
 legend("topleft",
-       legend = c("TP",
-                  "TN",
-                  "FP",
-                  "FN"),
+       legend = c("TN",
+                  "TP",
+                  "FN",
+                  "FP"),
        pch = c(19, 17, 3, 4),
        col = c("blue","blue","red","red"),
        bty = "n",
@@ -94,10 +422,10 @@ plot(GenDataD.1$Xtest,
                          ifelse(cond1_test_5iteracion=="10",3,4)) ),
      xlab = "X1", ylab = "X2")
 legend("topleft",
-       legend = c("TP",
-                  "TN",
-                  "FP",
-                  "FN"),
+       legend = c("TN",
+                  "TP",
+                  "FN",
+                  "FP"),
        pch = c(19, 17, 3, 4),
        col = c("blue","blue","red","red"),
        bty = "n",

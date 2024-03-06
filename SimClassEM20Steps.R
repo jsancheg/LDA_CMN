@@ -1842,6 +1842,50 @@ eCmn1 <- function(Xtrain,par)
   return(output)
 }
 
+
+f_etaDIF <- function(eta_gj,z, v , X, mu, invSigma_jj)
+{
+  # eta_gj: contains the value of eta for the p-th variable
+  # z : a vector of dimension nx1 containing either
+  #     the labels of the observation for the g-th group where z = 1 if observation i belongs 
+  #     to group g in the case of supervised learning or
+  #     the estimated probabilities z of observation i belonging to group g in the case of
+  #     semi-supervised learning
+  # v : a vector of dimension nx1 containing either
+  #     the labels of whether the i-th observation is contaminated v = 0 
+  #     or non-contaminated v= 1  
+  #     or the estimated probabilities v of observation i is contaminated or not
+  #     where if the probability is higher than 0.5 the observation is non-contaminated
+  #     and if the probability is lower than 0.5 is contaminated.
+  # X : matrix of observations
+  # mu: mu_gj it is the mean for the group g the variable j 
+  # invSigma: invSigmajj it is the jth element of the diagonal of the estimated inverse 
+  #           matrix of the covariance
+  
+  m <- length(X)
+  #  G <- ncol(mu)
+  output <- 0.0
+  if(any(nrow(z),nrow(v))== m) stop("z and v has to be same length")
+  sum1 <- 0
+  sum2 <- 0
+  product1 <- numeric(m)
+  product2 <- numeric(m)
+  
+  product1 <- z*(1-v)
+  
+  for(i in 1:m)
+  {
+    product2[i]<- product1[i]* ( (X[i]-mu)^2 )
+  } #end-if i
+  sum1 <- (-invSigma_jj/(2*eta_gj)) * sum(product2)
+  sum2 <- -(log(eta_gj)/2) *sum(product1)    
+  
+  output <- sum1 + sum2
+  
+  return(output)
+  
+}
+
 f_eta <- function(eta,z, v , X, mu, sigma)
 {
   p <- ncol(X)
