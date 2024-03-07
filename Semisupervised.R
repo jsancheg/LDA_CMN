@@ -550,13 +550,13 @@ HeadLongSearch_mod <- function(Xtrain, Xtest, RW, ltrain, ltest,
                            vtest,CE,
                            pnolabeled = 0.5,iterations = 10,
                            alpharef = 0.75, 
-                           tol = 0.01, epsilon = 0)
+                           tol = 0.01, epsilon = 0,i_sim = NULL,file_name = NULL )
   # Xtrain :  matrix containing observations used in training
   # Xtest  :  matrix containing observations used in test
   # RW     :  list of variables ordered according the F-statistics
   # ltrain :  vector containing the group information for observations in the training
   # ltest  :  vector containing the group information for observations in the test
-  # vtest  :
+  # vtest  : vector containing the contaminated information for observations in the test
   # CE     :  vector with the models to be tested
   
   
@@ -592,7 +592,7 @@ HeadLongSearch_mod <- function(Xtrain, Xtest, RW, ltrain, ltest,
     X_test <- Xtest %>% dplyr::select(all_of(PM))
     
     
-    cat("\n Model ",unlist(PM))
+    cat("\n"," File : ", file_name, " - Simulation: ",i_sim,"Model ",unlist(PM))
     
     models[[cont]] <- SemiSupervisedFitting(X_train,X_test,ltrain,ltest,
                                             vtest,model = c("E","V"), pnolabeled, 
@@ -617,11 +617,11 @@ HeadLongSearch_mod <- function(Xtrain, Xtest, RW, ltrain, ltest,
   # (OldCCRCM < CCRCM & !setequal(CM,RW) ) continue while all variables are not 
   # included in the model and the inclusion of all the variables is the best model
   # 
-#  exit <- 0
+  exit <- 0
   
   while( (!setequal(OldCM,CM) & OldCCRCM < CCRCM & 
-          !setequal(VisitededVariables2,ARW) ) | 
-         (OldCCRCM < CCRCM & !setequal(CM,RW) )   )
+          !setequal(VisitededVariables2,ARW) ) & exit == 0 | 
+         (OldCCRCM < CCRCM & !setequal(CM,RW) ) & exit == 0 )
   {
     OldCM <- CM
     OldCCRCM <- CCRCM
@@ -650,7 +650,7 @@ HeadLongSearch_mod <- function(Xtrain, Xtest, RW, ltrain, ltest,
         
         
         models[[cont]]$PM <- PM
-        cat("\n",cont," ,model = ",unlist(PM),"\n")
+        cat("\n"," File : ", file_name, " - Simulation: ",i_sim,  " ,model = ",unlist(PM),"\n")
         CCRPM <- models[[cont]]$CCRTestC
         
         cont <- cont + 1
@@ -661,6 +661,7 @@ HeadLongSearch_mod <- function(Xtrain, Xtest, RW, ltrain, ltest,
           CCRCM <- CCRPM 
           posCM <- cont-1
           nIterToConvergence <- models[[cont-1]]$niterations
+          exit <- 1
           break
         } # end if
         j <- j + 1
@@ -785,7 +786,7 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
     
     selectedVar_mod <- HeadLongSearch(Xtrain,Xtest,RW,ltrain,ltest,vtest,
                                       CE = CE, pnolabeled = 0.5, iterations = niterations,
-                                      alpharef = 0.75, tol = 0.01, epsilon = 0)
+                                      alpharef = 0.75, tol = 0.01, epsilon = 0, i_sim , file_name)
     
     
     pos_True_Model <- findPosModel(selectedVar_mod$models, variables_True_Model)
@@ -1095,7 +1096,7 @@ SemiSupervised_HLS_Mod <- function(file_name,pathScenarios,CE,variables_True_Mod
     saturated_mod <-  SemiSupervisedFitting(Xtrain,Xtest,ltrain,ltest,
                                             vtest, CE,pnolabeled) 
     
-    selectedVar_mod <- HeadLongSearch(Xtrain,Xtest,RW,ltrain,ltest,vtest,
+    selectedVar_mod <- HeadLongSearch_mod(Xtrain,Xtest,RW,ltrain,ltest,vtest,
                                       CE = CE, pnolabeled = 0.5, iterations = niterations,
                                       alpharef = 0.75, tol = 0.01, epsilon = 0)
     

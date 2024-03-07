@@ -1,15 +1,13 @@
 # File that contains all the functions used in 
-# variable selection with contaminated mixture models
+# v ariable selection with contaminated mixture models
 
 # Create dataset
 
 
-#work_path <- "E:/University of Glasgow/Literature review/R Code/"
-#setwd(work_path)
 
-work_path <- "/home/jsancheg/git_environment/LDA_CMN"
+#work_path <- "/home/jsancheg/git_environment/LDA_CMN"
 
-dir(work_path)
+#dir(work_path)
 #setwd(work_path)
 source("utilities.R")
 pathOutput <- "/home/jsancheg/git_environment/LDA_CMN/Scenarios/"
@@ -2087,11 +2085,11 @@ f_eta <- function(eta,z, v , X, mu, sigma)
   
   for(i in 1:m)
   {
-    sum1 <- sum1 + z[i]*(1-v[i])*log(eta)
+    sum1 <- sum1 + p*z[i]*(1-v[i])*log(eta)
     sum2 <- sum2 + mahalanobis(X[i,],mu,sigma)*z[i]* (1-v[i])/eta
   }
   
-  sum1 <-(-p/2) *sum1
+  sum1 <-(-1/2) *sum1
   sum2 <- (-1/2) * sum2
   output <- sum1 + sum2
   

@@ -35,6 +35,31 @@ GenerateSFile <- function(file_name,pathScenarios, pathOutput,Model="VVV")
   return(1);  
 }
 
+GenerateSFile_HLS <- function(file_name,pathScenarios, pathOutput,Model="VVV")
+{
+  
+
+  Number_Separating_Variables <-str_split_1(file_name, "_")[[3]]
+  
+  if(Number_Separating_Variables == 2)
+  {
+    variables_True_Model <- c("X2","X4")
+  }else if(Number_Separating_Variables == 3)
+  {
+    variables_True_Model <- c("X2","X4","X5")
+  }
+  
+  CE <- Model
+  Output <- SemiSupervised_HLS_Mod(file_name,pathScenarios,CE,variables_True_Model,
+                               pnolabeled = 0, niterations = 10,
+                               alpharef = 0.99, tol = 0.01, epsilon = 0)
+  
+  Sfile_name <- str_replace(file_name,"S_","SV_")
+  saveRDS(Output,paste0(pathOutput,Sfile_name))
+  
+  return(1);  
+}
+
 
 GenerateSFile_vectorize <- function(file_name,pathScenarios, pathOutput,Model="VVV")
 {

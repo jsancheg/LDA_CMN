@@ -1,4 +1,7 @@
-source("SimClassEM20steps")
+
+source("SimClassEM20Steps.R")
+source("CMNFunctionsV2.R")
+
 #source("DifIFunctions.R")
 
 loglikCMN<-function(X,l, par)
@@ -94,7 +97,9 @@ CalculateMetrics <- function(Xtrain,Xtest,ltrain,ltest,
     
   cfd1_Train <- vector("list",nsteps)
   cfd1_Test <- vector("list",nsteps)
-  
+  est_vtrain <- vector("list",nsteps)
+  est_vtest <- vector("list",nsteps)
+    
   for(i in 1:nsteps)
   {
     res1[[i]] <- CNmixt(Xtrain, G = 1, contamination = TRUE, model = Model ,iter.max = i)
@@ -128,7 +133,10 @@ CalculateMetrics <- function(Xtrain,Xtest,ltrain,ltest,
     estsigmad1s[[i]] <- par1s[[i]]$Sigma
     estalphad1s[[i]] <- par1s[[i]]$alpha
     estetad1s[[i]] <- par1s[[i]]$eta
-    
+
+    est_vtrain [[i]] <-     ressd1[[i]]$models[[1]]$v
+
+      
     pred_class_train <- ressd1[[i]]$models[[1]]$group
     pred_v_train <- ifelse(ressd1[[i]]$models[[1]]$v>0.5,1,0)
     
@@ -148,15 +156,17 @@ CalculateMetrics <- function(Xtrain,Xtest,ltrain,ltest,
     
     cfd1_Train[[i]] <- MLmetrics::ConfusionMatrix(pred_v_train,vtrain)    
     
-    par_fittedModel <- list(G = 1 ,pig = par1s[[i]]$prior,
+    par_fittedModel <- list(G = length(unique(ltrain)) ,pig = par1s[[i]]$prior,
                 mu = par1s[[i]]$mu,
                 sigma = par1s[[i]]$Sigma,
                 alpha = par1s[[i]]$alpha,
                 eta = par1s[[i]]$eta)
-    
-    output <- eCmn(Xtest, par_fittedModel)
+   cat("\n step ",i) 
+   
+    output <- eCmn(Xtest,ltest, par_fittedModel)
     pred_class_test <- output$lhat
     
+    est_vtest[[i]]<-output$v
     
     pred_v_test <- ifelse(output$v>0.5,1,0)
     aux_test <- data.frame(Actual_v = vtest, Pred_v = as.vector(pred_v_test) )
@@ -179,10 +189,445 @@ CalculateMetrics <- function(Xtrain,Xtest,ltrain,ltest,
                  parameters = par1s, res_clustering = res1, res_da = ressd1,
                  loglikelihood_clustering = logliked1, loglikelihood_da = logliked1s,
                  muhat_da = estmud1s, Sigmahat_da = estsigmad1s,
-                 alpha_da = estalphad1s, eta_da = estetad1s)
+                 alpha_da = estalphad1s, eta_da = estetad1s,
+                 vtrain_da = est_vtrain, vtest_da = est_vtest)
   
   return(Output)
 }
+
+
+
+
+# Dataset D.1 (contaminated) ----------------------------------------------
+
+mu1 <- c(0,0)
+mu <- mu1
+sg <- diag(1,2)
+pig<- c(1)
+nobservations = 700
+ptraining = 0.5
+alphag <- 0.95
+etag <- 30
+set.seed(123)
+#GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+#saveRDS(GenDataD.1,"DatasetD1.RDS")
+#GenDataD.10 <- ContaminatedMixt::rCN(700,mu1,sg,alphag,etag)
+#saveRDS(GenDataD.10,"DatasetD10.RDS")
+
+GenDataD.1 <- readRDS("DatasetD1.RDS")
+GenDataD.10 <- readRDS("DatasetD10.RDS")
+
+
+
+GenDataD.1$vtrain
+length(GenDataD.1$vtrain)
+
+Xtrain <- GenDataD.1$Xtrain
+Xtest <- GenDataD.1$Xtest
+ltrain <- GenDataD.1$ltrain
+ltest <- GenDataD.1$ltest
+vtrain <- GenDataD.1$vtrain
+vtest <- GenDataD.1$vtest
+Model <- c("EII","VII")
+
+
+nsteps <- 20
+
+actual_mean = apply(GenDataD.1$Xtrain,2,mean)
+est_var <- matrix(c(0.0), ncol = ncol(Xtrain),nrow = ncol(Xtrain))
+aux_var <- matrix(c(0.0), ncol = ncol(Xtrain),nrow = ncol(Xtrain))
+for(i in 1:nrow(Xtrain))
+{
+    aux <-ltrain[i]*(vtrain[i] + (1-vtrain[i])* (Xtrain[i,]-actual_mean) %*% t(Xtrain[i,]-actual_mean) )  
+    est_var = est_var + aux 
+}
+est_var/mg
+
+ind_cont <- GenDataD.1$vtrain==0
+ind_nocont <-!ind_cont
+
+actual_var_cont = var(GenDataD.1$Xtrain[ind_cont,])
+actual_var = var(GenDataD.1$Xtrain[ind_nocont,])
+round(actual_var,2)
+
+actual_var %*% solve(actual_var_cont)
+actual_var * 27
+
+mg <- sum(GenDataD.1$vtrain)
+ntrain <- length(GenDataD.1$vtrain)
+
+actual_pi = apply(unmap(GenDataD.1$ltrain),2,sum)/ntrain
+actual_alpha <-1- sum(vtrain==0)/ntrain
+
+
+aux_eta <- optimize(f_eta,c(1,10000),tol=0.001, 
+                    z = ltrain, v = vtrain, X = Xtrain,
+                    mu = actual_mean, sigma = actual_var, maximum = TRUE)
+
+
+optimize(f_eta,c(1,1000),tol = 0.001,
+         z=ltrain,v=vtrain,X=Xtrain,
+         mu = actual_mean, sigma = diag(diag(actual_var),2), maximum = TRUE)
+
+optimize(f_eta,c(1,1000),tol = 0.001,
+         z=ltrain,v=vtrain,X=Xtrain,
+         mu = actual_mean, sigma = sg, maximum = TRUE)
+
+
+
+actual_eta <- aux_eta$maximum
+actual_eta
+
+
+par_actual <- list()
+par_actual$mu <- actual_mean
+par_actual$sigma <- actual_var
+par_actual$alpha <- actual_alpha
+par_actual$eta <-actual_eta
+par_actual$z <- ltrain
+par_actual$v <- as.matrix(vtrain)
+par_actual$G <- 1
+par_actual$pig <- 1
+
+
+
+logLikActual <-loglikCMN(GenDataD.1$Xtrain, GenDataD.1$ltrain, par_actual)
+logLikActual
+
+
+round(actual_mean,2)
+round(actual_var,2)
+round(actual_alpha,2)
+round(actual_eta,2)
+round(logLikActual,2)
+
+
+metrics_d1 <- CalculateMetrics(Xtrain,Xtest,ltrain,
+                               ltest,vtrain, vtest,
+                               Model = Model, nsteps = 20 )
+
+
+mu <- metrics_d1$muhat_da
+sigma <- metrics_d1$Sigmahat_da
+alpha <- metrics_d1$alpha_da
+eta <- metrics_d1$eta_da
+loglikelihood <- metrics_d1$loglikelihood_da
+unlist(loglikelihood)
+
+
+par_real <- list(G = 1, pig = 1, mu = mu1, sigma = sg,
+                 alpha = alphag, eta = etag, z = ltrain,
+                 v = as.matrix(vtrain) )
+
+loglikCMN(Xtrain,ltrain,par_real)
+
+
+
+# Plot Sensitivity
+round(metrics_d1$Metrics[,c("Sensitivity_vTrain","Specificity_vTrain","Precision_vTrain","F1_Train")],2)
+
+round(metrics_d1$Metrics[,c("Sensitivity_vTest","Specificity_vTest","Precision_vTest","F1_Test")],2)
+
+
+# Prediction at iteration 5 10  15 20  Training set 
+vD1_1 <- ifelse(metrics_d1$vtrain_da[[1]]<0.5,0,1)
+vD1_2 <- ifelse(metrics_d1$vtrain_da[[2]]<0.5,0,2)
+vD1_3 <- ifelse(metrics_d1$vtrain_da[[3]]<0.5,0,3)
+vD1_4 <- ifelse(metrics_d1$vtrain_da[[4]]<0.5,0,4)
+vD1_5 <- ifelse(metrics_d1$vtrain_da[[5]]<0.5,0,1)
+vD1_7 <- ifelse(metrics_d1$vtrain_da[[10]]<0.5,0,1)
+vD1_10 <- ifelse(metrics_d1$vtrain_da[[10]]<0.5,0,1)
+vD1_15 <- ifelse(metrics_d1$vtrain_da[[15]]<0.5,0,1)
+vD1_20 <- ifelse(metrics_d1$vtrain_da[[20]]<0.5,0,1)
+
+
+cond1_train_5iteracion <- paste0(GenDataD.1$vtrain,vD1_5)
+cond1_train_7iteracion <- paste0(GenDataD.1$vtrain,vD1_7)
+cond1_train_10iteracion <- paste0(GenDataD.1$vtrain,vD1_10)
+
+
+# plot of predictions in the training set at 5th step ECM algorithm
+plot(GenDataD.1$Xtrain, 
+     col = ifelse(cond1_train_5iteracion == "11","blue",
+                  ifelse(cond1_train_5iteracion == "00","blue",
+                         ifelse(cond1_train_5iteracion=="10","red","red")) ),
+     pch = ifelse(cond1_train_5iteracion == "11",19,
+                  ifelse(cond1_train_5iteracion == "00",17,
+                         ifelse(cond1_train_5iteracion=="10",3,4)) ),
+     xlab = "X1", ylab = "X2")
+legend("topleft",
+       legend = c("TN",
+                  "TP",
+                  "FN",
+                  "FP"),
+       pch = c(19, 17, 3, 4),
+       col = c("blue","blue","red","red"),
+       bty = "n",
+       pt.cex = 1,
+       cex = 0.8)
+
+# plot of prediction in the training set at 10th step ECM algorithm
+plot(GenDataD.1$Xtrain, 
+     col = ifelse(cond1_train_10iteracion == "11","blue",
+                  ifelse(cond1_train_10iteracion == "00","blue",
+                         ifelse(cond1_train_10iteracion=="10","red","red")) ),
+     pch = ifelse(cond1_train_10iteracion == "11",19,
+                  ifelse(cond1_train_10iteracion == "00",17,
+                         ifelse(cond1_train_10iteracion=="10",3,4)) ),
+     xlab = "X1", ylab = "X2")
+legend("topleft",
+       legend = c("TN",
+                  "TP",
+                  "FN",
+                  "FP"),
+       pch = c(19, 17, 3, 4),
+       col = c("blue","blue","red","red"),
+       bty = "n",
+       pt.cex = 1,
+       cex = 0.8)
+
+
+
+
+est_v_5 <- metrics_d1$vtest_da[[5]]
+est_v_10 <- metrics_d1$vtest_da[[10]]
+
+vD1_test_5 <- ifelse(est_v_5<0.5,0,1)
+vD1_test_10 <- ifelse(est_v_10<0.5,0,1)
+
+
+cond1_test_5iteracion <- paste0(GenDataD.1$vtest,vD1_test_5)
+cond1_test_10iteracion <- paste0(GenDataD.1$vtest,vD1_test_10)
+
+# plot of predictions in test set at the 5th step of the ECM algorithm
+plot(GenDataD.1$Xtest, 
+     col = ifelse(cond1_test_5iteracion == "11","blue",
+                  ifelse(cond1_test_5iteracion == "00","blue",
+                         ifelse(cond1_test_5iteracion=="10","red","red")) ),
+     pch = ifelse(cond1_test_5iteracion == "11",19,
+                  ifelse(cond1_test_5iteracion == "00",17,
+                         ifelse(cond1_test_5iteracion=="10",3,4)) ),
+     xlab = "X1", ylab = "X2")
+legend("topleft",
+       legend = c("TN",
+                  "TP",
+                  "FN",
+                  "FP"),
+       pch = c(19, 17, 3, 4),
+       col = c("blue","blue","red","red"),
+       bty = "n",
+       pt.cex = 1,
+       cex = 0.8)
+
+# plot of predictions in test set at the 10th step of the ECM algorithm
+plot(GenDataD.1$Xtest, 
+     col = ifelse(cond1_test_10iteracion == "11","blue",
+                  ifelse(cond1_test_10iteracion == "00","blue",
+                         ifelse(cond1_test_10iteracion=="10","red","red")) ),
+     pch = ifelse(cond1_test_10iteracion == "11",19,
+                  ifelse(cond1_test_10iteracion == "00",17,
+                         ifelse(cond1_test_10iteracion=="10",3,4)) ),
+     xlab = "X1", ylab = "X2")
+legend("topleft",
+       legend = c("TN",
+                  "TP",
+                  "FN",
+                  "FP"),
+       pch = c(19, 17, 3, 4),
+       col = c("blue","blue","red","red"),
+       bty = "n",
+       pt.cex = 1,
+       cex = 0.8)
+
+
+metrics_d1$cf_train[[5]]
+metrics_d1$cf_test[[5]]
+
+metrics_d1$cf_train[[7]]
+metrics_d1$cf_test[[7]]
+
+metrics_d1$cf_train[[10]]
+metrics_d1$cf_test[[10]]
+
+metrics_d1$cf_train[[11]]
+metrics_d1$cf_test[[11]]
+
+
+# fitting at convergence
+res_conv <- CNmixt(Xtrain, G = 1, label= ltrain ,contamination = TRUE, model = Model, threshold = 1.0e-3)
+par_conv <- list(G = res_conv$models[[1]]$G, pig = res_conv$models[[1]]$prior, 
+                 mu = res_conv$models[[1]]$mu, sigma = res_conv$models[[1]]$Sigma,
+                 alpha = res_conv$models[[1]]$alpha,
+                 eta  = res_conv$models[[1]]$eta )
+
+res_conv$models[[1]]$iter.stop
+resD1<-ModelAccuracy3(Xtrain, Xtest,
+                      ltrain, ltest,
+                      CE = "EII", alpharef = 0.90, tol = 0.0001)
+
+resD1$sigma
+resD1$eta
+
+res_conv$models[[1]]$loglik
+par_conv$z = ltrain
+par_conv$v <- as.matrix(res_conv$models[[1]]$v)
+
+loglik_conv <- loglikCMN(Xtrain,ltrain,par_conv)
+
+
+# estimated parameters at convergence
+par_conv
+# mu
+round(par_conv$mu,2)
+# sigma
+round(par_conv$sigma,2)
+#alpha 
+round(par_conv$alpha,2)
+#eta
+round(par_conv$eta,2)
+# loglikelihood
+round(loglik_conv,2)
+
+
+output <- eCmn(Xtest,ltest, par_conv)
+
+vtrain_conv <- ifelse(res_conv$models[[1]]$v>0.5,1,0)
+vtest_conv <- ifelse(output$v>0.5,1,0)
+
+table(vtest,vtest_conv)
+
+cond1_train_convergence <- paste0(GenDataD.1$vtrain,vtrain_conv)
+cond1_test_convergence <- paste0(GenDataD.1$vtrain,vtest_conv)
+
+Prueba <-emCmn_DIF_VVV(Xtrain,ltrain,NULL,threshold = 0.001)
+Prueba$mu
+Prueba$sigma
+Prueba$eta
+
+
+# Plot of predictions in the train set when the ECM run until convergence
+plot(GenDataD.1$Xtrain, 
+     col = ifelse(cond1_train_convergence  == "11","blue",
+                  ifelse(cond1_train_convergence  == "00","blue",
+                         ifelse(cond1_train_convergence =="10","red","red")) ),
+     pch = ifelse(cond1_train_convergence  == "11",19,
+                  ifelse(cond1_train_convergence  == "00",17,
+                         ifelse(cond1_train_convergence =="10",3,4)) ),
+     xlab = "X1", ylab = "X2")
+      legend("topleft",
+       legend = c("TN",
+                  "TP",
+                  "FN",
+                  "FP"),
+       pch = c(19, 17, 3, 4),
+       col = c("blue","blue","red","red"),
+       bty = "n",
+       pt.cex = 1,
+       cex = 0.8)
+
+
+# Plot of predictions in the test set when the ECM run until convergence
+plot(GenDataD.1$Xtest, 
+     col = ifelse(cond1_test_convergence == "11","blue",
+                  ifelse(cond1_test_convergence == "00","blue",
+                         ifelse(cond1_test_convergence=="10","red","red")) ),
+     pch = ifelse(cond1_test_convergence == "11",19,
+                  ifelse(cond1_test_convergence == "00",17,
+                         ifelse(cond1_test_convergence=="10",3,4)) ),
+     xlab = "X1", ylab = "X2")
+legend("topleft",
+       legend = c("TN",
+                  "TP",
+                  "FN",
+                  "FP"),
+       pch = c(19, 17, 3, 4),
+       col = c("blue","blue","red","red"),
+       bty = "n",
+       pt.cex = 1,
+       cex = 0.8)
+
+
+#MLmetrics::ConfusionDF()
+
+
+ymin = min(na.omit(metrics_d1$Metrics$Sensitivity_vTrain,metrics_d1$Metrics$Sensitivity_vTest))
+ymax = max(na.omit(metrics_d1$Metrics$Sensitivity_vTrain,metrics_d1$Metrics$Sensitivity_vTest))
+
+plot(5:20,metrics_d1$Metrics$Sensitivity_vTrain[5:20], type = "l", lwd = 1,
+     col = "blue", ylim=c(0.65,1), ylab = "Sensitivity",xlab = "Iterations")
+lines(5:20,metrics_d1$Metrics$Sensitivity_vTest[5:20], lwd = 2,col = "green")
+legend("bottomright",legend= c("Train","Test"),col = c("blue","green"),lwd = c(1,2))
+
+
+# Plot Specificity
+
+ymin = min(na.omit(metrics_d1$Metrics$Specificity_vTrain,metrics_d1$Metrics$Specificity_vTest))
+ymax = max(na.omit(metrics_d1$Metrics$Specificity_vTrain,metrics_d1$Metrics$Specificity_vTest))
+
+plot(5:20,metrics_d1$Metrics$Specificity_vTrain[5:20], type = "l", lwd = 1,
+     col = "blue", ylim=c(0.65,1), ylab = "Specificiy",xlab = "Iterations")
+lines(5:20,metrics_d1$Metrics$Specificity_vTest[5:20], lwd = 2,col = "green")
+legend("bottomright",legend= c("Train","Test"),col = c("blue","green"),lwd = c(1,2))
+
+
+# Plot Precision
+
+ymin = min(na.omit(metrics_d1$Metrics$Precision_vTrain,metrics_d1$Metrics$Precision_vTest))
+ymax = max(na.omit(metrics_d1$Metrics$Precision_vTrain,metrics_d1$Metrics$Precision_vTest))
+
+plot(5:20,metrics_d1$Metrics$Precision_vTrain[5:20], type = "l", lwd = 1,
+     col = "blue", ylim=c(0.65,1), ylab = "Precision",xlab = "Iterations")
+lines(5:20,metrics_d1$Metrics$Precision_vTest[5:20], lwd = 2,col = "green")
+legend("bottomright",legend= c("Train","Test"),col = c("blue","green"),lwd = c(1,2))
+
+
+# Plot F1 score
+
+ymin = min(na.omit(metrics_d1$Metrics$F1_Train,metrics_d1$Metrics$F1_Test))
+ymax = max(na.omit(metrics_d1$Metrics$F1_Test,metrics_d1$Metrics$F1_Test))
+
+plot(5:20,metrics_d1$Metrics$Precision_vTrain[5:20], type = "l", lwd = 1,
+     col = "blue", ylim=c(ymin-1,ymax+2), ylab = "Precision",xlab = "Iterations")
+lines(5:20,metrics_d1$Metrics$Precision_vTest[5:20], lwd = 2,col = "green")
+legend("topleft",legend= c("Train","Test"),col = c("blue","green"),lwd = c(1,2))
+
+
+mu1
+sg
+
+map_eta <- sapply(2:35,function(x) f_eta(x,ltrain,vtrain,Xtrain,mu1,sg))
+
+plot(c(2:35),map_eta,type = "l")
+
+
+aux_eta <- optimize(f_eta,c(1,10000),tol=0.001, 
+                    z = ltrain, v = vtrain, X = Xtrain,
+                    mu = actual_mean, sigma = actual_var, maximum = TRUE)
+
+optimize(f_eta,c(1,1000),tol = 0.001,
+         z=ltrain,v=vtrain,X=Xtrain,
+         mu =mu1, sigma =sg, maximum = TRUE)
+
+
+
+# DatasetD.20 ------------------------------------ ------------------------
+
+
+
+
+
+
+# Unsupervised
+# mu
+lapply(list(mu[[3]],mu[[5]],mu[[10]],mu[[15]],mu[[17]],mu[[20]]),round,2)
+# sigma
+lapply(list(sigma[[3]],sigma[[5]],sigma[[10]],sigma[[15]],sigma[[17]],sigma[[20]]),round,2)
+# alpha
+round(c(alpha[[3]],alpha[[5]],alpha[[10]],alpha[[15]],alpha[[17]],alpha[[20]]),2)
+# eta
+round(c(eta[[3]],eta[[5]],eta[[10]],eta[[15]],eta[[17]],eta[[20]]),2)
+# log-likelihood
+round(c(loglikelihood[[3]],loglikelihood[[5]],loglikelihood[[10]],loglikelihood[[15]],loglikelihood[[17]],loglikelihood[[20]]),2)
 
 
 # actual values for mu sigma and pi in the training set
@@ -192,8 +637,9 @@ actual_var = var(GenDataD.1$Xtrain)
 mg <- sum(GenDataD.1$vtrain)
 ntrain <- length(GenDataD.1$vtrain)
 
-actual_pi = mg/ntrain
-actual_alpha <- 0
+actual_pi <- sum(unmap(ltrain))/ntrain
+actual_alpha = mg/ntrain
+
 actual_eta <-0
 aux1<-0
 aux2 <- 0
@@ -214,89 +660,13 @@ actual_alpha <- actual_alpha/ntrain
 actual_eta <- b/(2*a)
 
 
-# Dataset D.1 (contaminated) ----------------------------------------------
-
-mu1 <- c(0,0)
-mu <- mu1
-sg <- diag(1,2)
-pig<- c(1)
-nobservations = 700
-ptraining = 0.5
-alphag <- 0.95
-etag <- 30
-set.seed(123)
-GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
-GenDataD.1$vtrain
-length(GenDataD.1$vtrain)
-
-nsteps <- 20
 
 
-metrics_d1 <- CalculateMetrics(GenDataD.1$Xtrain,GenDataD.1$Xtest,GenDataD.1$ltrain,
-                               GenDataD.1$ltest,GenDataD.1$vtrain, GenDataD.1$vtest,
-                               Model = c("EII","VII"), nsteps = 20 )
-mu <- metrics_d1$muhat_da
-sigma <- metrics_d1$Sigmahat_da
-alpha <- metrics_d1$alpha_da
-eta <- metrics_d1$eta_da
-loglikelihood <- metrics_d1$loglikelihood_da
-
-round(metrics_d1$Metrics[,c("Sensitivity_vTest","Specificity_vTest","Precision_vTest","F1_Test")],2)
-
-# Unsupervised
-# mu
-lapply(list(mu[[3]],mu[[5]],mu[[10]],mu[[15]],mu[[17]],mu[[20]]),round,2)
-# sigma
-lapply(list(sigma[[3]],sigma[[5]],sigma[[10]],sigma[[15]],sigma[[17]],sigma[[20]]),round,2)
-# alpha
-round(c(alpha[[3]],alpha[[5]],alpha[[10]],alpha[[15]],alpha[[17]],alpha[[20]]),2)
-# eta
-round(c(eta[[3]],eta[[5]],eta[[10]],eta[[15]],eta[[17]],eta[[20]]),2)
-# log-likelihood
-round(c(loglikelihood[[3]],loglikelihood[[5]],loglikelihood[[10]],loglikelihood[[15]],loglikelihood[[17]],loglikelihood[[20]]),2)
-
-
-actual_mean = apply(GenDataD.1$Xtrain,2,mean)
-actual_var = var(GenDataD.1$Xtrain)
-mg <- sum(GenDataD.1$vtrain)
-ntrain <- length(GenDataD.1$vtrain)
-
-actual_pi = apply(unmap(GenDataD.1$ltrain),2,sum)/ntrain
-actual_alpha <- sum(GenDataD.1$vtrain==0)/ntrain
-
-aux_eta <- optimize(f_eta,c(1,10000),tol=0.01, 
-                    z = GenDataD.1$ltrain, v = GenDataD.1$v, X = GenDataD.1$Xtrain,
-                    mu = mu1, sigma = sg, maximum = TRUE)
-
-
-actual_eta <- aux_eta$maximum
 
 actual_eta 
 
 
-par_actual <- list()
-par_actual$mu <-matrix(mu1,nrow = length(mu1),ncol = 1) 
-par_actual$sigma <- sg
-par_actual$alpha <- alphag
-par_actual$eta <- etag
-par_actual$G <- 1
-par_actual$pig <- 1
-par_actual$v <- matrix(GenDataD.1$vtrain,nrow = nrow(GenDataD.1$Xtrain), 
-                       ncol = 1)
 
-logLikActual <-loglikCMN(GenDataD.1$Xtrain, GenDataD.1$ltrain, par_actual)
-logLikActual
-
-
-par_actual <- list()
-par_actual$mu <- mu
-par_actual$sigma <- sg
-par_actual$alpha <- alphag
-par_actual$eta <-etag
-par_actual$z <- GenDataD.1$ltrain
-par_actual$v <- GenDataD.1$vtrain
-  
-loglikCMN(GenDataD.1$Xtrain,l = GenDataD.1$ltrain,par_actual)
 
 resD1<-ModelAccuracy3(GenDataD.1$Xtrain, GenDataD.1$Xtest,
                       GenDataD.1$ltrain, GenDataD.1$ltest,
@@ -438,6 +808,33 @@ table(GenDataD.1$vtest,vD1_test_5)
 table(GenDataD.1$vtest,vD1_test_10)
 
 
+# actual values for mu sigma and pi in the training set
+#---------------------------------------------
+actual_mean = apply(GenDataD.1$Xtrain,2,mean)
+actual_var = var(GenDataD.1$Xtrain)
+mg <- sum(GenDataD.1$vtrain)
+ntrain <- length(GenDataD.1$vtrain)
+
+actual_pi = mg/ntrain
+actual_alpha <- 0
+actual_eta <-0
+aux1<-0
+aux2 <- 0
+aux3 <- 0
+a <-0
+b<-0
+for (i in 1:ntrain)
+{
+  aux1 <- GenDataD.1$ltrain[i]*(GenDataD.1$vtrain[i])
+  actual_alpha <- actual_alpha  + aux1 
+  aux2 <- GenDataD.1$ltrain[i]*(1-GenDataD.1$vtrain[i])
+  
+  a <- a + aux2
+  aux3 <- aux2* mahalanobis(GenDataD.1$Xtrain[i,],actual_mean,actual_var)
+  b <- b + aux3
+}
+actual_alpha <- actual_alpha/ntrain
+actual_eta <- b/(2*a)
 
 
 aux20 <- eCmn(GenDataD.1$Xtest,parD1_20)
