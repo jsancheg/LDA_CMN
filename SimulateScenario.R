@@ -3740,5 +3740,51 @@ SimScenario_Individual <- function(Sets, nruns,pathOutput)
 
 get_factors_from_file_name <- function(file_name )
 {
+  aux_Factors <- str_split(file_name,"_",simplify = TRUE)
+  aux_Factors1 <- as.character(14)
+  Scenarios_Factors <- as.character()
+  temp <- as.character()
   
+  if(length(aux_Factors)<11)
+    {
+      stop("\n Check the name of the file because it does not fill the expected structure \n")
+    }else  aux_Factors1[1:8] <- aux_Factors[2:9]
+
+    aux_Factors1
+    
+    if(str_length(aux_Factors[10]) == 5)
+    {
+      aux_Factors1[9] <- as.numeric(str_sub(aux_Factors[10],2,3))/100 
+      aux_Factors1[10] <- as.numeric(str_sub(aux_Factors[10],4,5))/100
+      aux_Factors1[11] <- 0
+    } else if(str_length(aux_Factors[10]) == 7)
+    {
+      aux_Factors1[9] <- as.numeric(str_sub(aux_Factors[10],2,3))/100 
+      aux_Factors1[10] <- as.numeric(str_sub(aux_Factors[10],4,5))/100
+      aux_Factors1[11] <- as.numeric(str_sub(aux_Factors[10],6,7))/100
+      
+    }
+      
+    if(str_length(aux_Factors[11]) == 4)
+    {
+      aux_Factors1[12] <- str_sub(aux_Factors[11],2,2) 
+      aux_Factors1[13] <- str_sub(aux_Factors[11],3,4)
+      aux_Factors1[14] <- 0
+    } else if(str_length(aux_Factors[11]) == 5)
+    {
+      aux_Factors1[12] <- str_sub(aux_Factors[11],2,2) 
+      aux_Factors1[13] <- str_sub(aux_Factors[11],3,3)
+      aux_Factors1[14] <- str_sub(aux_Factors[11],4,5)
+    }
+      
+      Scenarios_Factors[1:4] <- aux_Factors1[1:4]  
+      
+      
+      Scenarios_Factors[5] <- aux_Factors1[6]
+      Scenarios_Factors[6] <- aux_Factors1[8]
+      Scenarios_Factors[7] <- aux_Factors1[7]
+      Scenarios_Factors[8] <- as.numeric(aux_Factors1[5])/100
+      Scenarios_Factors[9:14] <- aux_Factors1[9:14]
+      
+      return(Scenarios_Factors)  
 }
