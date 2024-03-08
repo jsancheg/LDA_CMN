@@ -66,12 +66,12 @@ ptraining <- 0.75
 pig_a <- 1
 mu_a <- matrix(c(0,0,0), nrow = p_a, ncol = G_a, byrow = TRUE)
 sigma_a <- array(0,dim = c(p_a,p_a,G_a))
-sigma_a[,,1] <- diag(1,p_a)
+sigma_a[,,1] <- diag(c(3,1,3),p_a)
 alpha_a <- 0.8
 eta_a <- 5
-#DatasetA <- SimGClasses(mu_a,sigma_a,pig_a,nobs_a,ptraining,alpha_a,eta_a)
+DatasetA <- SimGClasses(mu_a,sigma_a,pig_a,nobs_a,ptraining,alpha_a,eta_a)
 #saveRDS(DatasetA,"DatasetA.RDS")
-DatasetA <- readRDS("DatasetA.RDS")
+#DatasetA <- readRDS("DatasetA.RDS")
 fit_AEq <- CNmixt(X = DatasetA$Xtrain,G = G_a, contamination = TRUE, model = "EII",
                   initialization = "mixt", label = DatasetA$ltrain)
 
@@ -275,6 +275,10 @@ par0 <- list(G = G_a, pig = pig_a, mu = fit_AEq$models[[1]]$mu,
 fit_ADif <- emCmn_DIF_VVV(X = DatasetA$Xtrain,labels = DatasetA$ltrain, par0, 
                            Maxiterations = 1000,threshold = 0.001)
 
+fit_ADif <- emCmn_DIF_VVV(X = DatasetA$Xtrain,labels = DatasetA$ltrain,  
+                           Maxiterations = 1000,threshold = 0.001)
+
+
 # without passing initial parameters
 #fit_ADif <- emCmn_DIF_EII(X = DatasetA$Xtrain,labels = DatasetA$ltrain)
 
@@ -349,6 +353,10 @@ sigma_ADifr<- round(fit_ADif$sigma,2)
 alpha_ADifr <- round(fit_ADif$alpha,2)
 eta_ADifr <- round(fit_ADif$eta,2)
 
+mu_ADifr
+sigma_ADifr
+alpha_ADifr
+eta_ADifr
 
 Accuracy_ADifTrain <- Accuracy(pred_ADifTrainv,DatasetA$vtrain)
 Sensitivity_ADifTrain <- Sensitivity(DatasetA$vtrain, pred_ADifTrainv,positive = 0)
@@ -792,11 +800,21 @@ $$
 
 
 ### Overview
-In this section, the behavior of contaminated mixture normal models assuming equal and different variables inflation factor within group is investigated. To generate the data the following process is conducted to generate three datasets where $75\%$ of the samples composed the training subset and the remaining are part of the test subset.
+In this section, the behavior of contaminated mixture normal models assuming equal and different variables inflation factor within group is investigated. To generate the data the following process is conducted to generate three datasets where $75\%$ of the samples composed the training subset and the remaining are part of the test subset. 
 
-a) A contaminated dataset of $100$ samples in $p=3$ dimensions and same variable inflation factor within group and $G=1$; 
-b) A contaminated dataset of $300$ samples in $p=3$ dimensions with different variable inflation factor within group and $G=1$;
+a) A contaminated dataset of `r format(nobs_a,digits = 2)` samples in $p=$ `r format(p_a,digits = 2)` dimensions and same variable inflation factor within group and $G=1$; 
+b) A contaminated dataset of `r format(nobs_b,digits = 2)` samples in $p=$ `r format(p_b,digits = 2)` dimensions with different variable inflation factor within group and $G=1$;
 
+The covariance structure for these simulations is a diagonal matrix allowing variable taking different variances.    
+
+$$
+    \Sigma = 
+\begin{bmatrix}
+\sigma_{11} & 0 & 0 \\
+0 & \sigma_{22} & 0 \\
+0 & 0 & \sigma_{33} \\
+\end{bmatrix}
+$$
 
 
 ### Dataset A

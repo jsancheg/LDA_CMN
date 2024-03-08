@@ -5,16 +5,19 @@
 \documentclass[
 ]{article}
 \usepackage{amsmath,amssymb}
-\usepackage{lmodern}
 \usepackage{iftex}
 \ifPDFTeX
   \usepackage[T1]{fontenc}
   \usepackage[utf8]{inputenc}
   \usepackage{textcomp} % provide euro and other symbols
 \else % if luatex or xetex
-  \usepackage{unicode-math}
+  \usepackage{unicode-math} % this also loads fontspec
   \defaultfontfeatures{Scale=MatchLowercase}
   \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
 \fi
 % Use upquote if available, for straight quotes in verbatim environments
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
@@ -34,46 +37,6 @@
 \makeatother
 \usepackage{xcolor}
 \usepackage[margin=1in]{geometry}
-\usepackage{color}
-\usepackage{fancyvrb}
-\newcommand{\VerbBar}{|}
-\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
-\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
-% Add ',fontsize=\small' for more characters per line
-\usepackage{framed}
-\definecolor{shadecolor}{RGB}{248,248,248}
-\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
-\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
-\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
-\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
-\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
-\newcommand{\BuiltInTok}[1]{#1}
-\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
-\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
-\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
-\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
-\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
-\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
-\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
-\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
-\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
-\newcommand{\ExtensionTok}[1]{#1}
-\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
-\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
-\newcommand{\ImportTok}[1]{#1}
-\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
-\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
-\newcommand{\NormalTok}[1]{#1}
-\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
-\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
-\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
-\newcommand{\RegionMarkerTok}[1]{#1}
-\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
-\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
-\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
-\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
-\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
-\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
 \usepackage{longtable,booktabs,array}
 \usepackage{calc} % for calculating minipage widths
 % Correct order of tables after \paragraph or \subparagraph
@@ -124,7 +87,7 @@
 \fi
 \IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
-\urlstyle{same} % disable monospaced font for URLs
+\urlstyle{same}
 \hypersetup{
   pdftitle={Mixture of contaminated normal distributions with different variables inflation factor within classes},
   pdfauthor={Jorge Sanchez},
@@ -193,40 +156,40 @@ training subset and the remaining are part of the test subset.
 \def\labelenumi{\alph{enumi})}
 \tightlist
 \item
-  A contaminated dataset of \(100\) samples in \(p=3\) dimensions and
-  same variable inflation factor within group and \(G=1\);
+  A contaminated dataset of 300 samples in \(p=\) 3 dimensions and same
+  variable inflation factor within group and \(G=1\);
 \item
-  A contaminated dataset of \(100\) samples in \(p=3\) dimensions with
+  A contaminated dataset of 3000 samples in \(p=\) 3 dimensions with
   different variable inflation factor within group and \(G=1\);
-\item
-  A contaminated balanced dataset of \(100\) samples in \(p=3\)
-  dimensions and \(G=2\) with equal proportions for both groups and one
-  group with same variable inflation factor and another group with
-  different variable inflation factor;
 \end{enumerate}
 
-The parameters for the first dataset are \[
-\mu = \begin{pmatrix} 0 \\ 0 \\ 0\\ \end{pmatrix} , \Sigma = I_{3} = \begin{pmatrix} 1 & 0 & 0  \\ 0 & 1 & 0  \\ 0 & 0 & 1   \\ \end{pmatrix}, \alpha = 0.8, \eta = 5
+The covariance structure for these simulations is a diagonal matrix
+allowing variable taking different variances.
+
+\[
+    \Sigma = 
+\begin{bmatrix}
+\sigma_{11} & 0 & 0 \\
+0 & \sigma_{22} & 0 \\
+0 & 0 & \sigma_{33} \\
+\end{bmatrix}
 \]
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\#pairs(DatasetA$Xtrain, col = c("red","blue")[DatasetA$vtrain + 1],}
-\CommentTok{\#      pch = ifelse(DatasetA$vtrain == 0,24,19), cex = 1)}
+\hypertarget{dataset-a}{%
+\subsubsection{Dataset A}\label{dataset-a}}
 
-\FunctionTok{pairs}\NormalTok{(DatasetA}\SpecialCharTok{$}\NormalTok{Xtrain, }\AttributeTok{panel =} \ControlFlowTok{function}\NormalTok{(x,y, ...) \{}
-  \FunctionTok{points}\NormalTok{(x,y, }
-         \AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"red"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetA}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{+} \DecValTok{1}\NormalTok{],}
-         \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetA}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{),}
-         \AttributeTok{cex =} \DecValTok{1}\NormalTok{,}
-\NormalTok{         ...)}
-      \FunctionTok{text}\NormalTok{(x[indAreal\_T0\_P0\_Trainv],y[indAreal\_T0\_P0\_Trainv],}
-           \AttributeTok{labels=}\FunctionTok{c}\NormalTok{(indAreal\_T0\_P0\_Trainv),}\AttributeTok{pos =} \DecValTok{4}\NormalTok{)}
-\NormalTok{\} )}
-\end{Highlighting}
-\end{Shaded}
+The parameters for dataset A are \[
+\mu = \begin{bmatrix}0 \\0 \\0 \\\end{bmatrix} , \Sigma = I_{3} = \begin{bmatrix}3&0&0 \\0&1&0 \\0&0&3 \\\end{bmatrix}, \alpha = 0.8 , \eta = 5
+\]
+
+{●} True positive (true contaminated predicted as contamiated) {▲} True
+negative (true non-contaminated predicted as non-contaminated) {+} False
+positive (true non-contaminated predicted as contaminated) {X} False
+negative (true contaminated predicted as non-contaminated)
 
 \includegraphics{DifferentVarInflationFactors_files/figure-latex/plotA_training-1.pdf}
+
+\includegraphics{DifferentVarInflationFactors_files/figure-latex/plotA_test-1.pdf}
 
 Looking at the training data above, it is clear that the inflation
 factor is the same across all variables with a few contaminated samples
@@ -235,80 +198,237 @@ firstly with the contaminated mixture of normals model assuming equal
 variable inflation factor within group and secondly with the model
 assuming different variable inflation factor within group.
 
+\hypertarget{fitting-a-model-with-same-variable-inflation-factor-within-group-for-dataset-a.}{%
+\subsubsection{Fitting a model with same variable inflation factor
+within group for dataset
+A.}\label{fitting-a-model-with-same-variable-inflation-factor-within-group-for-dataset-a.}}
+
 The parameter estimates were obtained by using the command Cnmixt until
 covergence from the library ContaminatedMixt. Next, the self-coded
 E-step was used to obtain the labels whether a sample is
 non-contaminated or contaminated. The function Cnmixt assumes equal
-variable inflation factor within group and their parameters are shown
-below.
+variable inflation factor within group and their estimated parameters
+are shown below.
 
 \[
-\mu = \begin{bmatrix}0.07 \\0.15 \\0.13 \\\end{bmatrix} , \Sigma = \begin{bmatrix}1.05&0&0 \\0&1.05&0 \\0&0&1.05 \\\end{bmatrix}, \alpha = 0.78 , \eta = 4.95
-\] The initial values for the parameters of the model were taken from
-the contaminated mixture model produced by the function Cnmixt from the
+\mu = \begin{bmatrix}-0.01 \\-0.05 \\0.01 \\\end{bmatrix} , \Sigma = \begin{bmatrix}2.41&0&0 \\0&2.41&0 \\0&0&2.41 \\\end{bmatrix}, \alpha = 0.86 , \eta = 4.98
+\]
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Equal IF Train}\tabularnewline
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cont & 17 & 23 \\
+Non-cont & 0 & 185 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Equal IF Test}\tabularnewline
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cont & 11 & 9 \\
+Non-cont & 0 & 55 \\
+\end{longtable}
+
+\hypertarget{fitting-a-model-with-different-variables-inflation-factor-within-group-using-the-real-parameters-as-initial-values-and-running-an-e-step-to-predict-nu-values-for-dataset-a.}{%
+\subsubsection{\texorpdfstring{Fitting a model with different variables
+inflation factor within group using the real parameters as initial
+values and running an e-step to predict \(\nu\) values for dataset
+A.}{Fitting a model with different variables inflation factor within group using the real parameters as initial values and running an e-step to predict \textbackslash nu values for dataset A.}}\label{fitting-a-model-with-different-variables-inflation-factor-within-group-using-the-real-parameters-as-initial-values-and-running-an-e-step-to-predict-nu-values-for-dataset-a.}}
+
+It is assumed the real parameter estimates are known and they are
+plug-in the self-coded E-step function to predict samples contamination
+in both training and test sets. The confusion matrix where the rows are
+the real values and the columns are the predicted ones shows that
+42\(\%\), and 55\(\%\) of the contaminated samples are correctly
+identified in the training and test set respectively.
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Train set}\tabularnewline
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cont & 21 & 19 \\
+Non-cont & 2 & 183 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Test set}\tabularnewline
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cont & 11 & 9 \\
+Non-cont & 0 & 55 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Train}\tabularnewline
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Accuracy & 0.90 & 0.91 \\
+Precision & 1.00 & 0.91 \\
+Recall & 0.42 & 0.52 \\
+Sensitivity & 0.42 & 0.52 \\
+Specificity & 1.00 & 0.99 \\
+F1 score & 0.60 & 0.67 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Test}\tabularnewline
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Accuracy & 0.88 & 0.88 \\
+Precision & 1.00 & 1.00 \\
+Recall & 0.55 & 0.55 \\
+Sensitivity & 0.55 & 0.55 \\
+Specificity & 1.00 & 1.00 \\
+F1 score & 0.71 & 0.71 \\
+\end{longtable}
+
+\hypertarget{using-the-real-contamination-information-nus-and-running-m-step-for-a-model-allowing-different-variable-inflation-factor-within-group-to-obtain-parameter-estimates-for-dataset-a.}{%
+\subsubsection{\texorpdfstring{Using the real contamination information
+\(\nu\)'s and running m-step for a model allowing different variable
+inflation factor within group to obtain parameter estimates for dataset
+A.}{Using the real contamination information \textbackslash nu's and running m-step for a model allowing different variable inflation factor within group to obtain parameter estimates for dataset A.}}\label{using-the-real-contamination-information-nus-and-running-m-step-for-a-model-allowing-different-variable-inflation-factor-within-group-to-obtain-parameter-estimates-for-dataset-a.}}
+
+The parameter estimates obtained by using the real contamination
+information are
+
+\[
+\mu = \begin{bmatrix}-0.05 \\-0.06 \\0.03 \\\end{bmatrix} , \Sigma = \begin{bmatrix}2.77&-0.25&0.14 \\-0.25&0.88&0.1 \\0.14&0.1&3.11 \\\end{bmatrix} , \alpha = 0.82, \dot{N} * \dot{N}^{T} = N = \begin{bmatrix}4.4&0&0 \\0&5.43&0 \\0&0&4.71 \\\end{bmatrix}
+\]
+
+\hypertarget{fitting-a-model-with-different-variable-inflation-factor-within-group-using-the-one-obtained-in-an-equal-variable-inflation-factor-within-group-model-as-initial-parameters-for-dataset-a.}{%
+\subsubsection{Fitting a model with different variable inflation factor
+within group using the one obtained in an equal variable inflation
+factor within group model as initial parameters for dataset
+A.}\label{fitting-a-model-with-different-variable-inflation-factor-within-group-using-the-one-obtained-in-an-equal-variable-inflation-factor-within-group-model-as-initial-parameters-for-dataset-a.}}
+
+The initial values for the parameters of the model were taken from the
+contaminated mixture model produced by the function Cnmixt from the
 ContaminatedMixt package that assumes same variable inflation factor
-within group. Next, an iteration of a self-coded m-step that assumes
-different variable inflation factor within group for EII model was run
-to obtain the estimated parameters shown below. It is possible to see
-that there are some differences between the estimates obtained for both
-models. The main difference between the estimates is observed in the
-values that the model with different variables inflation factor take for
-\(\alpha\) which suggest a \(51\%\) of non-contaminated samples and
-implies a greater contamination that the other model. Also, the
-inflation factors in the diagonal of the matrix \(\dot{N}\) are
-different and much smaller than \(4.95\).
+within group. Next, the E-M algorithm with a self-coded m-step that
+assumes different variable inflation factor within group for EII model
+is run until convergence that was reached after 22 steps. The estimated
+parameters are shown below.
 
 \[
-\mu = \begin{bmatrix}0.07 \\0.16 \\0.13 \\\end{bmatrix} , \Sigma = \begin{bmatrix}1.31&0&0 \\0&1.31&0 \\0&0&1.31 \\\end{bmatrix} , \alpha = 0.93, \dot{N} * \dot{N}^{T} = N = \begin{bmatrix}14.07&0&0 \\0&6.53&0 \\0&0&1.93 \\\end{bmatrix}
-\] Next, a self-coded function E-step was used to obtain the estimates
-of labels corresponding whether the observations are non-contaminated or
+\mu = \begin{bmatrix}0.02 \\-0.05 \\-0.09 \\\end{bmatrix} , \Sigma = \begin{bmatrix}3.82&-0.37&0.33 \\-0.37&1.17&0.15 \\0.33&0.15&3.7 \\\end{bmatrix} , \alpha = 0.96, \dot{N} * \dot{N}^{T} = N = \begin{bmatrix}4.62&0&0 \\0&9.05&0 \\0&0&11.32 \\\end{bmatrix}
+\]
+
+It is possible to see that there are some differences between the
+estimates obtained for both models. The main difference between the
+estimates is observed in the values that the model with different
+variables inflation factor take for \(\alpha\) which suggest a 0.96 of
+non-contaminated samples and implies a greater contamination that the
+equal variable inflation factor model 0.86. Also, the inflation factors
+in the diagonal of the matrix \(\dot{N}\) are different and much bigger
+than the estimated by the equal inflation factor model 5.
+
+It can be seen that the estimate for \(\alpha\) is far from to the true
+parameter value. Moreover, the estimates for \(\eta\) assuming different
+inflation factor are all different from the true parameter value that is
+5. Also, it is possible to see in the diagonal of matrix \(N\) that
+\(X_{1}\) and \(X_{2}\) are the variables with inflation factors further
+from the true value, while \(X_{3}\) is closer to the true value.
+
+Next, a self-coded function E-step was used to obtain the estimates of
+labels corresponding whether the observations are non-contaminated or
 contaminated in the test set. It was observed that the estimates for
 \(\alpha\) and \(N\) were affected for the choose of the initial values
 of \(\nu_{i}\) which denotes if the \(i^{th}\) sample is
 non-contaminated if \(\nu_{i}=1\) otherwise is \(0\). The pairs plot of
 the samples in the test subset shows a little more dispersion for the
-pair \(X_{1}\) and \(X_{2}\) than for the pair \(X_{1}\) and \(X_{3}\).
+pair \(X_{2}\) and \(X_{3}\) than for the pair \(X_{1}\) and \(X_{3}\).
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\#pairs(DatasetA$Xtest, col = c("red","blue")[DatasetA$vtest + 1],}
-\CommentTok{\#      pch = ifelse(DatasetA$vtest == 0,24,19), cex = 1)}
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Different IF Train}\tabularnewline
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cont & 8 & 32 \\
+Non-cont & 0 & 185 \\
+\end{longtable}
 
-\FunctionTok{pairs}\NormalTok{(DatasetA}\SpecialCharTok{$}\NormalTok{Xtest, }\AttributeTok{panel =} \ControlFlowTok{function}\NormalTok{(x,y, ...) \{}
-  \FunctionTok{points}\NormalTok{(x,y, }
-         \AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"red"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetA}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{+} \DecValTok{1}\NormalTok{],}
-         \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetA}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{),}
-         \AttributeTok{cex =} \DecValTok{1}\NormalTok{,}
-\NormalTok{         ...)}
-      \FunctionTok{text}\NormalTok{(x[indAreal\_T0\_P0\_Testv],y[indAreal\_T0\_P0\_Testv],}
-           \AttributeTok{labels=}\FunctionTok{c}\NormalTok{(indAreal\_T0\_P0\_Testv),}\AttributeTok{pos =} \DecValTok{4}\NormalTok{)}
-\NormalTok{\} )}
-\end{Highlighting}
-\end{Shaded}
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Different IF Test}\tabularnewline
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cont & 4 & 16 \\
+Non-cont & 0 & 55 \\
+\end{longtable}
 
-\includegraphics{DifferentVarInflationFactors_files/figure-latex/plotA_test-1.pdf}
+\hypertarget{comparison-between-model-that-assume-equal-variable-and-different-variable-inflation-factor-within-group-for-dataset-a.}{%
+\subsubsection{Comparison between model that assume equal variable and
+different variable inflation factor within group for dataset
+A.}\label{comparison-between-model-that-assume-equal-variable-and-different-variable-inflation-factor-within-group-for-dataset-a.}}
 
 The confusion matrix where the rows are the actual values and the
 columns the predicted values for the model assuming same variable
 inflation factor within group , shows that it was possible to identify
 half of the contaminated observations and all the non-contaminated
 observations correctly.
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(t\_AEq, }\AttributeTok{format =} \StringTok{"markdown"}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{longtable}[]{@{}lrr@{}}
-\toprule()
-& 0 & 1 \\
-\midrule()
-\endhead
-0 & 2 & 2 \\
-1 & 0 & 21 \\
-\bottomrule()
-\end{longtable}
 
 However, taking a look of the performance of the model assuming
 different variables inflation factor within group is also able to
@@ -319,43 +439,53 @@ surprise that it overcame their counterpart that assume different
 variable inflation factors within group. It is possible to confirm this
 result taking a look to the other metrics specially F1\_Score.
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(t\_ADif, }\AttributeTok{format =} \StringTok{"markdown"}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{longtable}[]{@{}lr@{}}
-\toprule()
-& 1 \\
-\midrule()
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Train}\tabularnewline
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
 \endhead
-0 & 4 \\
-1 & 21 \\
-\bottomrule()
+\bottomrule\noalign{}
+\endlastfoot
+Accuracy & 0.90 & 0.86 \\
+Precision & 1.00 & 1.00 \\
+Recall & 0.42 & 0.20 \\
+Sensitivity & 0.42 & 0.20 \\
+Specificity & 1.00 & 1.00 \\
+F1 score & 0.60 & 0.33 \\
 \end{longtable}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\#knitr::kable(df\_A, format = "markdown")}
-\FunctionTok{format\_table}\NormalTok{(df\_A)}
-\end{Highlighting}
-\end{Shaded}
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Test}\tabularnewline
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Accuracy & 0.88 & 0.79 \\
+Precision & 1.00 & 1.00 \\
+Recall & 0.55 & 0.20 \\
+Sensitivity & 0.55 & 0.20 \\
+Specificity & 1.00 & 1.00 \\
+F1 score & 0.71 & 0.33 \\
+\end{longtable}
 
-\begin{verbatim}
-##        Metric Equal_IF Different_IF
-## 1    Accuracy     0.92         0.84
-## 2   Precision     1.00             
-## 3      Recall     0.50             
-## 4 Sensitivity     0.50             
-## 5 Specificity     1.00         1.00
-## 6    F1 score     0.67
-\end{verbatim}
+\hypertarget{dataset-b}{%
+\subsubsection{Dataset B}\label{dataset-b}}
 
-The parameters for the second dataset are
+The parameters for dataset B are
 
 \[
-\mu = \begin{pmatrix} 0 \\ 0 \\ 0\\  \end{pmatrix} , \Sigma = I_{3} = \begin{pmatrix} 1 & 0 & 0  \\ 0 & 1 & 0  \\ 0 & 0 & 1   \\ \end{pmatrix}, \alpha = 0.8, \dot{N}_{g} = \begin{pmatrix} 1 & 0 & 0 \\ 0 & \sqrt{5} & 0  \\ 0 & 0 & 1  \\  \end{pmatrix}
+\mu = \begin{bmatrix}0 \\0 \\0 \\\end{bmatrix} , \Sigma = I_{3} = \begin{bmatrix}2&0&0 \\0&5&0 \\0&0&7 \\\end{bmatrix}, \alpha = 0.7, \dot{N}_{g} = \begin{bmatrix}1&0&0 \\0&25&0 \\0&0&1 \\\end{bmatrix}, {N}_{g} = \begin{bmatrix}1&0&0 \\0&5&0 \\0&0&1 \\\end{bmatrix}
 \] The main different between the second dataset versus the previous one
 is that the data is generated from allowing different variables
 inflation factor within the group. It is possible to see that \(X_{2}\)
@@ -365,166 +495,260 @@ variable inflation factor in the group and next allowing different
 variable inflation factor within the group and comparing the results
 obtained.
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\#pairs(DatasetB$Xtrain, col = c("red","blue")[DatasetB$vtrain + 1],}
-\CommentTok{\#      pch = ifelse(DatasetB$vtrain == 0,24,19), cex = 1)}
-\FunctionTok{pairs}\NormalTok{(DatasetB}\SpecialCharTok{$}\NormalTok{Xtrain, }\AttributeTok{panel =} \ControlFlowTok{function}\NormalTok{(x,y, ...) \{}
-  \FunctionTok{points}\NormalTok{(x,y, }
-         \AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"red"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetB}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{+} \DecValTok{1}\NormalTok{],}
-         \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetB}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{),}
-         \AttributeTok{cex =} \DecValTok{1}\NormalTok{,}
-\NormalTok{         ...)}
-      \FunctionTok{text}\NormalTok{(x[indBreal\_T0\_P0\_Trainv],y[indBreal\_T0\_P0\_Trainv],}
-           \AttributeTok{labels=}\FunctionTok{c}\NormalTok{(indBreal\_T0\_P0\_Trainv),}\AttributeTok{pos =} \DecValTok{4}\NormalTok{)}
-\NormalTok{\} )}
-\end{Highlighting}
-\end{Shaded}
+{●} True positive (true contaminated predicted as contaminated) {▲} True
+negative (true non-contaminated predicted as non-contaminated) {+} False
+positive (true non-contaminated predicted as contaminated) {X} False
+negative (true contaminated predicted as non-contaminated)
 
 \includegraphics{DifferentVarInflationFactors_files/figure-latex/plotB_training-1.pdf}
-It is possible to observed that in the training and test subset there is
-a much higher dispersion in the variable \(X2\) in comparison with
-\(X_{1}\) and \(X_{3}\).
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\#pairs(DatasetB$Xtest, col = c("red","blue")[DatasetB$vtest + 1],}
-\CommentTok{\#      pch = ifelse(DatasetB$vtest == 0,24,19), cex = 1)}
-\FunctionTok{pairs}\NormalTok{(DatasetB}\SpecialCharTok{$}\NormalTok{Xtest, }\AttributeTok{panel =} \ControlFlowTok{function}\NormalTok{(x,y, ...) \{}
-  \FunctionTok{points}\NormalTok{(x,y, }
-         \AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"red"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetB}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{+} \DecValTok{1}\NormalTok{],}
-         \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetB}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{),}
-         \AttributeTok{cex =} \DecValTok{1}\NormalTok{,}
-\NormalTok{         ...)}
-\CommentTok{\#      text(x[indBreal\_T0\_P0\_Testv],y[indBreal\_T0\_P0\_Testv],}
-\CommentTok{\#           labels=c(indBreal\_T0\_P0\_Testv),pos = 4)}
-\NormalTok{\} )}
-\end{Highlighting}
-\end{Shaded}
-
 \includegraphics{DifferentVarInflationFactors_files/figure-latex/plotB_test-1.pdf}
 
-Similar procedure is carry out fitting the data with the model EII
-assuming same variable inflation factor in the group and the parameters
-obtained are:
+It is possible to observe that in the training and test subset there is
+a much higher dispersion in the variable \(X2\) with values from \(-10\)
+to \(8\) in comparison with \(X_{1}\) and \(X_{3}\).
+
+\hypertarget{fitting-a-model-with-same-variable-inflation-factor-within-group-for-dataset-b.}{%
+\subsubsection{Fitting a model with same variable inflation factor
+within group for dataset
+B.}\label{fitting-a-model-with-same-variable-inflation-factor-within-group-for-dataset-b.}}
+
+Similar procedure is carry out fitting the data using Cnmixt function
+for model EII and assuming same variable inflation factor in the group
+and the parameters obtained are:
 
 \[
-\mu = \begin{bmatrix}0.06 \\-0.08 \\0.07 \\\end{bmatrix} , \Sigma = \begin{bmatrix}1.22&0&0 \\0&1.22&0 \\0&0&1.22 \\\end{bmatrix}, \alpha = 0.99 , \eta = 1
+\mu = \begin{bmatrix}0.03 \\0.09 \\-0.05 \\\end{bmatrix} , \Sigma = \begin{bmatrix}5.06&0&0 \\0&5.06&0 \\0&0&5.06 \\\end{bmatrix}, \alpha = 0.83 , \eta = 12.29
 \]
 
-It is possible to observe that the estimations for \(\mu,\Sigma\) are
-quite close, while there is a noticeable different in the estimates for
-\(\alpha\) since the estimate parameter assumes there is less
-contaminated samples than what the true parameter states. The estimation
-for \(\eta\) could be confused by the estimated for \(\lambda\) as the
-model fitted is EII. It is possible to see that the value the estimate
-takes is \(1.22\) (see diagonal of the variance covariance matrix).
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Equal IF Train}\tabularnewline
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cont & 247 & 281 \\
+Non-cont & 18 & 1254 \\
+\end{longtable}
 
-Next, the same data is fit with the model allowing different variables
-inflation factor within group and the parameter estimates are shown
-below:
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Equal IF Test}\tabularnewline
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cont & 195 & 174 \\
+Non-cont & 10 & 821 \\
+\end{longtable}
+
+\hypertarget{fitting-a-model-with-different-variables-inflation-factor-within-group-using-the-real-parameters-as-initial-values-and-running-an-e-step-to-predict-nu-values-for-dataset-b.}{%
+\subsubsection{\texorpdfstring{Fitting a model with different variables
+inflation factor within group using the real parameters as initial
+values and running an e-step to predict \(\nu\) values for dataset
+B.}{Fitting a model with different variables inflation factor within group using the real parameters as initial values and running an e-step to predict \textbackslash nu values for dataset B.}}\label{fitting-a-model-with-different-variables-inflation-factor-within-group-using-the-real-parameters-as-initial-values-and-running-an-e-step-to-predict-nu-values-for-dataset-b.}}
+
+It is assumed that the real parameters are known and they are used as an
+input for a self-coded E-step as it was done previously to produce
+estimates for \(\nu\)'s. From the tables below it is possible to see
+that half of the contaminated samples and any of them were identified in
+the train and test subsets respectively.
+
+\begin{longtable}[]{@{}lrr@{}}
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cont & 320 & 208 \\
+Non-cont & 33 & 1239 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}lrr@{}}
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cont & 242 & 127 \\
+Non-cont & 21 & 810 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Metrics train set}\tabularnewline
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Accuracy & 0.83 & 0.87 \\
+Precision & 0.93 & 0.91 \\
+Recall & 0.47 & 0.61 \\
+Sensitivity & 0.47 & 0.61 \\
+Specificity & 0.99 & 0.97 \\
+F1 score & 0.62 & 0.73 \\
+\end{longtable}
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Metrics test set}\tabularnewline
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Accuracy & 0.85 & 0.88 \\
+Precision & 0.95 & 0.92 \\
+Recall & 0.53 & 0.66 \\
+Sensitivity & 0.53 & 0.66 \\
+Specificity & 0.99 & 0.97 \\
+F1 score & 0.68 & 0.77 \\
+\end{longtable}
+
+\hypertarget{using-the-real-contamination-information-nus-to-run-a-m-step-for-a-model-allowing-different-variable-inflation-factor-within-group-to-obtain-parameter-estimates-for-dataset-b.}{%
+\subsubsection{\texorpdfstring{Using the real contamination information
+\(\nu\)'s to run a m-step for a model allowing different variable
+inflation factor within group to obtain parameter estimates for dataset
+B.}{Using the real contamination information \textbackslash nu's to run a m-step for a model allowing different variable inflation factor within group to obtain parameter estimates for dataset B.}}\label{using-the-real-contamination-information-nus-to-run-a-m-step-for-a-model-allowing-different-variable-inflation-factor-within-group-to-obtain-parameter-estimates-for-dataset-b.}}
+
+The parameter estimates for \(\mu,\Sigma\) are quite close to the true
+parameter values. The model to be fitted has covariance structure (VVV).
+There is a noticeable different in the estimate for \(\alpha\) with
+respect to its true value. The estimation for \(\alpha\) assumes that
+there are more contaminated samples than what the true parameter states.
+The estimation for \(\eta\) for each variable is visible in the diagonal
+of the matrix \(N\). The model reaches convergence after 25 steps and
+the parameter estimates are:
 
 \[
-\mu = \begin{bmatrix}0.06 \\-0.07 \\0.07 \\\end{bmatrix} , \Sigma = \begin{bmatrix}1.18&0&0 \\0&1.18&0 \\0&0&1.18 \\\end{bmatrix} , \alpha = 0.99, \dot{N} * \dot{N}^{T} = N = \begin{bmatrix}1&0&0 \\0&5.63&0 \\0&0&1 \\\end{bmatrix}
-\] The parameters obtained for \(\mu,\Sigma,\) and \(\lambda\) are very
-similar as the initial values for the parameters come from the estimates
-for the model EII with same variable inflation factor within group. The
-main difference between the estimates produced by these two models lies
-in the estimates for \(\alpha\) that is \(0.51\) which means that the
-inflation factor is being overestimated as the percentage of
-non-contaminated samples is \(0.9\). Also, It is possible to see that
-the variable inflation factor estimates are different for variables
-\(X_{1},X_{2}\) and \(X_{3}\). Also, the estimate for the variable
-inflation factor corresponding to \(X_{2}\) is smaller that the true
-variable.
+\mu = \begin{bmatrix}0.03 \\0.05 \\-0.03 \\\end{bmatrix} , \Sigma = \begin{bmatrix}1.98&0.03&-0.01 \\0.03&4.91&0.12 \\-0.01&0.12&6.85 \\\end{bmatrix} , \alpha = 0.71, \dot{N} * \dot{N}^{T} = N = \begin{bmatrix}1&0&0 \\0&22.28&0 \\0&0&1 \\\end{bmatrix}
+\]
 
-Taking a look of the performance of the model assuming same variable
-inflation factor within group we can see that it is not able to identify
-any of the \(5\) contaminated samples. The plot of the test subset shows
-that the contaminated samples are quite close to the non-contaminated
-samples.
+\hypertarget{fitting-a-model-with-different-variable-inflation-factor-within-group-using-the-one-obtained-in-an-equal-variable-inflation-factor-within-group-model-as-initial-parameters-for-dataset-b.}{%
+\subsubsection{Fitting a model with different variable inflation factor
+within group using the one obtained in an equal variable inflation
+factor within group model as initial parameters for dataset
+B.}\label{fitting-a-model-with-different-variable-inflation-factor-within-group-using-the-one-obtained-in-an-equal-variable-inflation-factor-within-group-model-as-initial-parameters-for-dataset-b.}}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(t\_BEq, }\AttributeTok{format =} \StringTok{"markdown"}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
+The parameters obtained for \(\mu\), and \(\Sigma\) are very similar to
+their true values. The main difference between the estimates produced by
+a model assuming equal variable inflation factors and different variable
+inflation factors lies in the estimates for \(\alpha\). For the former
+model \(\alpha\) is equal to 0.71 while the latter is equal to 0.89
+which means that it overestimated the percentage of non-contaminated
+samples. Also, the variable inflation factors estimates are different
+for all the variables as the elements of the diagonal of matrix \(N\)
+shows. Moreover, the estimate for the variable inflation factor
+corresponding to \(X_{2}\) is greater than its true value.
 
-\begin{longtable}[]{@{}lr@{}}
-\toprule()
-& 1 \\
-\midrule()
+\[
+\mu = \begin{bmatrix}0.03 \\0.12 \\-0.03 \\\end{bmatrix} , \Sigma = \begin{bmatrix}1.77&-0.04&-0.05 \\-0.04&9.06&0.09 \\-0.05&0.09&6.04 \\\end{bmatrix} , \alpha = 0.89, \dot{N} * \dot{N}^{T} = N = \begin{bmatrix}1.11&0&0 \\0&27.79&0 \\0&0&1.27 \\\end{bmatrix}
+\] Taking a look of the performance of the model assuming same variable
+inflation factor within group we can see that it is able to identify 33
+and 35 contaminated samples in the training and test sets.
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Different IF Train}\tabularnewline
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
 \endhead
-0 & 5 \\
-1 & 20 \\
-\bottomrule()
+\bottomrule\noalign{}
+\endlastfoot
+Cont & 175 & 353 \\
+Non-cont & 0 & 1272 \\
 \end{longtable}
 
-The model allowing different variables inflation factor within group
-performs better than its counterpart that assumes same variable
-inflation factor in the group. The former is able to detect \(2\) of the
-\(5\) contaminated samples.
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{knitr}\SpecialCharTok{::}\FunctionTok{kable}\NormalTok{(t\_BDif, }\AttributeTok{format =} \StringTok{"markdown"}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{longtable}[]{@{}lr@{}}
-\toprule()
-& 1 \\
-\midrule()
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Different IF Test}\tabularnewline
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+& Cont & Non-cont \\
+\midrule\noalign{}
 \endhead
-0 & 5 \\
-1 & 20 \\
-\bottomrule()
+\bottomrule\noalign{}
+\endlastfoot
+Cont & 128 & 241 \\
+Non-cont & 0 & 831 \\
 \end{longtable}
+
+\hypertarget{comparison-between-model-that-assume-equal-variable-and-different-variable-inflation-factor-within-group-for-dataset-b.}{%
+\subsubsection{Comparison between model that assume equal variable and
+different variable inflation factor within group for dataset
+B.}\label{comparison-between-model-that-assume-equal-variable-and-different-variable-inflation-factor-within-group-for-dataset-b.}}
 
 The rest of the metrics confirms that when the data was coming from
 different variables inflation factors the model allowing different
-inflation factor seems to be more appropiate than assuming equal
-inflation factor within group. Nevertheless, more exploration is needed.
+inflation factor seems to be more appropriate than assuming equal
+inflation factor within group as long as the initial parameters values
+are close to the true values.
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\#knitr::kable(df\_A, format = "markdown")}
-\FunctionTok{format\_table}\NormalTok{(df\_B)}
-\end{Highlighting}
-\end{Shaded}
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Train}\tabularnewline
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Accuracy & 0.83 & 0.80 \\
+Precision & 0.93 & 1.00 \\
+Recall & 0.47 & 0.33 \\
+Sensitivity & 0.47 & 0.33 \\
+Specificity & 0.99 & 1.00 \\
+F1 score & 0.62 & 0.50 \\
+\end{longtable}
 
-\begin{verbatim}
-##        Metric Equal_IF Different_IF
-## 1    Accuracy     0.80         0.80
-## 2   Precision                      
-## 3      Recall                      
-## 4 Sensitivity                      
-## 5 Specificity     1.00         1.00
-## 6    F1 score
-\end{verbatim}
-
-The parameters for the third dataset are
-
-\[
-\mu_{1} = \begin{pmatrix} 0 \\ 0 \\  0 \end{pmatrix} ,  \mu_{2} = \begin{pmatrix} 0 \\ 3 \\ 0 \end{pmatrix}  \Sigma_{1} = I_{3}, \Sigma_{2} = I_{3}, \alpha_{1} = 0.8, \alpha_{2} = 0.9, \eta_{1} = 5,N_{2} = \begin{pmatrix} 1 & 0 & 0  \\ 0 & \sqrt{10} & 0  \\ 0 & 0 & 1  \\\end{pmatrix}
-\]
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{pairs}\NormalTok{(DatasetC}\SpecialCharTok{$}\NormalTok{Xtrain, }\AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"green"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetC}\SpecialCharTok{$}\NormalTok{ltrain],}
-      \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetC}\SpecialCharTok{$}\NormalTok{vtrain }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{), }\AttributeTok{cex =} \DecValTok{1}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-\includegraphics{DifferentVarInflationFactors_files/figure-latex/plotC_training-1.pdf}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{pairs}\NormalTok{(DatasetC}\SpecialCharTok{$}\NormalTok{Xtest, }\AttributeTok{col =} \FunctionTok{c}\NormalTok{(}\StringTok{"green"}\NormalTok{,}\StringTok{"blue"}\NormalTok{)[DatasetC}\SpecialCharTok{$}\NormalTok{ltest],}
-      \AttributeTok{pch =} \FunctionTok{ifelse}\NormalTok{(DatasetC}\SpecialCharTok{$}\NormalTok{vtest }\SpecialCharTok{==} \DecValTok{0}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{19}\NormalTok{), }\AttributeTok{cex =} \DecValTok{1}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-\includegraphics{DifferentVarInflationFactors_files/figure-latex/plotC_test-1.pdf}
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Test}\tabularnewline
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Metric & Equal\_IF & Different\_IF \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Accuracy & 0.85 & 0.80 \\
+Precision & 0.95 & 1.00 \\
+Recall & 0.53 & 0.35 \\
+Sensitivity & 0.53 & 0.35 \\
+Specificity & 0.99 & 1.00 \\
+F1 score & 0.68 & 0.52 \\
+\end{longtable}
 
 \end{document}
