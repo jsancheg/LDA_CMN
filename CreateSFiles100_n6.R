@@ -29,8 +29,8 @@ library(readr)
 
 
 dir(pathScenarios)
-ini <- n100.3 + 1 
-fin <- n100.4
+ini <- n100.5 + 1 
+fin <- n100.6
 fin-ini + 1
 
 Model <- c("EII","VII","VEI","EEI","EVI","VVI","EEE","VVV")

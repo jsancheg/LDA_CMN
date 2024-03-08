@@ -43,14 +43,14 @@ if(pc_name == "LAPTOP-ADR3M911")
 
 dir(pathScenarios)
 ini <- 1
-fin <- n5.1
+fin <- n100.1
 
 fin-ini +1
 
 tic("File 5 variables")
 Model <- c("EII","VII","EEI","VEI","EEE","VVV")
 
-status <- mclapply(Scenarios5[ini:ini], function(x)
+status <- mclapply(Scenarios100[ini:ini], function(x)
     {
 
     tryCatch(

@@ -167,10 +167,10 @@ SemiSupervisedFitting <- function(X_train, X_test, ltrain, ltest,
     ModelNonCont <- CNmixt(X_train,G, contamination = FALSE,model = model,
                    initialization = "random.post",alphamin = alpharef,
                    label = ltrain1, iter.max = iterations)
+    resNC <- getBestModel(ModelNonCont, criterion = "BIC")
     ModelCont <- CNmixt(X_train,G, contamination = TRUE,model = model,
                         initialization = "random.post",alphamin = alpharef,
                         label = ltrain1, iter.max = iterations)
-    resNC <- getBestModel(ModelNonCont, criterion = "BIC")
     resC <- getBestModel(ModelCont,criterion = "BIC")
 #    res1 <- CNmixt(X_train,G,  model = model, 
 #                  initialization = "random.post", alphamin = alpharef,
@@ -181,10 +181,10 @@ SemiSupervisedFitting <- function(X_train, X_test, ltrain, ltest,
     ModelNonCont <- CNmixt(X_train,G, contamination = FALSE,model = model,
                            initialization = "mixt",alphamin = alpharef,
                            label = ltrain1, iter.max = iterations)
+    resNC <- getBestModel(ModelNonCont, criterion = "BIC")
     ModelCont <- CNmixt(X_train,G, contamination = TRUE,model = model,
                         initialization = "mixt",alphamin = alpharef,
                         label = ltrain1, iter.max = iterations)
-    resNC <- getBestModel(ModelNonCont, criterion = "BIC")
     resC <- getBestModel(ModelCont,criterion = "BIC")
   }
         
@@ -784,9 +784,9 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
     saturated_mod <-  SemiSupervisedFitting(Xtrain,Xtest,ltrain,ltest,
                                             vtest, CE,pnolabeled) 
     
-    selectedVar_mod <- HeadLongSearch(Xtrain,Xtest,RW,ltrain,ltest,vtest,
+    selectedVar_mod <- HeadLongSearch(Xtrain,Xtest,RW,ltrain,ltest,vtest, 
                                       CE = CE, pnolabeled = 0.5, iterations = niterations,
-                                      alpharef = 0.75, tol = 0.01, epsilon = 0, i_sim , file_name)
+                                      alpharef = 0.75, tol = 0.01, epsilon = 0)
     
     
     pos_True_Model <- findPosModel(selectedVar_mod$models, variables_True_Model)
@@ -1098,7 +1098,7 @@ SemiSupervised_HLS_Mod <- function(file_name,pathScenarios,CE,variables_True_Mod
     
     selectedVar_mod <- HeadLongSearch_mod(Xtrain,Xtest,RW,ltrain,ltest,vtest,
                                       CE = CE, pnolabeled = 0.5, iterations = niterations,
-                                      alpharef = 0.75, tol = 0.01, epsilon = 0)
+                                      alpharef = 0.75, tol = 0.01, epsilon = 0,i_sim,file_name)
     
     
     pos_True_Model <- findPosModel(selectedVar_mod$models, variables_True_Model)
@@ -1129,7 +1129,7 @@ SemiSupervised_HLS_Mod <- function(file_name,pathScenarios,CE,variables_True_Mod
     t_test <- table(ltest,selectedVar_mod$models[[pos]]$ltest_hat_C)
     CCRltesthatSM <- sum(diag(t_test))/sum(t_test)
     
-    cat("\n", "selected model", "test set ",selectedVar_mod$Selectedmodel,"-",CCRltesthatSM,"\n")
+    cat("\n ", "Scenario: ", file_name, " completed - ","selected model", "test set ",selectedVar_mod$Selectedmodel,"-",CCRltesthatSM,"\n")
     
     # Filter contaminated vs non-contaminated samples
     lind_nocont_class <- list()
