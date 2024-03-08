@@ -13,6 +13,9 @@ if(pc_name == "LAPTOP-ADR3M911")
   pathSSFiles1 <- "E:/University of Glasgow/Thesis/SSFiles1/"
   
   pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
+  pathSFiles1 <- "E:/University of Glasgow/Thesis/SFiles/"
+  pathSFiles_HLS_VVV <- "E:/University of Glasgow/Thesis/SFiles_HLS_VVV/"
+  pathSFiles_HLS_ALL <- "E:/University of Glasgow/Thesis/SFiles_HLS_ALL/"
   
 }else if(pc_name == "WildFree")
 {

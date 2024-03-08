@@ -742,9 +742,9 @@ mu1 <- c(0,0)
 mu <- mu1
 sg <- diag(1,2)
 pig<- c(1)
-nobservations = 700
-ptraining = 0.5
-alphag <- 0.95
+nobservations = 160
+ptraining = 0.75
+alphag <- 0.99
 etag <- 30
 set.seed(123)
 GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)

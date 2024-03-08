@@ -19,17 +19,39 @@ library(patchwork)
 library(ggpubr)
 library(nlme)
 
+source("ListScenarios.R")
+
 SSmetrics <- readRDS("Metrics_SSFiles.RDS")
 
 
 # Plot Model Size Selected Variables --------------------------------------
 
-SSmetrics$Model[SSmetrics$Number_Separating_Variables == 2 & is.na(SSmetrics$Model)] <- "X2-X4"
-SSmetrics$Model[SSmetrics$Number_Separating_Variables == 3 & is.na(SSmetrics$Model)] <- "X2-X4-X5"
+#SSmetrics$Model[SSmetrics$Number_Separating_Variables == 2 & is.na(SSmetrics$Model)] <- "X2-X4"
+#SSmetrics$Model[SSmetrics$Number_Separating_Variables == 3 & is.na(SSmetrics$Model)] <- "X2-X4-X5"
+
+SSmetrics$Model_Size[SSmetrics$Number_Separating_Variables == 2 & is.na(SSmetrics$Model)] <- 2
+SSmetrics$Model_Size[SSmetrics$Number_Separating_Variables == 3 & is.na(SSmetrics$Model)] <- 3
+
+SSmetrics$Model[SSmetrics$Number_Separating_Variables == 2 & SSmetrics$Model == ""] <- "X2-X4"
+SSmetrics$Model[SSmetrics$Number_Separating_Variables == 3 & SSmetrics$Model ==""] <- "X2-X4-X5"
+SSmetrics$Model1[SSmetrics$Number_Separating_Variables == 2 & SSmetrics$Model1 == ""] <- "X2-X4"
+SSmetrics$Model1[SSmetrics$Number_Separating_Variables == 3 & SSmetrics$Model1 ==""] <- "X2-X4-X5"
 
 
+SSmetrics$Model_Size[SSmetrics$Number_Separating_Variables == 2 & SSmetrics$Model ==""] <- 2
+SSmetrics$Model_Size[SSmetrics$Number_Separating_Variables == 3 & SSmetrics$Model ==""] <- 3
+
+
+nrow(SSmetrics)
+
+data<- SSmetrics
+
+#view(data %>% filter(Model == ""))
+
+#view(data %>% filter(Model != ""))
 
 data <- SSmetrics %>% filter(Model != "")
+
 data <- data %>% mutate(IncludeX1 = as.numeric(str_detect(Model1,"X1")),
                           IncludeX3 = as.numeric(str_detect(Model1,"X3"))) %>%
   relocate(IncludeX1,IncludeX3, .after = IncludeX5)
@@ -57,20 +79,28 @@ ggplot(data[data$Variables == "Selected", ], aes(x = "", y = Model_Size)) +
 
 
 table(SSmetrics$Variables,SSmetrics$Model_Size)
-SSmetrics %>% filter(Variables=="True") %>% select(Model) %>% table 
+SSmetrics %>% filter(Variables=="True") %>% select(Model1) %>% table 
 SSmetrics %>% filter(Variables=="True" & Model == "") %>% select(File) %>% table
+
 # 5 variables - 49 Scenarios
-SSmetrics %>% filter(Variables=="True" & Model == "" & Number_Variables==5) %>% select(File) %>% table
+SSmetrics %>% filter(Variables=="True" & Model != "" & Number_Variables==5) %>% select(File) %>% table
 
-SSmetrics %>% filter(Variables=="True" & Model == "" & Number_Variables==5) %>% select(File) %>% table %>% length
+SSmetrics %>% filter(Variables=="True" & Model != "" & Number_Variables==5) %>% select(File) %>% table %>% length
 
-TrueModel5Wrong <- SSmetrics %>% filter(Variables=="True" & Model == "" & Number_Variables==5) %>% select(File) %>% table %>% rownames
+TrueModel5Good <- SSmetrics %>% filter(Variables=="True" & Model != "" & Number_Variables==5) %>% select(File) %>% table %>% rownames
+
 
 
 #100 variables
-SSmetrics %>% filter(Variables=="True" & Model == "" & Number_Variables==100) %>% select(File) %>% table
+SSmetrics %>% filter(Variables=="True" & Model != "" & Number_Variables==100) %>% select(File) %>% table
 
-SSmetrics %>% filter(Variables=="True" & Model == "" & Number_Variables==100) %>% select(File) %>% table %>% length
+SSmetrics %>% filter(Variables=="True" & Model != "" & Number_Variables==100) %>% select(File) %>% table %>% length
+
+TrueModel100WGood <- SSmetrics %>% filter(Variables=="True" & Model != "" & Number_Variables==100) %>% select(File) %>% table %>% rownames
+
+# Missing files
+
+setdiff(str_replace(Scenarios,"S_","SSV_"), unique(SSmetrics$File) )
 
 
 
