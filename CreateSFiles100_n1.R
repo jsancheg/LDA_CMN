@@ -29,7 +29,7 @@ library(readr)
 
 
 dir(pathScenarios)
-ini <- 1 
+ini <- 1
 fin <- n100.1
 fin-ini + 1
 

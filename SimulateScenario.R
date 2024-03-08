@@ -3738,4 +3738,7 @@ SimScenario_Individual <- function(Sets, nruns,pathOutput)
 }
 
 
-get_factors_from_file_name <- function(file_name string)
+get_factors_from_file_name <- function(file_name )
+{
+  
+}
