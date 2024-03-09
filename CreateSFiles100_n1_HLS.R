@@ -47,7 +47,7 @@ fin <- n100.1
 
 fin-ini +1
 
-tic("File 5 variables")
+tic("File 100 variables")
 Model <- c("EII","VII","EEI","VEI","EEE","VVV")
 
 status <- mclapply(Scenarios100[ini:ini], function(x)

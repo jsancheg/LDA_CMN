@@ -3,7 +3,7 @@
 
 
 # Simulate scenarios in a pool --------------------------------------------
-
+library(tools)
 
 
 SimScenario <- function(Sets, nruns,pathOutput)
@@ -3789,3 +3789,43 @@ get_factors_from_file_name <- function(file_name )
       
       return(Scenarios_Factors)  
 }
+
+Deconstruc_Pool_Scenarios <- function(file_name,pathFile,pathOutput)
+{
+  # The goal of the Deconstruc_Pool_Scenarios is to create a separated file 
+  # for each simulation in file_name
+  # file_name: File with RDS extension that contains the simulations
+  # pathFile:  Path where this file has been saved
+  
+  # read the file
+  
+  fileRDS <- readRDS(paste0(pathFile,file_name))
+  
+  # count number of simulations 
+  n_simulations <- length(fileRDS$GenData)
+  
+  # Save simulation parameters
+  simulation_parameters <- fileRDS$par
+
+  output_file_name <- file_path_sans_ext(file_name)
+  
+  output_file_name
+  
+  create_individual_files <- function(simulation_number,pooled_data,simulation_parameters,output_file_name,pathOutput)
+    {
+        data_simulated <- vector("list",1)
+        data_simulated <- pooled_data[[simulation_number]]
+        output <- list(GenData = list(data_simulated), par  = simulation_parameters)
+        saveRDS(output,paste0(pathOutput,output_file_name,"_",simulation_number,".RDS") )
+        return(1)
+    }
+  
+    status <- sapply(1:n_simulations,function(i) 
+           { 
+                            create_individual_files(i,fileRDS$GenData,simulation_parameters,output_file_name,pathOutput)
+                            
+             } )
+    
+    return(unlist(status))                                                         
+}
+  
