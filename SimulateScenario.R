@@ -3713,17 +3713,18 @@ SimScenario_Individual <- function(Sets, nruns,pathOutput)
         
       }    
       GenData[[1]] <- SimGClasses(mu,sg,f3,f4,f6,f8,f9)
+      parameters <- list(G = f2, mu = mu, sigma = sg, 
+                         ClassProportion = f3,
+                         alpha = f8,
+                         eta = f9,
+                         NumberObservations = f4,
+                         ProportionTraining = f6)
+      
       output <- list(GenData = GenData, par = parameters)
       saveRDS(output,paste0(pathOutput,dfname,"_",i_run,".RDS"))
       cat("\n writing file: ",paste0(dfname,"_",nruns,".RDS") ,"\n")
       
     } # End-for replicates
-    parameters <- list(G = f2, mu = mu, sigma = sg, 
-                       ClassProportion = f3,
-                       alpha = f8,
-                       eta = f9,
-                       NumberObservations = f4,
-                       ProportionTraining = f6)
 #    output <- list(GenData = GenData, par = parameters)
 #    saveRDS(output,paste0(pathOutput,dfname,"_",nruns,".RDS"))
     return(paste0(dfname,"_",nruns,".RDS"))
