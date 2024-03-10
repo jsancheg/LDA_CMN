@@ -21,7 +21,13 @@ library(nlme)
 
 source("ListScenarios.R")
 
-SSmetrics <- readRDS("Metrics_SSFiles.RDS")
+# SSmetrics <- readRDS("Metrics_SSFiles.RDS")
+
+#  Equivalent with SSMetrics but have corrected the column Nsim with the number of simulations
+#  instead of replicates that were in the past 1-10
+#  Also record the replicate for each file
+
+SSmetrics <- readRDS("SSMetrics_Old_2024_03_10.RDS")
 
 
 # Plot Model Size Selected Variables --------------------------------------
@@ -46,9 +52,9 @@ nrow(SSmetrics)
 
 data<- SSmetrics
 
-#view(data %>% filter(Model == ""))
+# View(data %>% filter(Model == ""))
 
-#view(data %>% filter(Model != ""))
+# View(data %>% filter(Model != ""))
 
 data <- SSmetrics %>% filter(Model != "")
 

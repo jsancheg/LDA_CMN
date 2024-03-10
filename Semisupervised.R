@@ -1908,7 +1908,7 @@ sort_labels <- function(model_string)
 }
 
 
-Create_MetricsFile <- function(filepath,ListFiles,NameMetricFile = "Metrics")
+Create_MetricsFileOld <- function(filepath,ListFiles,NameMetricFile = "Metrics")
 {
   filenames <- paste0(filepath,ListFiles)
   combine_df <- data.frame()
@@ -1923,11 +1923,15 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricFile = "Metrics")
     
   }
   
+  
+  
   #    return(combine_df)
+  combine_df <- combine_df %>% mutate(Replicate = Nsim)
+  combine_df <- combine_df %>% mutate(Nsim = row_number())
   combine_df <- combine_df %>% relocate(File, .before = Nsim)
   combine_df <- mutate(combine_df, Model_Selected = Model_SM)
   
-  aux_df <- combine_df %>% dplyr::select(File,Nsim,
+  aux_df <- combine_df %>% dplyr::select(File,Nsim,Replicate,
                                          Model_TM,Model_SM,Model_SaturatedM,
                                          Nvars_TM,Nvars_SM,Nvars_SaturatedM,
                                          CCR_TM,CCR_SM,CCR_SaturatedM,
@@ -1980,7 +1984,7 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricFile = "Metrics")
   )
   
   aux_df_Long <- aux_df1 %>% 
-    pivot_longer(
+    tidyr::pivot_longer(
       cols = A1:Z3,
       names_to = c(".value","Variables"),
       names_pattern = "(.)(.)"
@@ -2025,7 +2029,7 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricFile = "Metrics")
   aux_df2 <- aux_df2 %>% mutate(Training_Proportion = 
                                   str_split(File,"_",simplify = TRUE)[,6])
   
-  aux_df2 <- aux_df2 %>% mutate(Class_Porportion = 
+  aux_df2 <- aux_df2 %>% mutate(Class_Proportion = 
                                   str_split(File,"_",simplify = TRUE)[,7])
   
   aux_df2 <- aux_df2 %>% mutate(Covariance_Structure = 
@@ -2082,6 +2086,16 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricFile = "Metrics")
   aux_df2 <- aux_df2 %>% mutate(Eta2 = Eta_int[,2])
   aux_df2 <- aux_df2 %>% mutate(Eta3 = Eta_int[,3])
   
+
+  
+  aux_df2$Model[aux_df2$Number_Separating_Variables == 2 & aux_df2$Model == ""] <- "X2-X4"
+  aux_df2$Model[aux_df2$Number_Separating_Variables == 3 & aux_df2$Model ==""] <- "X2-X4-X5"
+  aux_df2$Model1[aux_df2$Number_Separating_Variables == 2 & aux_df2$Model1 == ""] <- "X2-X4"
+  aux_df2$Model1[aux_df2$Number_Separating_Variables == 3 & aux_df2$Model1 ==""] <- "X2-X4-X5"
+  
+  
+  aux_df2$Model_Size[aux_df2$Number_Separating_Variables == 2 & aux_df2$Model ==""] <- 2
+  aux_df2$Model_Size[aux_df2$Number_Separating_Variables == 3 & aux_df2$Model ==""] <- 3
   
   
   
@@ -2094,7 +2108,7 @@ Create_MetricsFile <- function(filepath,ListFiles,NameMetricFile = "Metrics")
                                  .after = File )
   
   
-  saveRDS(Output,paste0(NameMetricFile,".RDS"))
+  saveRDS(Output,paste0(NameMetricsFile,".RDS"))
   return(Output)
 }
 

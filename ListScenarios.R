@@ -6,17 +6,65 @@ pc_name <- system_info['nodename']
 
 if(pc_name == "LAPTOP-ADR3M911")
 {
+  
+
+# Scenarios directory -----------------------------------------------------
+
+  
   pathScenarios <- "E:/University of Glasgow/Thesis/Scenarios/"
   pathScenarios1 <- "E:/University of Glasgow/Thesis/Scenarios1/"
+
   
+
+# SFiles directory ---------------------------------------------------------
+
+    
+  pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
+  pathSFiles1 <- "E:/University of Glasgow/Thesis/SFiles/"
+  
+  
+  # First complete run, the files in this folder do not have recorded
+  # model for covariance matrix that fit best the data.
+  # It is believed that all Scenarios were fitted with EII
+  pathSFiles_Old <- "E:/University of Glasgow/Thesis/SFiles_Old"
+
+  pathSFiles_HLS_VVV <- "E:/University of Glasgow/Thesis/SFiles_HLS_VVV/"
+  
+  pathSFiles_HLS_ALL <- "E:/University of Glasgow/Thesis/SFiles_HLS_ALL/"
+
+  # Directory containing the fit of all models for Supervised Learning
+  # Greedy search
+  pathSFiles_AllModels <- "E:/University of Glasgow/Thesis/SFiles_AllModels/"
+  
+  pathSFiles_Hard_To_Fit <- "E:/University of Glasgow/Thesis/SFiles_Hard_To_Fit/"
+  
+
+
+# SSFiles directory -------------------------------------------------------
+
   pathSSFiles <- "E:/University of Glasgow/Thesis/SSFiles/"
   pathSSFiles1 <- "E:/University of Glasgow/Thesis/SSFiles1/"
   
-  pathSFiles <- "E:/University of Glasgow/Thesis/SFiles/"
-  pathSFiles1 <- "E:/University of Glasgow/Thesis/SFiles/"
-  pathSFiles_HLS_VVV <- "E:/University of Glasgow/Thesis/SFiles_HLS_VVV/"
-  pathSFiles_HLS_ALL <- "E:/University of Glasgow/Thesis/SFiles_HLS_ALL/"
+    
+  #  First complete run, the files in this folder do not have saved the 
+  #  model for covariance matrix that fit best the data.
+  #  It is believed that all Scenarios were fitted with EII
+  #  A;sp the files were fitted with pnolabeled at 0.5
+  pathSSFiles_Old<-"E:/University of Glasgow/Thesis/SSFiles_Old_PNolabeled50/"
   
+  pathSFiles_HLS_VVV <- "E:/University of Glasgow/Thesis/SSFiles_HLS_VVV/"
+  
+    
+  pathSSFiles_HLS_ALL <- "E:/University of Glasgow/Thesis/SSFiles_HLS_ALL/"
+  
+
+  # Directory containing the fit of all models for Supervised Learning
+  # Greedy search
+  pathSSFiles_AllModels <- "E:/University of Glasgow/Thesis/SSFiles_AllModels/"
+  
+  pathSFiles_Hard_To_Fit <- "E:/University of Glasgow/Thesis/SSFiles_Hard_To_Fit/"
+  
+      
 }else if(pc_name == "WildFree")
 {
   pathScenarios <- "/home/jsancheg/Documents/Scenarios/"
