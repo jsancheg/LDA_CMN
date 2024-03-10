@@ -2101,7 +2101,7 @@ Create_MetricsFileOld <- function(filepath,ListFiles,NameMetricFile = "Metrics")
   
   Output <- aux_df2 %>% relocate(c(Number_Classes,Number_Separating_Variables,
                                    Number_Variables,Number_Observations,
-                                   Training_Proportion,Class_Porportion,
+                                   Training_Proportion,Class_Proportion,
                                    Covariance_Structure,Covariance_Structure2,
                                    Group_Mean_Distance,AlphaC,EtaC,Alpha1,Alpha2,Alpha3,
                                    Eta1,Eta2,Eta3),

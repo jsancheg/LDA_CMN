@@ -250,4 +250,4 @@ mod5.1 <- gls(CCR ~ Variables, data = data5,
 mod5.20 <- gls(CCR ~ Variables + Class_Proportion + Number_Classes +
                  Covariance_Structure + Group_Mean_Distance ,
                data = data5,
-               correlation = corSymm(form = ))
+               correlation = corSymm(form = ~1|Nsim))
