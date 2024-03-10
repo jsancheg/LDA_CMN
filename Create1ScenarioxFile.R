@@ -31,6 +31,51 @@ setdiff(ScenariosSSV_To_Be_Generated,ScenariosSV_To_Be_Generated)
 
 Scenarios_to_be_generated <- unique(ScenariosSV_To_Be_Generated,ScenariosSSV_To_Be_Generated)
 
+scenarios_to_be_decomposed <- ScenariosSSV_To_Be_Generated
+
+
+# Decompose these scenarios
+n_scenarios_to_decompose <-length(scenarios_to_be_decomposed)
+
+tic("Decompose")
+sapply(1:n_scenarios_to_decompose,function(i)
+{
+  Deconstruct_Pool_Scenarios(Scenarios100[i],pathScenarios,pathScenarios1)
+})
+toc()
+
+
+
+Model <- c("EII","VII","VEI","EEI","EVI","VVI","EEE","VVV")
+Model <- c("EII","VII","EEI","VEI","EEE","VVV")
+
+scenarios_hard_to_fit <- dir(path_Scenarios_Hard_To_Fit)
+
+tic("SSFiles_hard_to_fit")
+status <-mclapply(scenarios_hard_to_fit, function(x){
+  
+  SSFilename <- str_replace(x,"S_","SSV_")
+  FilesProcessed <- dir(path_SSFiles_Hard_To_Fit)
+  if(is_empty(intersect(FilesProcessed,SSFilename))) 
+  {
+    tryCatch(
+      {
+        
+        GenerateSSFile(x,path_Scenarios_Hard_To_Fit,path_SSFiles_Hard_To_Fit,Model,pnolabeled = 0.50) 
+        return(1)
+      }, error = function(e){
+        cat("Error fitting scenario: ",x, "\n")
+        return(NULL)
+        
+      }
+    )
+    
+  }else cat("\n The file ",SSFilename, " already exists in the directory. \n")
+  
+}, mc.cores = 1)
+toc()
+
+
 
 
 # Simulate 20 simulations per Scenario
@@ -49,3 +94,5 @@ sapply( 2:length(Scenarios_to_be_generated), function (i) {
   SimScenario_Individual(Simulation_Parameters,20,path_Scenarios_Hard_To_Fit)
   
 })      
+
+

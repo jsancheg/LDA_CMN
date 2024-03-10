@@ -40,17 +40,18 @@ if(pc_name == "LAPTOP-ADR3M911")
   
 }
 
+Scenarios100_to_Process <- dir(pathScenarios1)
+length(Scenarios100_to_Process)
 
-dir(pathScenarios)
 ini <- 1
-fin <- n100.1
+fin <- n100.1 * 10
 
 fin-ini +1
 
-tic("File 100 variables")
+tic("Individual Scenarios")
 Model <- c("EII","VII","EEI","VEI","EEE","VVV")
 
-status <- mclapply(Scenarios100[ini:ini], function(x)
+status <- mclapply(Scenarios100_to_Process[ini:fin], function(x)
     {
 
     tryCatch(
@@ -59,7 +60,7 @@ status <- mclapply(Scenarios100[ini:ini], function(x)
         FilesProcessed <- dir(pathSFiles)
         if(is_empty(intersect(FilesProcessed,SFilename))) 
         {
-          GenerateSFile_HLS(x,pathScenarios,pathSFiles_HLS_ALL,Model) 
+          GenerateSFile_HLS(x,pathScenarios1,pathSFiles_HLS_ALL,Model) 
         } else cat("\n The file ",SFilename, " already exists in the directory. \n")
         return(1)
       }, error = function(e)

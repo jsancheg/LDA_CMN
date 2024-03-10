@@ -3790,7 +3790,7 @@ get_factors_from_file_name <- function(file_name )
       return(Scenarios_Factors)  
 }
 
-Deconstruc_Pool_Scenarios <- function(file_name,pathFile,pathOutput)
+Deconstruct_Pool_Scenarios <- function(file_name,pathFile,pathOutput)
 {
   # The goal of the Deconstruc_Pool_Scenarios is to create a separated file 
   # for each simulation in file_name
