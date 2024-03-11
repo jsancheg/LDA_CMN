@@ -117,13 +117,20 @@ variables_Inclusion5 <- data5 %>% filter(Variables == "Selected") %>%
 
 variables_Inclusion5$Number_Separating_Variables <- as.numeric(variables_Inclusion5$Number_Separating_Variables)
 
-class(variables_Inclusion5$Number_Separating_Variables)
-class(variables_Inclusion5$IncludeX5)
+aggregate(. ~ Number_Separating_Variables, variables_Inclusion5, sum)
+
+      
+colSums(variables_Inclusion5)
 
 table(variables_Inclusion5$Number_Separating_Variables)
 
-InclusionVar5 <- variables_Inclusion5 %>% dplyr::group_by(Number_Separating_Variables) %>% 
-  mutate(total = rowSums(select(., starts_with("Include") )))
+#InclusionVar5 <- variables_Inclusion5 %>% dplyr::group_by(Number_Separating_Variables) %>% 
+#  mutate(total = rowSums(select(., starts_with("IncludeX") )))
+
+InclusionVar5 <- variables_Inclusion5 %>% group_by(Number_Separating_Variables) %>% rowwise() %>% 
+  mutate(total = sum(c_across(starts_with("IncludeX")),na.rm = TRUE))    
+
+
 
 total2 <- nrow(InclusionVar5 %>% filter(Number_Separating_Variables == 2))
 round(100*(apply(InclusionVar5 %>% filter(Number_Separating_Variables==2),2,sum)/total2),1)
@@ -251,3 +258,4 @@ mod5.20 <- gls(CCR ~ Variables + Class_Proportion + Number_Classes +
                  Covariance_Structure + Group_Mean_Distance ,
                data = data5,
                correlation = corSymm(form = ~1|Nsim))
+  
