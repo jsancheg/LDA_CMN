@@ -43,7 +43,7 @@ if(pc_name == "LAPTOP-ADR3M911")
 Scenarios100_to_Process <- dir(pathScenarios1)
 length(Scenarios100_to_Process)
 
-ini <- 1
+ini <- 150
 fin <- n100.1 * 10
 
 fin-ini +1
