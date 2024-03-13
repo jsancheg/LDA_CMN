@@ -35,8 +35,8 @@ SSmetrics <- readRDS("SSMetrics_Old_2024_03_10.RDS")
 #SSmetrics$Model[SSmetrics$Number_Separating_Variables == 2 & is.na(SSmetrics$Model)] <- "X2-X4"
 #SSmetrics$Model[SSmetrics$Number_Separating_Variables == 3 & is.na(SSmetrics$Model)] <- "X2-X4-X5"
 
-SSmetrics$Model_Size[SSmetrics$Number_Separating_Variables == 2 & is.na(SSmetrics$Model)] <- 2
-SSmetrics$Model_Size[SSmetrics$Number_Separating_Variables == 3 & is.na(SSmetrics$Model)] <- 3
+# SSmetrics$Model_Size[SSmetrics$Number_Separating_Variables == 2 & is.na(SSmetrics$Model)] <- 2
+# SSmetrics$Model_Size[SSmetrics$Number_Separating_Variables == 3 & is.na(SSmetrics$Model)] <- 3
 
 SSmetrics$Model[SSmetrics$Number_Separating_Variables == 2 & SSmetrics$Model == ""] <- "X2-X4"
 SSmetrics$Model[SSmetrics$Number_Separating_Variables == 3 & SSmetrics$Model ==""] <- "X2-X4-X5"
