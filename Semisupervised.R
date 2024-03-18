@@ -1908,7 +1908,7 @@ sort_labels <- function(model_string)
 }
 
 
-Create_MetricsFileOld <- function(filepath,ListFiles,NameMetricFile = "Metrics")
+Create_MetricsFileOld <- function(filepath,ListFiles,NameMetricsFile = "Metrics")
 {
   filenames <- paste0(filepath,ListFiles)
   combine_df <- data.frame()
@@ -2044,12 +2044,21 @@ Create_MetricsFileOld <- function(filepath,ListFiles,NameMetricFile = "Metrics")
   aux_df2 <- aux_df2 %>% mutate(EtaC = 
                                   str_split(File,"_",simplify = TRUE)[,11])
   
+  aux_df2_no_na <- na.omit(aux_df2)
   
   aux_df2 <- aux_df2 %>% mutate(Variables = recode(Variables,
                                                    '1' = "True",
                                                    '2' = "Selected",
                                                    '3' = "All"))
+  
+  aux_df2_no_na <- aux_df2_no_na %>% mutate(Variables = recode(Variables,
+                                                   '1' = "True",
+                                                   '2' = "Selected",
+                                                   '3' = "All"))
+  
   aux_df2$Covariance_Structure2 <- aux_df2$Covariance_Structure
+
+  aux_df2_no_na$Covariance_Structure2 <- aux_df2_no_na$Covariance_Structure
   
   
   aux_df2 <- aux_df2 %>% mutate(Covariance_Structure2 = recode(Covariance_Structure,
@@ -2058,7 +2067,14 @@ Create_MetricsFileOld <- function(filepath,ListFiles,NameMetricFile = "Metrics")
                                                                "SCBNSV" = "NSV",
                                                                "IND" = "IND"))
   
+  aux_df2_no_na <- aux_df2_no_na %>% mutate(Covariance_Structure2 = recode(Covariance_Structure,
+                                                               "SCBSV" = "SV",
+                                                               "SCBSNSV" = "SNSV",
+                                                               "SCBNSV" = "NSV",
+                                                               "IND" = "IND"))
+  
   n <- nrow(aux_df2)
+  n_no_na <- nrow(aux_df2_no_na)
   
   aux_alpha <- sapply(aux_df2$AlphaC, function(alpha_str)
   {
@@ -2067,7 +2083,15 @@ Create_MetricsFileOld <- function(filepath,ListFiles,NameMetricFile = "Metrics")
     } else if(alpha_str == "A8090") return(c(80,90,0))
   })
   
+  aux_alpha_no_na <- sapply(aux_df2_no_na$AlphaC, function(alpha_str)
+  {
+    if(alpha_str == "A808090"){
+      return(c(80,80,90))
+    } else if(alpha_str == "A8090") return(c(80,90,0))
+  })
+  
   Alpha_int <- matrix(aux_alpha,ncol = 3, nrow = n, byrow = TRUE)
+  Alpha_int_no_na <- matrix(aux_alpha_no_na,ncol = 3, nrow = n_no_na, byrow = TRUE)
   
   aux_eta <- sapply(aux_df2$EtaC, function(Eta_str)
   {
@@ -2076,27 +2100,52 @@ Create_MetricsFileOld <- function(filepath,ListFiles,NameMetricFile = "Metrics")
     } else if(Eta_str == "E530") return(c(5,30,0))
   })
   
+  aux_eta_no_na <- sapply(aux_df2_no_na$EtaC, function(Eta_str)
+  {
+    if(Eta_str == "E5530"){
+      return(c(5,5,30))
+    } else if(Eta_str == "E530") return(c(5,30,0))
+  })
+  
+  
   Eta_int <- matrix(aux_eta, ncol = 3, nrow = n, byrow = TRUE)
+  Eta_int_no_na <- matrix(aux_eta_no_na, ncol = 3, nrow = n_no_na, byrow = TRUE)
   
   aux_df2 <- aux_df2 %>% mutate(Alpha1 = Alpha_int[,1])
   aux_df2 <- aux_df2 %>% mutate(Alpha2 = Alpha_int[,2])
   aux_df2 <- aux_df2 %>% mutate(Alpha3 = Alpha_int[,3])
   
+  aux_df2_no_na <- aux_df2_no_na %>% mutate(Alpha1 = Alpha_int_no_na[,1])
+  aux_df2_no_na <- aux_df2_no_na %>% mutate(Alpha2 = Alpha_int_no_na[,2])
+  aux_df2_no_na <- aux_df2_no_na %>% mutate(Alpha3 = Alpha_int_no_na[,3])
+  
+  
   aux_df2 <- aux_df2 %>% mutate(Eta1 = Eta_int[,1])
   aux_df2 <- aux_df2 %>% mutate(Eta2 = Eta_int[,2])
   aux_df2 <- aux_df2 %>% mutate(Eta3 = Eta_int[,3])
   
-
+  aux_df2_no_na <- aux_df2_no_na %>% mutate(Eta1 = Eta_int_no_na[,1])
+  aux_df2_no_na <- aux_df2_no_na %>% mutate(Eta2 = Eta_int_no_na[,2])
+  aux_df2_no_na <- aux_df2_no_na %>% mutate(Eta3 = Eta_int_no_na[,3])
+  
   
   aux_df2$Model[aux_df2$Number_Separating_Variables == 2 & aux_df2$Model == ""] <- "X2-X4"
   aux_df2$Model[aux_df2$Number_Separating_Variables == 3 & aux_df2$Model ==""] <- "X2-X4-X5"
   aux_df2$Model1[aux_df2$Number_Separating_Variables == 2 & aux_df2$Model1 == ""] <- "X2-X4"
   aux_df2$Model1[aux_df2$Number_Separating_Variables == 3 & aux_df2$Model1 ==""] <- "X2-X4-X5"
   
+
+  aux_df2_no_na$Model[aux_df2_no_na$Number_Separating_Variables == 2 & aux_df2_no_na$Model == ""] <- "X2-X4"
+  aux_df2_no_na$Model[aux_df2_no_na$Number_Separating_Variables == 3 & aux_df2_no_na$Model ==""] <- "X2-X4-X5"
+  aux_df2_no_na$Model1[aux_df2_no_na$Number_Separating_Variables == 2 & aux_df2_no_na$Model1 == ""] <- "X2-X4"
+  aux_df2_no_na$Model1[aux_df2_no_na$Number_Separating_Variables == 3 & aux_df2_no_na$Model1 ==""] <- "X2-X4-X5"
   
+    
   aux_df2$Model_Size[aux_df2$Number_Separating_Variables == 2 & aux_df2$Model ==""] <- 2
   aux_df2$Model_Size[aux_df2$Number_Separating_Variables == 3 & aux_df2$Model ==""] <- 3
   
+  aux_df2_no_na$Model_Size[aux_df2_no_na$Number_Separating_Variables == 2 & aux_df2_no_na$Model ==""] <- 2
+  aux_df2_no_na$Model_Size[aux_df2_no_na$Number_Separating_Variables == 3 & aux_df2_no_na$Model ==""] <- 3
   
   
   Output <- aux_df2 %>% relocate(c(Number_Classes,Number_Separating_Variables,
@@ -2107,8 +2156,17 @@ Create_MetricsFileOld <- function(filepath,ListFiles,NameMetricFile = "Metrics")
                                    Eta1,Eta2,Eta3),
                                  .after = File )
   
+  Output_no_na <- aux_df2_no_na %>% relocate(c(Number_Classes,Number_Separating_Variables,
+                                   Number_Variables,Number_Observations,
+                                   Training_Proportion,Class_Proportion,
+                                   Covariance_Structure,Covariance_Structure2,
+                                   Group_Mean_Distance,AlphaC,EtaC,Alpha1,Alpha2,Alpha3,
+                                   Eta1,Eta2,Eta3),
+                                 .after = File )
   
   saveRDS(Output,paste0(NameMetricsFile,".RDS"))
+  saveRDS(Output_no_na,paste0(NameMetricsFile,"_no_na",".RDS"))
+  
   return(Output)
 }
 

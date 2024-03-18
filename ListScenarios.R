@@ -26,7 +26,7 @@ if(pc_name == "LAPTOP-ADR3M911")
   # First complete run, the files in this folder do not have recorded
   # model for covariance matrix that fit best the data.
   # It is believed that all Scenarios were fitted with EII
-  pathSFiles_Old <- "E:/University of Glasgow/Thesis/SFiles_Old"
+  pathSFiles_Old <- "E:/University of Glasgow/Thesis/SFiles_Old/"
 
   pathSFiles_HLS_VVV <- "E:/University of Glasgow/Thesis/SFiles_HLS_VVV/"
   
