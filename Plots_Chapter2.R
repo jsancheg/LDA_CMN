@@ -1,6 +1,9 @@
 
 source("SimClassEM20Steps.R")
 source("CMNFunctionsV2.R")
+library(ggplot2)
+library(ggfortify)
+library(car)
 
 #source("DifIFunctions.R")
 

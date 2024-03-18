@@ -248,7 +248,7 @@ cond1Areal_testv <- paste0(DatasetA$vtest,predArealTestv)
 
 par_Areal$v <-as.matrix( DatasetA$vtrain )
 
-ms_ADifrealv <- mCmn_DIF_VVV(Xtrain = DatasetA$Xtrain,ltrain = DatasetA$ltrain, par = par_Areal)
+ms_ADifrealv <- mCmn_DIF_Diag(Xtrain = DatasetA$Xtrain,ltrain = DatasetA$ltrain, par = par_Areal)
 
 ms_ADifrealv$mu
 ms_ADifrealv$sigma
@@ -272,10 +272,10 @@ par0 <- list(G = G_a, pig = pig_a, mu = fit_AEq$models[[1]]$mu,
 #fit_ADif <- emCmn1_DIF_EII(X = DatasetA$Xtrain,labels = DatasetA$ltrain, par0, 
 #                           Maxiterations = 1000,threshold = 0.01)
 
-fit_ADif <- emCmn_DIF_VVV(X = DatasetA$Xtrain,labels = DatasetA$ltrain, par0, 
-                           Maxiterations = 1000,threshold = 0.001)
+#fit_ADif <- emCmn_DIF_VVV(X = DatasetA$Xtrain,labels = DatasetA$ltrain, par0, 
+#                           Maxiterations = 1000,threshold = 0.001)
 
-fit_ADif <- emCmn_DIF_VVV(X = DatasetA$Xtrain,labels = DatasetA$ltrain,  
+fit_ADif <- emCmn_DIF_Diag(X = DatasetA$Xtrain,labels = DatasetA$ltrain,  
                            Maxiterations = 1000,threshold = 0.001)
 
 
@@ -601,7 +601,7 @@ cond1Breal_testv <- paste0(DatasetB$vtest,predBrealTestv)
 
 par_Breal$v <-as.matrix( DatasetB$vtrain )
 
-ms_BDifrealv <- mCmn_DIF_VVV(Xtrain = DatasetB$Xtrain,ltrain = DatasetB$ltrain, par = par_Breal)
+ms_BDifrealv <- mCmn_DIF_Diag(Xtrain = DatasetB$Xtrain,ltrain = DatasetB$ltrain, par = par_Breal)
 
 ms_BDifrealv$mu
 ms_BDifrealv$sigma
@@ -633,7 +633,7 @@ par0 <- list(G = G_b, pig = pig_b, mu = fit_BEq$models[[1]]$mu,
 #fit_BDif <- emCmn1_DIF_EII(X = DatasetB$Xtrain,labels = DatasetB$ltrain, par0,
 #                           Maxiterations = 1000, threshold = 0.01)
 
-fit_BDif <- emCmn_DIF_VVV(X = DatasetB$Xtrain,labels = DatasetB$ltrain, par0,
+fit_BDif <- emCmn_DIF_Diag(X = DatasetB$Xtrain,labels = DatasetB$ltrain, par0,
                            Maxiterations = 1000, threshold = 0.01)
 
 
