@@ -1998,7 +1998,7 @@ Create_MetricsFileOld <- function(filepath,ListFiles,NameMetricsFile = "Metrics"
                                            "Precision_Class" = "P"  ,
                                            "Recall_Class" = "R" ,
                                            "F1_Class" = "S",
-                                           "Precicison_Cont" = "V" ,
+                                           "Precision_Cont" = "V" ,
                                            "Recall_Cont" = "W",
                                            "F1_Cont" = "Z")
   
