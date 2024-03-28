@@ -87,6 +87,35 @@ summary(dfAll$DifCCR)
 summary(dfAll$DifSensitivity)
 summary(dfAll$DifSpecificity)
 
+colnames(dfAll)
+
+dfLong_0 <- dfAll%>%dplyr::select(Alpha,Eta, CR_SatMC,CR_SV,
+                                  Sensitivity_SatM, Sensitivity_SelM,
+                                  Specificity_SatM, Specificity_SelM) %>% 
+                      dplyr::rename("A1" = "CR_SatMC",
+                                    "A2" = "CR_SV",
+                                    "B1" = "Sensitivity_SatM",
+                                    "B2" = "Sensitivity_SelM",
+                                    "C1" = "Specificity_SatM",
+                                    "C2" = "Specificity_SelM")
+
+dfLong_1 <- dfLong_0 %>% 
+  tidyr::pivot_longer(
+    cols = A1:C2,
+    names_to = c(".value","Variables"),
+    names_pattern = "(.)(.)"
+  )
+
+dfLong_2 <- dfLong_1 %>% dplyr::rename("CCR" = "A",
+                                         "Sensitivity" = "B",
+                                         "Specificity" = "C")
+
+dfLong_3  <- dfLong_2 %>% dplyr::mutate( Variables = forcats::fct_recode(Variables,
+                                                                        "All" = "1",
+                                                                        "Selected" = "2"))
+
+dfLong_3
+
 dfDifLong<- dfAll %>% dplyr::select(Alpha,Eta,DifCCR,DifAccuracy,
                                     DifSensitivity,DifSpecificity) %>% 
   pivot_longer(c(DifCCR,DifAccuracy,DifSensitivity,DifSpecificity),
@@ -100,6 +129,18 @@ dfDifLong <- dfDifLong %>% mutate(Variables = recode(Variables,
                                                      DifSensitivity = "Sensitivity",
                                                      DifSpecificity = "Specificity"))
 
+
+
+
+dfLong_4<- dfLong_3 %>% dplyr::select(Alpha,Eta,Variables,CCR,
+                                    Sensitivity,
+                                    Specificity) %>% 
+          pivot_longer(c(CCR,Sensitivity,Specificity ),
+               names_to = "Metrics",
+               values_to = "Values")
+
+
+dfLong_4
 
 
 # Calculate frequency of model size ---------------------------------------
@@ -262,6 +303,31 @@ g_freqSV %>% ggplotly
 
 # plot differences between SV - All variables  ----------------------------
 # plot the data
+
+plot1 <- ggplot(dfLong_4 %>% filter(Metrics %in% c("CCR","Sensitivity")),
+                aes(x = Metrics, y = Values, Color = Variables)) + 
+        ylab("Ratio")+ xlab("Metric")+ylim(0.5,1) + geom_boxplot() +
+        geom_hline(yintercept = 0)
+
+plot1
+
+plot2<- ggplot(dfDifLong %>% filter(Variables %in% c("CCR","Sensitivity")), 
+            aes(x = Variables, y = Dif, color = Alpha)) + 
+  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-0.2,0.2) + geom_boxplot() +
+  geom_hline(yintercept = 0)
+
+plot2
+
+
+plot3 <- ggplot(dfDifLong %>% filter(Variables %in% c("CCR","Sensitivity")), 
+             aes(x = Variables, y = Dif, color = Eta)) + 
+  ylab("Dif. Sel. var - All var.")+ xlab("Metric")+ylim(-0.2,0.2) + geom_boxplot() +
+  geom_hline(yintercept = 0)
+
+
+plot3
+
+
 
 
 g1<- ggplot(dfDifLong %>% filter(Variables %in% c("CCR","Accuracy")), 
