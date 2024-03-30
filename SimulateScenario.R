@@ -42,9 +42,9 @@ SimScenario <- function(Sets, nruns,pathOutput)
                      as.numeric(Sets[3]),"_",
                      as.numeric(Sets[4]),"_",as.numeric(Sets[8])*100,"_",
                      Sets[5],"_",Sets[7],"_",
-                     Sets[6],"_A",as.numeric(Sets[9])*100, 
+                     Sets[6],"_A",as.numeric(Sets[9])*100,"_", 
                      as.numeric(Sets[10])*100,"_E",
-                     as.numeric(Sets[12]), as.numeric(Sets[13]))
+                     as.numeric(Sets[12]), "_",as.numeric(Sets[13]))
     
   }else if (as.numeric(Sets[1]) == 3)
   {
@@ -52,9 +52,9 @@ SimScenario <- function(Sets, nruns,pathOutput)
                      as.numeric(Sets[3]),"_",
                      as.numeric(Sets[4]),"_",as.numeric(Sets[8])*100,"_",
                      Sets[5],"_",Sets[7],"_",
-                     Sets[6],"_A",as.numeric(Sets[9])*100, 
-                     as.numeric(Sets[10])*100,as.numeric(Sets[11])*100,
-                     "_E",as.numeric(Sets[12]), as.numeric(Sets[13]),
+                     Sets[6],"_A",as.numeric(Sets[9])*100, "_",
+                     as.numeric(Sets[10])*100, "_", as.numeric(Sets[11])*100,
+                     "_E",as.numeric(Sets[12]), "_", as.numeric(Sets[13]),"_",
                      as.numeric(Sets[14]))
   }
   
