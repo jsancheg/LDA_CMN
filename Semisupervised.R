@@ -123,6 +123,160 @@ E_StepCMN <- function(X,l,par)
 }
 
 
+
+SemiSupervisedFitting_Version1 <- function(X_train, X_test, ltrain, ltest,
+                                  vtest, model = "EEI",
+                                  pnolabeled = 0.5,
+                                  iterations = 10, 
+                                  alpharef = 0.75, tol = 0.01)
+  # X_train:       matrix with the observations used in training
+  # X_test:        matrix with the observations used in testing
+  # ltrain:       labels used in training
+  # ltest:        labels used in test
+  # pnolabeled:   percentage of no labeled observations in ltrain 
+  # model:        model used
+  # iterations:   maximum number of iterations
+  # alpharef:     reference for alpha
+  # tol:          tolerance
+{
+  parameters_C <- list()
+  parameters_Nc <- list()
+  estimate <- list()
+  # logl_c: log likelihood for contaminated model
+  logl_c <- 0
+  obslll_c <- 0
+  accTest_C <- 0
+  CCRTest_C <- 0
+  
+  # logl_nc: log likelihood for non-contaminated model
+  logl_nc <- 0
+  obslll_nc <- 0
+  accTest_Nc <- 0
+  
+  G <- length(unique(ltrain))
+  
+  ntrain <- length(ltrain)
+  ltrain1 <- ltrain
+  # nolebeled: contains the number of unlabeled
+  nolabeled <- floor(pnolabeled*ntrain)
+  ind_nolabeled <- sample(1:ntrain,nolabeled,replace = FALSE)
+  ltrain1[ind_nolabeled] <- 0
+  #table(ltrain1)
+  
+  if(ncol(X_train) == 1) 
+  {
+    ModelNonCont <- CNmixt(X_train,G, contamination = FALSE,model = model,
+                           initialization = "random.post",alphamin = alpharef,
+                           label = ltrain1, iter.max = iterations)
+    resNC <- getBestModel(ModelNonCont, criterion = "BIC")
+    ModelCont <- CNmixt(X_train,G, contamination = TRUE,model = model,
+                        initialization = "random.post",alphamin = alpharef,
+                        label = ltrain1, iter.max = iterations)
+    resC <- getBestModel(ModelCont,criterion = "BIC")
+    #    res1 <- CNmixt(X_train,G,  model = model, 
+    #                  initialization = "random.post", alphamin = alpharef,
+    #                  label = ltrain1,iter.max = iterations)
+    
+  }else if(ncol(X_train) > 1)
+  {
+    ModelNonCont <- CNmixt(X_train,G, contamination = FALSE,model = model,
+                           initialization = "mixt",alphamin = alpharef,
+                           label = ltrain1, iter.max = iterations)
+    resNC <- getBestModel(ModelNonCont, criterion = "BIC")
+    ModelCont <- CNmixt(X_train,G, contamination = TRUE,model = model,
+                        initialization = "mixt",alphamin = alpharef,
+                        label = ltrain1, iter.max = iterations)
+    resC <- getBestModel(ModelCont,criterion = "BIC")
+  }
+  
+  #res1 <- ModelAccuracy2(X_train,X_test,ltrain,ltest,"EEI")
+  
+  logl_nc <- resNC$models[[1]]$loglik
+  obslll_nc <- resNC$models[[1]]$obslll
+  
+  logl_c <- resC$models[[1]]$loglik
+  obslll_c <- resC$models[[1]]$obslll
+  
+  parameters_C$G <- resC$models[[1]]$G
+  parameters_C$pig <- resC$models[[1]]$prior
+  parameters_C$mu <- resC$models[[1]]$mu
+  parameters_C$Sigma <-resC$models[[1]]$Sigma
+  parameters_C$InvSigma <- resC$models[[1]]$invSigma
+  parameters_C$alpha <-resC$models[[1]]$alpha
+  parameters_C$eta <- resC$models[[1]]$eta
+  
+  # estimate contaminated model  
+  estimate$ztrain_hat <- resC$models[[1]]$posterior
+  # estimated class labels
+  estimate$ltrain_hat <- resC$models[[1]]$group
+  estimate$vtrain_hat <- resC$models[[1]]$v
+  estimate$badPoints <- resC$models[[1]]$detection
+  
+  parameters_Nc$pro <- resNC$models[[1]]$prior
+  parameters_Nc$mean <- resNC$models[[1]]$mean
+  parameters_Nc$variance <- resNC$models[[1]]$Sigma
+  
+  table(ltrain1,resC$models[[1]]$group)
+  
+  if(ncol(X_train) == 1)
+  {
+    mstep_nc <- mclust::mstep( data = as.matrix(X_train), modelName = resNC$models[[1]]$model, z = unmap(estimate$ltrain_hat) )
+    estep_nc <- mclust::estep(data =as.matrix(X_test), modelName =  mstep_nc$modelName, 
+                              parameters = mstep_nc$parameters)
+    
+  }else if(ncol(X_train) > 1)
+  {
+    mstep_nc <- mclust::mstep( data = X_train, modelName = resNC$models[[1]]$model, z = unmap(estimate$ltrain_hat) )
+    estep_nc <- mclust::estep(data =X_test, modelName =  mstep_nc$modelName, 
+                              parameters = mstep_nc$parameters)
+    
+  }
+  mstep_nc$modelName
+  mstep_nc$parameters
+  
+  ltest_hat_nc <- apply(estep_nc$z,1,which.max)
+  CCRTest_Nc <- sum((ltest_hat_nc == ltest)) / length(ltest)
+  CCRTest_Nc
+  
+  ExpectedValues_C <- E_StepCMN(X_test,ltest,parameters_C)
+  
+  if (length(ExpectedValues_C$lhat)==length(ltest)){
+    CCRTest_C <- sum((ExpectedValues_C$lhat == ltest)) / length(ltest)
+  }  else CCRTest_C = -1 
+  
+  if (length(ExpectedValues_C$vhat) == length(vtest))
+  {
+    AccTest_C <- sum((ExpectedValues_C$vhat == vtest)) / length(vtest)
+  } else AccTest_C =  - 1
+  
+  resC$models[[1]]$v
+  
+  resC$models[[1]]$label
+  resC$models[[1]]$entropy
+  resC$models[[1]]$IC
+  
+  table(resC$models[[1]]$label,resC$models[[1]]$group)
+  table(ltrain,resC$models[[1]]$group)
+  table(ltrain1,ltrain)
+  length(resC$models[[1]]$group)
+  
+  
+  
+  Output <- list(CCRTestNc = CCRTest_Nc,CCRTestC = CCRTest_C,
+                 ztest_hat_NC = estep_nc$z,
+                 ltest_hat_NC =  ltest_hat_nc,
+                 ztest_hat_C = ExpectedValues_C$z,
+                 ltest_hat_C = ExpectedValues_C$lhat,
+                 Expected_v = ExpectedValues_C$v,
+                 vtest_hat = ExpectedValues_C$vhat,
+                 niterations = iterations, 
+                 fitted_NC_model = resNC$models[[1]]$model,
+                 fitted_C_model = resC$models[[1]]$model,                 
+                 par = parameters_C)
+  return(Output)  
+}
+
+
 SemiSupervisedFitting <- function(X_train, X_test, ltrain, ltest,
                                  vtest, model = "EEI",
                                  pnolabeled = 0.5,
@@ -258,7 +412,20 @@ SemiSupervisedFitting <- function(X_train, X_test, ltrain, ltest,
   table(ltrain,resC$models[[1]]$group)
   table(ltrain1,ltrain)
   length(resC$models[[1]]$group)
-
+  
+  ExpectedValues_C_train <- E_StepCMN(as.matrix(X_train),ltrain, parameters_C )
+  
+  pseudo_label_info <- list(Unlabelled_index = ind_nolabeled,
+                            Unlabelled_data = X_train[ind_nolabeled, ],
+                            ltrain <- ltrain, 
+#                            vtrain <- vtrain, 
+                            True_labels_Class_train = vtrain[ind_nolabeled],
+#                           True_labels_V_train = vtrain[ind_nolaneled],
+                            lhat_train <- ExpectedValues_C_train$lhat,
+                            vhat_Train <- ExpectedValues_C_train$vhat,
+                            Pseudo_labels_Class_Train = ExpectedValues_C_train$lhat[ind_nolabeled],
+                            Pseudo_labels_V_Train = ExpectedValues_C_train$vhat[ind_nolabeled],
+                            Percentage_of_no_labeled = pnolabeled)
   
   Output <- list(CCRTestNc = CCRTest_Nc,CCRTestC = CCRTest_C,
                  ztest_hat_NC = estep_nc$z,
@@ -270,7 +437,8 @@ SemiSupervisedFitting <- function(X_train, X_test, ltrain, ltest,
                  niterations = iterations, 
                  fitted_NC_model = resNC$models[[1]]$model,
                  fitted_C_model = resC$models[[1]]$model,                 
-                 par = parameters_C)
+                 par = parameters_C,
+                 pseudo_label_info = pseudo_label_info)
     return(Output)  
 }
 
