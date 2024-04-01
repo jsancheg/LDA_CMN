@@ -279,7 +279,7 @@ SemiSupervisedFitting_Version1 <- function(X_train, X_test, ltrain, ltest,
 
 SemiSupervisedFitting <- function(X_train, X_test, ltrain, ltest,
                                  vtest, model = "EEI",
-                                 pnolabeled = 0.5,
+                                 pnolabeled = 0.5, ind_nolabeled = NULL,
                                  iterations = 10, 
                                  alpharef = 0.75, tol = 0.01)
 # X_train:       matrix with the observations used in training
@@ -311,9 +311,7 @@ SemiSupervisedFitting <- function(X_train, X_test, ltrain, ltest,
   ntrain <- length(ltrain)
   ltrain1 <- ltrain
   # nolebeled: contains the number of unlabeled
-  nolabeled <- floor(pnolabeled*ntrain)
-  ind_nolabeled <- sample(1:ntrain,nolabeled,replace = FALSE)
-  ltrain1[ind_nolabeled] <- 0
+  if(pnolabeled!=0) ltrain1[ind_nolabeled] <- 0
   #table(ltrain1)
   
   if(ncol(X_train) == 1) 
@@ -445,7 +443,8 @@ SemiSupervisedFitting <- function(X_train, X_test, ltrain, ltest,
 
 GreedySearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
                            vtest,CE,
-                           pnolabeled = 0.5,iterations = 10,
+                           pnolabeled = 0.5,ind_nolabeled = NULL,
+                          iterations = 10,
                            alpharef = 0.75, 
                            tol = 0.01, epsilon = 0)
   # Xtrain :  matrix containing observations used in training
@@ -492,7 +491,8 @@ GreedySearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
     cat("\n Model ",unlist(PM))
     
     models[[cont]] <- SemiSupervisedFitting(X_train,X_test,ltrain,ltest,
-                                            vtest,model = c("E","V"), pnolabeled, 
+                                            vtest,model = c("E","V"), pnolabeled,
+                                            ind_nolabeled, 
                                             iterations = iterations, 
                                             alpharef = alpharef )
     
@@ -537,7 +537,7 @@ GreedySearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
         X_train1 <- Xtrain[,PM]
         X_test1 <- Xtest[,PM]
         SemiSupervisedFitting(X_train1, X_test1, ltrain, ltest, 
-                              vtest, pnolabeled, model = CE,
+                              vtest, pnolabeled,ind_nolabeled, model = CE,
                               iterations = iterations, 
                               alpharef = alpharef)
       })
@@ -1552,6 +1552,8 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
   GenData <- vector("list",nsimulations)
   dfRW <- vector("list",nsimulations)
   estimates <- vector("list",nsimulations)
+  
+  
   #    Metrics <- data.frame(Nsim = rep(1:nsimulations,each = 3),
   #                          )
   MetricsPseudoValidation <- data.frame(File = numeric(), Nsim = numeric(),
@@ -1712,6 +1714,13 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
     vtest <- GenData[[i_sim]]$vtest
     
     
+    ntrain <- length(ltrain)
+    ltrain1 <- ltrain
+    # nolebeled: contains the number of unlabeled
+    nolabeled <- floor(pnolabeled*ntrain)
+    ind_nolabeled <- sample(1:ntrain,nolabeled,replace = FALSE)
+    
+    
     MmetricsSaturatedM[[i_sim]] <- data.frame(Group = 1:G, Precision = rep(0,G), 
                                               Recall = rep(0,G), Specificity = rep(0,G),
                                               F1 = rep(0,G)) 
@@ -1729,10 +1738,10 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
     
     
     saturated_mod <-  SemiSupervisedFitting(Xtrain,Xtest,ltrain,ltest,
-                                            vtest, CE,pnolabeled) 
+                                            vtest, CE,pnolabeled,ind_nolabeled) 
     
     selectedVar_mod <- GreedySearch(Xtrain,Xtest,RW,ltrain,ltest,vtest, 
-                                      CE = CE, pnolabeled = 0.5, iterations = niterations,
+                                      CE = CE, pnolabeled = pnolabeled, ind_nolabeled,iterations = niterations,
                                       alpharef = 0.75, tol = 0.01, epsilon = 0)
     
     
@@ -1747,7 +1756,7 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
       
       TrueModel  <- SemiSupervisedFitting(Xtrain_TM,
                                           Xtest_TM,ltrain,ltest,
-                                          vtest,CE,pnolabeled,
+                                          vtest,CE,pnolabeled,ind_nolabeled,
                                           iterations = niterations,
                                           alpharef = 0.75, 
                                           tol = 0.01)
