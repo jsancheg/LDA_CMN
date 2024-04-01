@@ -11,6 +11,7 @@ source("http://www.sthda.com/upload/rquery_cormat.r")
 setwd(pathWd)
 dir(pathOutput)
 
+pathOutput <- paste0(getwd() ,"/")
 
 dfAll <- Summarise_Files(pathOutput,nameDf,pattern,alphaM,etaM)
 

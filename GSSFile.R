@@ -35,7 +35,7 @@ GenerateSSFile <- function(file_name,pathScenarios, pathOutput,Model = "VVV",pno
 }
 
 
-GenerateSSFile_vectorize <- function(file_name,pathScenarios, pathOutput,Model = "VVV",pnolabeled = 0.5)
+GenerateSSFile_vectorize <- function(file_name,pathScenarios, pathOutput,Model = "VVV", Search = "GS",pnolabeled = 0.5)
 {
   #fileScenario <- readRDS(paste0(pathScenarios,file_name))  
   
@@ -50,13 +50,34 @@ GenerateSSFile_vectorize <- function(file_name,pathScenarios, pathOutput,Model =
   }
   
   CE <- Model
-  Output <- SemiSupervised_HLS_vectorize(file_name,pathScenarios,CE,variables_True_Model,
-                               pnolabeled = pnolabeled, niterations = 10,
-                               alpharef = 0.99, tol = 0.01, epsilon = 0)
   
-  SSfile_name <- str_replace(file_name,"S_","SSV_")
-  saveRDS(Output,paste0(pathOutput,SSfile_name))
+  if(Search == "GS")
+  {
+    Output <- SemiSupervised_GS(file_name,pathScenarios,CE,variables_True_Model,
+                                           pnolabeled = pnolabeled, niterations = 10,
+                                           alpharef = 0.99, tol = 0.01, epsilon = 0)
+    
+  }else{
+    Output <- SemiSupervised_HLS_vectorize(file_name,pathScenarios,CE,variables_True_Model,
+                                           pnolabeled = pnolabeled, niterations = 10,
+                                           alpharef = 0.99, tol = 0.01, epsilon = 0)
+    
+  }
   
+  
+  
+  if(Search == "GS")
+  {
+    SSfile_name <- str_replace(file_path_sans_ext(file_name),"S_","SSV_")
+    
+    saveRDS(Output,paste0(pathOutput,SSfile_name,"_",as.character(pnolabeled*100),".RDS"  ) )
+    
+  }
+  else{
+    SSfile_name <- str_replace(file_name,"S_","SSV_")
+    
+    saveRDS(Output,paste0(pathOutput,SSfile_name))
+  }
   return(1);  
 }
 

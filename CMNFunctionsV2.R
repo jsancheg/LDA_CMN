@@ -1088,6 +1088,7 @@ funcSample <- function(X,y,vpi)
     total = round(ng[g_1]/vpi[1],0)
     for(g_2 in 1:(G-1))
     {
+      
       aux[g_1,g_2] = floor(total * vpi[g_2])
     }
     aux[g_1,G] = floor(total * (1-sum(vpi[1:(G-1)])))
@@ -1099,15 +1100,32 @@ funcSample <- function(X,y,vpi)
   aux
   ng
   bolval
-  if (all(bolval == FALSE)) stop("Change the proportions one of the group does not have enough observations")
-  
-  val <- apply(aux,1,sum)
-  
-  maximo <- max(val[bolval])
-  
-  indmax <- which(val == maximo)
-  
-  mg <- aux[indmax,]
+  if ( all(bolval == FALSE) )
+    { 
+      bolval[1:G] = FALSE
+      pos <- sapply(1:G,function(g) sum(aux[g,] <= ng ) )
+      bolval[which.max(pos)] = TRUE
+      mg <- aux[which.max(pos),]
+      for(g in 1:G ) mg[g] <- aux[which.max(pos),g]
+      for(g in 1:G) 
+        if( ng[g] < mg[g] | (ng[g]-mg[g])== 1  ) 
+          {
+              mg[g] <- ng[g] - 4 
+          } else 
+    
+      cat("Change the proportions one of the group does not have enough observations")
+  } else
+  {
+    val <- apply(aux,1,sum)
+    
+    maximo <- max(val[bolval])
+    
+    indmax <- which(val == maximo)
+    
+    mg <- aux[indmax,]
+    
+  }
+    
   
   mg_samples <- vector("list",G)
   ind_samples <- vector("list",G)

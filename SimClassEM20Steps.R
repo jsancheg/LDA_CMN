@@ -1997,6 +1997,99 @@ mCmn1 <- function(Xtrain,ltrain,par,eta_max = 1000)
 }
 
 
+eCmn_x_l_par <- function(X,l,par)
+{
+  m <- nrow(X)
+  alpha <- par$alpha
+  mu <- par$mu
+  sigma <- par$sigma
+  eta<-par$eta
+  G <- par$G
+  pig <- par$pig
+  v <- matrix(0.0, ncol = G, nrow = m)
+  z <- matrix(0.0, ncol = G, nrow = m)
+  thetaig <- matrix(0.0, ncol = G, nrow = m)
+  denv <- matrix(0.0, ncol = G, nrow = m)
+  fxig <- matrix(0.0, ncol = G, nrow = m)
+  numz <- matrix(0.0, ncol = G, nrow = m)
+  numv <- matrix(0.0, ncol = G, nrow = m)
+  denzi <- rep(0,m)
+  lhat <- rep(0,m)
+  vhat <- rep(0,m)
+  
+  
+  output <- list()
+  for(g in 1:G)
+  {
+    for(i in 1:m)
+    {
+      if(ncol(X) == 1 & is.vector(sigma) & length(sigma)==1)
+      {
+        # thetaig : matrix containing the probability of i-th observation in group g 
+        # is not contaminated
+        thetaig[i,g] <- dnorm(X[i,],mu[g],sigma)
+        # fxig: matrix containing the probability of contaminated normal distribution for
+        # observation i in group g
+        fxig[i,g] <- alpha[g]*thetaig[i,g] + (1-alpha[g])*dnorm(X[i,],mu[g],eta[g]*sigma)
+        
+      } else if(length(dim(sigma))==2)
+      {
+        thetaig[i,g] <- dMVNorm(X[i,],mu[,g],sigma)
+        fxig[i,g] <- alpha[g]*thethaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],eta[g]*sigma)
+        
+      } else if(length(dim(sigma)) > 2)
+      {
+        if(ncol(X)>1)
+        {
+          thetaig[i,g] <-  dMVNorm(X[i,],mu[,g],sigma[,,g])
+          fxig[i,g] <- alpha[g] * thetaig[i,g] + (1-alpha[g])*dMVNorm(X[i,],mu[,g],eta[g]*sigma[,,g])
+          
+        }else if(ncol(X)==1)
+        {
+          if(is.null(dim(sigma)))
+          {
+            thetaig[i,g] <- dnorm(X[i,],mu[g],sigma)
+            fxig[i,g] <- alpha[g] * thetaig[i,g] + (1-alpha[g])*dnorm(X[i,],mu[g],eta[g]*sigma)
+          } else if(!is.null(dim(sigma)) )
+          {
+            thetaig[i,g] <- dnorm(X[i,],mu[g],sigma[,,g])
+            fxig[i,g] <- alpha[g] * thetaig[i,g] +  (1-alpha[g])*dnorm(X[i,],mu[g],eta[g]*sigma[,,g])
+            
+          }
+          
+        }
+        
+      } #End-f
+      
+      # avoid division by zero
+      numz[i,g] <- pig[g] * fxig[i,g]
+      numv[i,g] <- alpha[g] * thetaig[i,g]
+      denv[i,g] <- fxig[i,g]
+      v[i,g] <- numv[i,g]/denv[i,g]
+      
+      
+    }#End-for i
+    
+  }#End-for G
+  
+  # calculating zhat and lhat
+  
+  # calculating zhat and lhat
+  denzi <- apply(numz,1,sum)
+  for (i in 1:m)
+  {
+    z[i,] <- numz[i,]/denzi[i]
+  }
+  lhat<-apply(z,1,which.max)
+  for (i in 1:m)
+  {
+    vhat[i] <- ifelse(v[i,l[i]]>0.5,1,0)
+  }
+  
+  output <- list(z = z, v = v, lhat = lhat, vhat = vhat )
+  return(output)
+}
+
 
 eCmn <- function(Xtrain,par)
 {

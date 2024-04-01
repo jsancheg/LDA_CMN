@@ -10,6 +10,11 @@ ruta <-  "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CM
 pathFile <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Raw Data"
 setwd(ruta)
 
+sort_labels <- function(model_string)
+{
+  sorted_model <- sort(unlist(str_split(model_string,"-")))
+  return(paste(sorted_model,collapse="-"))
+}
 
 
 

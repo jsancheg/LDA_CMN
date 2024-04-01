@@ -68,6 +68,7 @@ ContSimulationsVars(pathOutput,nameDf,Xwine,y,lab,vpi,alphaM,etaM,ptrain,cont_va
 
 
 summary(factor(wine$Class))/nrow(wine)
+p <- ncol(wine)
 
 mug <- matrix (0.0, nrow = p, ncol = 3)
 

@@ -20,8 +20,17 @@ source("VSCMN.R")
 pathWd <- "E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
 
 
+sys_info <- Sys.info()
+sys_info
 
-pathOutput <-"E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Proc_CrabsNew/"
+if(sys_info["nodename"] == "WildFree")
+{
+  pathOutput <- "~/git_environment/LDA_CMN"
+} else {
+  pathOutput <-"E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Proc_CrabsNew/"
+  
+}
+  
 
 source("ReadCrabsDf.R")
 

@@ -26,6 +26,9 @@ pathOutput <-"E://University of Glasgow/Literature review/R Code/Food Analysis/L
 
 source("ReadCrabsDf.R")
 
+data(crabs)
+CrabsDf <- crabs
+
 BlueCrabs <- CrabsDf %>% filter(sp == "B")
 XBlueCrabs <- BlueCrabs %>% subset(select = c(FL, RW, CL, CW, BD))
 y <- as.numeric(BlueCrabs$sex)
@@ -47,6 +50,29 @@ pattern <- "A[\\d]+_[\\d]+_E[\\d]+_[\\d]+_Crabs"
 
 # run this line to generate the contaminated datasets
 ContSimulations(pathOutput,nameDf,XBlueCrabs,y,lab,vpi,alphaM,etaM,ptrain,ns = 10)
+
+pathwd <- getwd()
+
+pathOutput <- paste0(pathwd,"/s_crabs/")
+
+nfiles <-length(dir(pathOutput))
+
+scenarios_crabs <- dir(pathOutput)
+i <- 1
+dfs <- list()
+for (i in 1:nfiles)
+{
+    filename <- scenarios_crabs[i]
+    df <- readRDS(paste0(pathOutput,filename))
+    df$source <- filename
+    
+    dfs[[i]] <- df
+}
+
+combine_Df <- do.call(rbind,dfs)
+
+saveRDS(combine_Df,paste0(pathwd,"/Crabs_Metrics_25_03_2024.RDS") )
+
 
 
 dfAll <- Summarise_Files(pathOutput,nameDf,pattern,alphaM,etaM)

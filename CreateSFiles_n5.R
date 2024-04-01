@@ -32,7 +32,7 @@ Model <- c("EII","VII","EEI","VEI","EEE","VVV")
 Scenarios100[ini:fin]
 
 tic("vectorize function")
-status <-mclapply(Scenarios100[ini:fin], function(x){
+status <-mclapply(Scenarios5[ini:fin], function(x){
   
   SFilename <- str_replace(x,"S_","SSV_")
   FilesProcessed <- dir(pathSFiles)
@@ -41,7 +41,9 @@ status <-mclapply(Scenarios100[ini:fin], function(x){
 
         if(is_empty(intersect(FilesProcessed,SFilename))) 
         {
-          GenerateSFile_vectorize(x,pathScenarios,pathSFiles,Model) 
+#          GenerateSFile_vectorize(x,pathScenarios,pathSFiles,Model) 
+          GenerateSFile(x,pathScenarios,pathSFiles,Model) 
+          
         }else cat("\n The file ",SFilename, " already exists in the directory. \n")
         
         return(1)

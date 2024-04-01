@@ -230,6 +230,204 @@ MultSimPar3 <- function(nruns)
 
 
 
+cont_df <- function(X,y,lab,vpi,alpha,eta,ptrain, name_df, pathOutput )
+{
+  
+  # Function that contaminate the wine data set
+  # mug : matrix where each column is the mean of a group
+  # sg : matrix or array that contains the variance-covariance matrix for a group
+  # X  : matrix or array containing the covariates
+  # y  : vector containing the response (group information)
+  # lab: vector containing label for the corresponding groups
+  # vpi: vector containing the proportion of the sample for each group
+  # alpha: vector containing the percentage of non contaminated observations for each group
+  # eta:   vector containing the inflation factor for each group
+  # ptrain: vector containing the percentage of samples included in the training set for groups
+  # pathOutput: path where the file will be saved
+  
+  
+  
+  G <- length(unique(y))
+  ncont <- rep (0,G)
+  nocont <- rep(0,G)
+  nocont_train <- rep(0,G)
+  nocont_test <- rep(0,G)
+  ncont_train <- rep(0,G)
+  ncont_test <- rep(0,G)
+  ntrain <- rep(0,G)
+  ntest <- rep(0,G)
+  ng <- rep(0,G)
+  indsamples <- funcSample(X,y,vpi)
+  p <- ncol(X)
+  mug <- matrix(0.0,nrow = p, ncol = G)
+  sg <- array(0.0, dim = c(p,p,G))
+  
+  
+  for (g in 1:G) 
+  {
+    mug[,g] <- X[y==g,] %>% apply(2,mean)
+    sg[,,g] <- X[y == g,] %>% var
+    ng[g] <- length(indsamples[[g]])
+  }
+  
+  #BlueCrabsCont$sex <- ifelse(BlueCrabsCont$sex == "F",1,2)
+  for (g in 1:G)
+  {
+    nocont_train[g] = round(ng[g] * ptrain[g],0) 
+    nocont_test[g] = ng[g] - nocont_train[g]
+    
+    # number of contaminated samples in the train set
+    ncont_train[g] = round(nocont_train[g]/alpha[g],0) - nocont_train[g]
+    
+    # number of contaminated samples in the test set
+    ncont_test[g] = round(nocont_test[g]/alpha[g],0) - nocont_test[g]
+    
+    nocont[g] = nocont_train[g] + nocont_test[g]
+    
+    # number of contaminated observations to be simulated
+    ncont[g] = ncont_train[g] + ncont_test[g]
+    
+    # train size
+    ntrain[g] = nocont_train[g] + ncont_train[g]
+    
+    # test set for each sex
+    ntest[g]= nocont_test[g] + ncont_test[g]
+    
+  }
+  
+  indnc <- vector("list",G)
+  indc <- vector("list",G)
+  Xgnc_train <- vector("list",G)
+  Xgnc_test <- vector("list",G)
+  Xgc_train <- vector("list",G)
+  Xgc_test <- vector("list",G)
+  i<-1    
+  
+  
+  
+  GenContSamples <- SimCont(mug,sg,1:G,ncont,eta)
+  GenContSamples$index <- (nrow(X)+1):(nrow(X) +nrow(GenContSamples) )
+  GenContSamples <- GenContSamples %>% dplyr::select(index, everything())
+  colnames(GenContSamples)
+  ncolumns <- ncol(GenContSamples)
+  colnames(GenContSamples)[3:ncolumns] <-  colnames(X)
+  GenContSamples$Cont <- 1
+  colnames(GenContSamples)
+  head(GenContSamples)
+  
+  # Generate a set with the composition required for each group  
+  auxindnc <- funcSample(X,y,vpi)
+  winedf <- data.frame(X)
+  winedf$Cont <- 0
+  winedf$class <- y
+  winedf$index <- 1:nrow(X)
+  winedf <- winedf %>% dplyr::select(index,class, everything())
+  colnames(winedf)
+  
+  # Generate contaminated observation with the sane group composition used 
+  # in non contaminated set
+  auxindc <- funcSample(GenContSamples[,-1], GenContSamples$class, vpi)
+  #    indsampleTrain_nc <- vector("list",G)
+  GenContSamples$class
+  
+  for (g in 1:G)
+  {
+    # non contaminated set
+    auxDfg <- winedf %>% filter(class == g)
+    subsetg <- auxDfg[auxindnc[[g]],]
+    Xgnc_train[[g]] <- subsetg %>% slice_sample(n=nocont_train[g], replace = FALSE)
+    
+    indsampleTrain_nc <- Xgnc_train[[g]]$index
+    indsampleTest_nc <- setdiff(subsetg$index,indsampleTrain_nc)
+    
+    Xgnc_test[[g]] <-   subsetg %>% filter(index %in% indsampleTest_nc)
+    
+    
+    # contaminated
+    auxDfcont <- GenContSamples %>% filter (class == g)
+    subsetgcont <- auxDfcont[auxindc[[g]],]
+    
+    Xgc_train[[g]] <- subsetgcont %>% slice_sample(n = ncont_train[g], replace = FALSE)
+    
+    indsampleTrain_c <- Xgc_train[[g]]$index
+    indsampleTest_c <- setdiff(subsetgcont$index,indsampleTrain_c)
+    
+    Xgc_test[[g]] <- subsetgcont %>% filter(index %in% indsampleTest_c)
+    
+  }
+  nrow(winedf)
+  
+  colnames(GenContSamples)
+  table(GenContSamples$Cont)
+  table(winedf$Cont)
+  
+  table(GenContSamples$class)
+  table(winedf$class)
+  
+  # getting rid off index column    
+  WineCont <- rbind.data.frame(winedf %>% dplyr::select(-index),
+                               GenContSamples %>% dplyr::select(-index)  )
+  
+  
+  WineCont
+  
+  colnames(WineCont)
+  nrow(WineCont)
+  
+  auxTrain_nc <- ldply(Xgnc_train)
+  auxTest_nc <- ldply(Xgnc_test)
+  indnc_train <- auxTrain_nc$index
+  
+  table(auxTrain_nc$class)
+  table(auxTest_nc$class)
+  
+  auxTrain_c <- ldply(Xgc_train)
+  auxTest_c <- ldply(Xgc_test)
+  indc_train <- auxTrain_c$index
+  
+  auxTrain_c$class
+  
+  Xgc_train[[2]]$class  
+  
+  DfTrain <- rbind.data.frame(ldply(Xgnc_train),ldply(Xgc_train))
+  colnames(DfTrain)
+  
+  dfTest <- rbind.data.frame(ldply(Xgnc_test),ldply(Xgc_test))
+  
+  # DfTest <- rbind.data.frame(winedf[-indnc_train,-2], 
+  #                              GenContSamples[-indc_train,-2])
+  
+  colnames(dfTest)
+  
+  DfTest <- dfTest[sample(1:nrow(dfTest)),]
+  
+  
+  colnames(WineCont)
+  
+  
+  nrow(WineCont)
+  nrow(DfTrain)
+  
+  Xtrain <- DfTrain %>% dplyr::select(-c(index,class,Cont)) %>% as.matrix
+  Xtest <- DfTest %>% dplyr::select(-c(index,class,Cont)) %>% as.matrix
+  X <- rbind(Xtrain,Xtest)
+  ltrain <- DfTrain$class %>% as.numeric
+  ltest <- DfTest$class %>% as.numeric
+  l <- c(ltrain,ltest)
+  vtrain <- DfTrain$Cont %>% as.numeric
+  vtest <- DfTest$Cont %>% as.numeric
+  v <-c(vtrain,vtest)
+  ind <-(1:nrow(Xtrain))
+  
+  output <- list(X = X,l =l, ind = ind,Xtrain = Xtrain,
+                 Xtest = Xtest,ltrain = ltrain,ltest = ltest,
+                 v = v, vtrain = vtrain, vtest = vtest)
+  
+  return(output)
+}
+
+
+
 findPosModel <- function(ListofModels,modeltofind)
 {
   posinList <- 0
@@ -1255,6 +1453,44 @@ ContSimulations <- function(pathOutput,nameDf,X,y,lab,vpi,alphaM,etaM,ptrain,ns 
     }
   toc()
 }  
+
+
+ContSimulations_RDS <- function(pathOutput,nameDf,X,y,lab,vpi,alphaM,etaM,ptrain,ns = 10)
+{
+  # Function that create simulated data set with their respectively metrics
+  # pathOutput : Output path where generated files would be saved
+  # nameDf: Name of the data set
+  # X: covariates
+  # y: categorical variable
+  # lab: 
+  # vpi: vector of proportion for classes
+  # alphaM: Matrix of possible combinations of values for alpha 
+  # etaM:  Matrix of possible combination of values for eta
+  # ptrain: vector of proportion of observations used to train the model
+  # ns: number of simulations
+  
+  
+  
+  list_processed_files <- dir(pathOutput)
+  tic("simulation")
+  for(i_a in 1:nrow(alphaM))
+    for(i_eta in 1:nrow(etaM))
+    {
+      name_alpha <- paste(alphaM[i_a,],collapse = "_")
+      name_eta <- paste(etaM[i_eta,],collapse="_")
+      name_file <- paste0(pathOutput,"A",str_replace_all(name_alpha,"\\.",""),"_E",name_eta,"_",nameDf,".Rdata")
+      flag_existing_file <- str_detect(list_processed_files,paste0("A",str_replace_all(name_alpha,"\\.",""),"_E",name_eta,"_Crabs.Rdata"))
+      cat("\n File: ",name_file, " processed status ", any(flag_existing_file == TRUE), "\n" )
+      if (all(flag_existing_file == FALSE))
+      {
+        auxSim <- contDf (X,y,lab,vpi,alphaM[i_a,],etaM[i_eta,],ptrain,ns = 10)
+        save(auxSim,file = name_file)
+        cat("\n -- saving ", name_file,"---\n")
+      }  
+    }
+  toc()
+}  
+
 
 
 ContSimulationsVars <- function(pathOutput,nameDf,X,y,lab,vpi,alphaM,etaM,ptrain,cont_vars,ns = 10)
