@@ -918,8 +918,22 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
   #                          vtesthat_SM = numeric(), vtesthat_TM = numeric(),
   #                          vtesthat_SaturatedM = numeric() , stringsAsFactors = FALSE )   
   
+          time_df <- data.frame(File = character(), Simulation = numeric(), Stage = character(),
+                                Steps = numeric(), Time_Execution = numeric())    
+          if( any(str_detect(dir(getwd()),"Time_Execution.RDS")))
+          {
+             aux_time <- readRDS(paste0(getwd(),"/Time_Execution.RDS"))
+             time_df <- aux_time
+             index_time <- nrow(time_df)
+          }else{
+            index_time = 1
+          }
+          
+          
   for (i_sim in 1:nsimulations)
   {
+    time_begin <- Sys.time()
+    
     GenData[[i_sim]] <-fileRDS$GenData[[i_sim]]
     par <- fileRDS$par
     #GenData <- SimGClasses(mug = matrix(c(0,0,0,2,0,0,0,2,0,0),ncol = 2, nrow = 5, byrow = TRUE),
@@ -953,16 +967,35 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
     RW <- dfRW[[i_sim]]$Var
     variables_saturated_model <- RW
     
-    
+    tic("Saturated Model")
     saturated_mod <-  SemiSupervisedFitting(Xtrain,Xtest,ltrain,ltest,
                                             vtest, CE,pnolabeled) 
+    elapsed_time <- toc()
     
+    time_df[index_time,"File"] <- file_name
+    time_df[index_time,"Simulation"] <- i_sim
+    time_df[index_time,"Stage"] <- "All"
+    time_df[index_time,"Steps"] <- 1
+    time_df[index_time,"Time_Execution"] <- elapsed_time$toc - elapsed_time$tic
+    index_time <- index_time + 1
+    
+    tic("Selected Model")
     selectedVar_mod <- HeadLongSearch(Xtrain,Xtest,RW,ltrain,ltest,vtest, 
                                       CE = CE, pnolabeled = 0.5, iterations = niterations,
                                       alpharef = 0.75, tol = 0.01, epsilon = 0)
     
+    elapsed_time <- toc()
     
     pos_True_Model <- findPosModel(selectedVar_mod$models, variables_True_Model)
+    
+    time_df[index_time,"File"] <- file_name
+    time_df[index_time,"Simulation"] <- i_sim
+    time_df[index_time,"Stage"] <- "Selected"
+    time_df[index_time,"Steps"] <- length(selectedVar_mod$Selectedmodel)
+    time_df[index_time,"Time_Execution"] <- elapsed_time$toc - elapsed_time$tic
+    index_time <- index_time + 1
+
+    tic("True Model")
     
     if(pos_True_Model != 0 & is.numeric(pos_True_Model))
     {
@@ -979,6 +1012,13 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
                                           tol = 0.01)
       TrueModel$PM <- variables_True_Model
     } 
+
+    time_df[index_time,"File"] <- file_name
+    time_df[index_time,"Simulation"] <-i_sim
+    time_df[index_time,"Stage"] <- "True"
+    time_df[index_time,"Steps"] <- length(TrueModel)
+    time_df[index_time,"Time_Execution"] <- elapsed_time$toc - elapsed_time$tic
+    index_time <- index_time + 1
     
     # pos: position model obtained by variable selection
     pos <- selectedVar_mod$posCM
@@ -1152,8 +1192,18 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
     estimates[[i_sim]]$vTestHat_SM <- SM_vtest
     estimates[[i_sim]]$vTestHat_TM <- TM_vtest
     estimates[[i_sim]]$vTestHat_SaturatedM <- saturated_vtest
+    
+    time_end <- Sys.time()
+    time_df[index_time,"File"] <- file_name
+    time_df[index_time,"Simulation"] <- i_sim
+    time_df[index_time,"Stage"] <- "Complete"
+    time_df[index_time,"Steps"] <- length(TrueModel$PM)
+    time_df[index_time,"Time_Execution"] <- time_end - time_begin
+    index_time <- index_time + 1
   } # end-for i_sim
   
+          
+          saveRDS(time_df,paste0(getwd(),"/Time_Execution.RDS"))
   Output <-  list(Metrics = Metrics , 
                   # Matrix of metrics
                   Metrics_SaturatedM = MmetricsSaturatedM,
@@ -1162,7 +1212,8 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
                   # Generated Data
                   GenData = GenData,
                   # Estimates
-                  Estimates = estimates)
+                  Estimates = estimates,
+                  Time = time_df)
   
   #Check SSFilesToPRocessed[[4]]
   
@@ -1503,6 +1554,105 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
   estimates <- vector("list",nsimulations)
   #    Metrics <- data.frame(Nsim = rep(1:nsimulations,each = 3),
   #                          )
+  MetricsPseudoValidation <- data.frame(File = numeric(), Nsim = numeric(),
+                                        Percentage_Unlabelled_Data = numeric(),
+                                        FittedContModel_TM = character(),
+                                        FittedNoContModel_TM = character(),
+                                        Model_TM = character(),
+                                        Nvars_TM = numeric(),
+                                        CCR_Class_Train_TM = numeric(),
+                                        CCR_Class_Test_TM = numeric(),
+                                        CCR_Pseudo_Label_Train_TM = numeric(),
+                                        Recall_Class_Train_TM = numeric(),
+                                        Recall_Class_Test_TM = numeric(),
+                                        Recall_Pseudo_Label_Train_TM = numeric(),
+                                        Precision_Class_Train_TM = numeric(),
+                                        Precision_Class_Test_TM = numeric(),
+                                        Precision_Pseudo_Label_Train_TM = numeric(),
+                                        Specificity_Class_Train_TM = numeric(),
+                                        Specificity_Class_Test_TM = numeric(),
+                                        Specificity_Pseudo_Label_Train_TM = numeric(),
+                                        
+                                        Recall_Cont_Class_Train_TM = numeric(),
+                                        Recall_Cont_Class_Test_TM = numeric(),
+                                        Recall_Cont_Pseudo_Label_Train_TM = numeric(),
+                                        Precision_Cont_Class_Train_TM = numeric(),
+                                        Precision_Cont_Class_Test_TM = numeric(),
+                                        Precision_Cont_Pseudo_Label_Train_TM = numeric(),
+                                        Specificity_Class_Train_TM = numeric(),
+                                        Specificity_Pseudo_Label_Train_TM = numeric(),
+                                        
+                                        Recall_Cont_Class_Train_TM = numeric(),
+                                        Recall_Cont_Class_Test_TM = numeric(),
+                                        Recall_Cont_Pseudo_Label_Train_TM = numeric(),
+                                        Precision_Cont_Class_Train_TM = numeric(),
+                                        Precision_Cont_Class_Test_TM = numeric(),
+                                        Precision_Cont_Pseudo_Label_Train_TM = numeric(),
+                                        Specificity_Cont_Class_Train_TM = numeric(),
+                                        Specificity_Cont_Class_Test_TM = numeric(),
+                                        Specificity_Cont_Pseudo_Label_Train_TM = numeric(),
+                                        FittedContModel_TM = character(),
+                                        FittedNoContModel_TM = character(),
+                                        Model_TM = character(),
+                                        Nvars_TM = numeric(),
+                                        
+                                        FittedContModel_SM = character(),
+                                        FittedNoContModel_SM = character(),
+                                        Model_SM = character(),
+                                        Nvars_SM = character(),
+                                        CCR_Class_Train_SM = numeric(),
+                                        CCR_Class_Test_SM = numeric(),
+                                        CCR_Pseudo_Label_Train_SM = numeric(),
+                                        Recall_Class_Train_SM = numeric(),
+                                        Recall_Class_Test_SM = numeric(),
+                                        Recall_Pseudo_Label_Train_SM = numeroc(),
+                                        Precision_Class_Train_SM = numeric(),
+                                        Precision_Class_Test_SM = numeric(),
+                                        Precision_Pseudo_Label_Train_SM = numeric(),
+                                        Specificity_Class_Train_SM = numeric(),
+                                        Specificity_Class_Test_SM = numeric(),
+                                        Specificity_Pseudo_Label_Train_SM = numeric(),
+                                        
+                                        Recall_Cont_Class_Train_SM = numeric(),
+                                        Recall_Cont_Class_Test_SM = numeric(),
+                                        Recall_Cont_Pseudo_Label_Train_SM = numeric(),
+                                        Precision_Cont_Class_Train_SM = numeric(),
+                                        Precision_Cont_Class_Test_SM = numeric(),
+                                        Precision_Cont_Pseudo_Label_Train_SM = numeric(),
+                                        Specificity_Cont_Class_Train_SM = numeric(),
+                                        Specificity_Cont_Class_Test_SM = numeric(),
+                                        Specificity_Cont_Pseudo_Label_Train_SM = numeric(),
+                                        
+                                        FittedContModel_SaturatedM = character(),
+                                        FittedNoContModel_SaturatedM = character(),
+                                        Model_SaturatedM = character(),
+                                        Nvars_SaturatedM = numeric(),
+                                        CCR_Class_Train_SaturatedM= numeric(),
+                                        CCR_Class_Test_SaturatedM = numeric(),
+                                        CCR_Pseudo_Label_Train_SaturatedM = numeric(),
+                                        Recall_Class_Train_SaturatedM = numeric(),
+                                        Recall_Class_Test_SaturatedM = numeric(),
+                                        Recall_Pseudo_Label_Train_SaturatedM =  numeric(),
+                                        Precision_Class_Train_SaturatedM = numeric(),
+                                        Precision_Class_Test_SaturatedM = numeric(),
+                                        Precision_Pseudo_Label_Train_SaturatedM = numeric(),
+                                        Specificity_Class_Train_SaturatedM = numeric(),
+                                        Specificity_Class_Test_SaturatedM = numeric(),
+                                        Specificity_Pseudo_Label_Train_SaturatedM = numeric(),
+                                        
+                                        Recall_Cont_Class_Train_SaturatedM =  numeric(),
+                                        Recall_Cont_Class_Test_SaturatedM = numeric(),
+                                        Recall_Cont_Pseudo_Label_Train_SaturatedM = numeric(),
+                                        Precision_Cont_Class_Train_SaturatedM = numeric(),
+                                        Precision_Cont_Class_Test_SaturatedM = numeric(),
+                                        Precision_Cont_Pseudo_Label_SaturatedM = numeric(),
+                                        Specificity_Cont_Class_Train_SaturatedM = numeric(),
+                                        Specificity_Cont_Class_Test_SaturatedM = numeric(),
+                                        Specificity_Cont_Pseudo_Label_Train_SaturatedM = numeric()
+                                        
+                                        
+                                        )
+  
   
   Metrics = data.frame(Nsim = numeric(),
                        FittedContModel_SM = character(),
@@ -1603,6 +1753,13 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
                                           tol = 0.01)
       TrueModel$PM <- variables_True_Model
     } 
+    
+    saturated_mod$pseudo_label_info$vtrain <- GenData[[i_sim]]$vtrain
+    saturated_mod$pseudo_label_info$True_Labels_V_train <- GenData[[i_sim]]$vtrain[saturated_mod$pseudo_label_info$Unlabelled_index]
+    selectedVar_mod$pseudo_label_info$vtrain <- Gendata[[i_sim]]$vtrain
+    selectedVar_mod$pseudo_label_info$True_Labels_V_Train <- GenData[[i_sim]]$vtrain[selectedVar_mod$pseudo_label_info$Unlabelled_index]
+    TrueModel$pseudo_label_info$vtrain <- Gendata[i_sim]$vtrain
+    TrueModel$pseudo_label_info$True_Labels_V_Train <- GenData[[i_sim]]$vtrain[TrueModel$pseudo_label_info$Unlabelled_index]
     
     # pos: position model obtained by variable selection
     pos <- selectedVar_mod$posCM
@@ -1776,6 +1933,10 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
     estimates[[i_sim]]$vTestHat_SM <- SM_vtest
     estimates[[i_sim]]$vTestHat_TM <- TM_vtest
     estimates[[i_sim]]$vTestHat_SaturatedM <- saturated_vtest
+    estimates[[i_sim]]$PseudoInformation_TM <- TrueModel$pseudo_label_info
+    estimates[[i_sim]]$PseudoInformation_SM <- selectedVar_mod$models[[pos]]$pseudo_label_info
+    estimates[[i_sim]]$PseudoInformation_SaturatedM <- saturated_mod$pseudo_label_info
+    
   } # end-for i_sim
   
   Output <-  list(Metrics = Metrics , 
@@ -2346,3 +2507,130 @@ Create_MetricsFileOld <- function(filepath,ListFiles,NameMetricsFile = "Metrics"
 }
 
 
+cont_df <- function(X,y,lab,vpi.alpha,eta,ptrain)
+{
+  # Function that contaminate the wine data set
+  # mug   : matrix where each column is the mean of a group
+  # sg    : matrix or array that contains the variance-covariance matrix for a group
+  # X     : matrix or array containing the covariates
+  # y     : vector containing the response ( group information)
+  # lab   : vector containing labels for the corresponding group
+  # vpi   : vector containing the proportion of the sample for each group
+  # alpha : vector containing the percentage of non contaminated observations for each group
+  # eta   : vector containing the inflation factor for each group
+  # ptrain : vector containing the percentage of samples included in the training ser for groups
+  # pathOutput: path where the file will be saved
+  
+  
+  G <- length(unique(y))
+  ncont <- rep(0,G)
+  nocont <- rep(0,G)
+  nocont_train <- rep(0,G)
+  nocont_test <- rep(0,G)
+  ncont_train <- rep(0,G)
+  ncont_test <- rep(0,G)
+  ntrain <- rep(0,G)
+  ntest <- rep(0,G)
+  ng <- rep(0,G)
+  library(mclust)
+  
+  
+  length(indsamples[[1]])
+  p <- ncol(X)
+  mug <- matrix(0.0, nrow = p, ncol = G)
+  sg <- array(0.0, dim = c(p, p,G))
+
+  samples_cont_x_group <- apply(unmap(y),2,sum)
+  samples_no_cont_x_group <- round(table(y) * (alpha))
+  
+  ncont = round(samples_cont_x_group * (1-alpha))
+  
+  
+  for(g in 1:G)
+  {
+    mg[,g] <- X[y=g,] %>% apply(2,mean)
+    sg[,g] <- X[y==g,] %>% var
+  }
+  
+  GenContSamples <- SimCont(mug,sg,1:G,ncont,eta)
+  colnames(GenContSamples)
+  ng <- numeric()
+  cont <- numeric()#
+  
+  x_aux <- matrix()
+  x_aux <- X[y==1,]
+  x_cont_aux <- GenContSamples %>% filter(class == 1) %>% select(-class) %>% as.matrix
+  
+  colnames(x_cont_ax) <- colnames(x_aux)
+  # dim(x_aux)
+  # dim(x_cont_aux)
+  # x <- cbind(x_aux,x_cont_aux)
+  # y_aux <- rep(1,nrow(x))
+  
+  x <- matrix()
+  ng <- numeric()
+  cont_changes <- 1
+  g <- 1
+  
+  
+  for(g in 1:G)
+  {
+    x_aux <- X[y==g,]
+    if(g == 1)
+    {
+      x <- x_aux
+      ng[cont_changes] <- nrow(x)
+      cont_changes <- cont_changes + 1
+    }else {
+      x <- rbind(x,x_aux)
+      ng[cont_changes] <- nrow(x_aux)
+      cont_changes <- cont_changes + 1
+    }
+    x_cont_aux <- GenContSamples %>% filter(Class ==g) %>% select(-class) %>% as.matrix
+    colnames(x_cont_aux) <- colnames(x_aux)
+    ng[cont_changes] <- nrow(x_cont_aux)
+    cont_changes <- cont_changes + 1
+    x <- rbind(x,x_cont_aux)
+  }
+      # construct labels for classes
+      aux_labels <- rep(1:G, each = 2)
+      label_classes <- rep(aux_labels, ng)  
+      
+      
+      # construct labels for contamination
+      aux_labels_contamination <- rep(0,1:G)
+      labels_contamination <- rep(aux_labels_contamination,ng)
+      
+      
+      # update row names
+      rownames(x) <- 1:nrow(x)
+      
+      # assuming that training percentage is the same for all classes
+      ntrain <- nrow(x) * ptrain[1]
+      
+      # index fr splitting the set into training and set
+      ind_train <- sample(1:nrow(x), round( nrow(x)/2 ), replace = FALSE )
+      
+      # split the set into training and test
+      l <- labels_classes
+      v <- labels_conamination
+      
+      Xtrain <- x[ind_train,]
+      ltrain <- labels_classes[ind_train]
+      vtrain <- v[ind_train]
+      
+      Xtest <- x[-ind_train,]
+      ltest <- labeles_classes[-ind_train]
+      vtest <- v[-ind_train]
+      
+      ind <- ind_train
+      
+      table(ltrain,vtrain)
+      
+      output <- list(X = x, l =l, ind = ind, Xtrain = Xtrain,
+                     Xtest = Xtest, ltrain = ltrain, ltest = ltest,
+                     v = v, vtrain = vtrain, vtest = vtest)
+      
+      return(output)
+  
+}
