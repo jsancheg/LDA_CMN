@@ -543,7 +543,6 @@ GreedySearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
                               iterations = iterations, 
                               alpharef = alpharef)
       })
-    } # end-f nARW
     
     CCRPMs <- sapply(models_new, function(m) m$CCRTestC )
     
@@ -566,6 +565,7 @@ GreedySearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
       CCRCM <- CCRPMs[best_index]
       posCM <- cont - 1
     }
+  } # end-f nARW
     
 #    cat("\n", " File: ", file_name, " Simulation: ", i_sim, " - ", cont - 1, ", model = ", unlist(CM), "\n")
     
