@@ -278,8 +278,8 @@ SemiSupervisedFitting_Version1 <- function(X_train, X_test, ltrain, ltest,
 
 
 SemiSupervisedFitting <- function(X_train, X_test, ltrain, ltest,
-                                 vtest, model = "EEI",
-                                 pnolabeled = 0.5,
+                                 vtrain,vtest, model = "EEI",
+                                 pnolabeled = 0.5, ind_nolabeled = NULL,
                                  iterations = 10, 
                                  alpharef = 0.75, tol = 0.01)
 # X_train:       matrix with the observations used in training
@@ -308,12 +308,12 @@ SemiSupervisedFitting <- function(X_train, X_test, ltrain, ltest,
   
   G <- length(unique(ltrain))
   
-  ntrain <- length(ltrain)
+#  ntrain <- length(ltrain)
   ltrain1 <- ltrain
   # nolebeled: contains the number of unlabeled
-  nolabeled <- floor(pnolabeled*ntrain)
-  ind_nolabeled <- sample(1:ntrain,nolabeled,replace = FALSE)
-  ltrain1[ind_nolabeled] <- 0
+ # nolabeled <- floor(pnolabeled*ntrain)
+  #ind_nolabeled <- sample(1:ntrain,nolabeled,replace = FALSE)
+  if(pnolabeled > 0) ltrain1[ind_nolabeled] <- 0
   #table(ltrain1)
   
   if(ncol(X_train) == 1) 
@@ -444,8 +444,9 @@ SemiSupervisedFitting <- function(X_train, X_test, ltrain, ltest,
 
 
 GreedySearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
-                           vtest,CE,
-                           pnolabeled = 0.5,iterations = 10,
+                           vtrain, vtest,CE,
+                           pnolabeled = 0.5, ind_nolabeled = NULL,
+                          iterations = 10,
                            alpharef = 0.75, 
                            tol = 0.01, epsilon = 0)
   # Xtrain :  matrix containing observations used in training
@@ -492,7 +493,8 @@ GreedySearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
     cat("\n Model ",unlist(PM))
     
     models[[cont]] <- SemiSupervisedFitting(X_train,X_test,ltrain,ltest,
-                                            vtest,model = c("E","V"), pnolabeled, 
+                                            vtrain,vtest,model = c("E","V"),
+                                            pnolabeled, ind_nolabeled,
                                             iterations = iterations, 
                                             alpharef = alpharef )
     
@@ -537,7 +539,7 @@ GreedySearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
         X_train1 <- Xtrain[,PM]
         X_test1 <- Xtest[,PM]
         SemiSupervisedFitting(X_train1, X_test1, ltrain, ltest, 
-                              vtest, pnolabeled, model = CE,
+                              vtrain, vtest, pnolabeled, model = CE,
                               iterations = iterations, 
                               alpharef = alpharef)
       })
@@ -633,7 +635,7 @@ HeadLongSearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
     cat("\n Model ",unlist(PM))
       
     models[[cont]] <- SemiSupervisedFitting(X_train,X_test,ltrain,ltest,
-                                            vtest,model = c("E","V"), pnolabeled, 
+                                            vtrain, vtest,model = c("E","V"), pnolabeled, 
                                            iterations = iterations, 
                                            alpharef = alpharef )
     
@@ -681,7 +683,7 @@ HeadLongSearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
         X_test1 <- Xtest %>% dplyr::select(all_of(PM))
 
         models[[cont]] <-  SemiSupervisedFitting(X_train1,X_test1,ltrain,ltest,
-                              vtest,pnolabeled, model = CE,
+                              vtrain, vtest,pnolabeled, model = CE,
                               iterations = iterations, 
                               alpharef = alpharef )
         
@@ -720,7 +722,7 @@ HeadLongSearch <- function(Xtrain, Xtest, RW, ltrain, ltest,
 
 
 HeadLongSearch_mod <- function(Xtrain, Xtest, RW, ltrain, ltest,
-                           vtest,CE,
+                           vtrain, vtest,CE,
                            pnolabeled = 0.5,iterations = 10,
                            alpharef = 0.75, 
                            tol = 0.01, epsilon = 0,i_sim = NULL,file_name = NULL )
@@ -768,7 +770,7 @@ HeadLongSearch_mod <- function(Xtrain, Xtest, RW, ltrain, ltest,
     cat("\n"," File : ", file_name, " - Simulation: ",i_sim,"Model ",unlist(PM))
     
     models[[cont]] <- SemiSupervisedFitting(X_train,X_test,ltrain,ltest,
-                                            vtest,model = c("E","V"), pnolabeled, 
+                                            vtrain, vtest,model = c("E","V"), pnolabeled, 
                                             iterations = iterations, 
                                             alpharef = alpharef )
     
@@ -817,7 +819,7 @@ HeadLongSearch_mod <- function(Xtrain, Xtest, RW, ltrain, ltest,
         X_test1 <- Xtest %>% dplyr::select(all_of(PM))
         
         models[[cont]] <-  SemiSupervisedFitting(X_train1,X_test1,ltrain,ltest,
-                                                 vtest,pnolabeled, model = CE,
+                                                 vtrain, vtest,pnolabeled, model = CE,
                                                  iterations = iterations, 
                                                  alpharef = alpharef )
         
@@ -950,6 +952,7 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
     ltrain <- GenData[[i_sim]]$ltrain
     ltest <- GenData[[i_sim]]$ltest
     vtest <- GenData[[i_sim]]$vtest
+    vtrain <- GenData[[i_sim]]$vtrain
     
     
     MmetricsSaturatedM[[i_sim]] <- data.frame(Group = 1:G, Precision = rep(0,G), 
@@ -969,7 +972,7 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
     
     tic("Saturated Model")
     saturated_mod <-  SemiSupervisedFitting(Xtrain,Xtest,ltrain,ltest,
-                                            vtest, CE,pnolabeled) 
+                                            vtrain, vtest, CE,pnolabeled) 
     elapsed_time <- toc()
     
     time_df[index_time,"File"] <- file_name
@@ -1006,7 +1009,7 @@ SemiSupervised_HLS <- function(file_name,pathScenarios,CE,variables_True_Model,
       
       TrueModel  <- SemiSupervisedFitting(Xtrain_TM,
                                           Xtest_TM,ltrain,ltest,
-                                          vtest,CE,pnolabeled,
+                                          vtrain, vtest,CE,pnolabeled,
                                           iterations = niterations,
                                           alpharef = 0.75, 
                                           tol = 0.01)
@@ -1299,7 +1302,7 @@ SemiSupervised_HLS_Mod <- function(file_name,pathScenarios,CE,variables_True_Mod
     ltrain <- GenData[[i_sim]]$ltrain
     ltest <- GenData[[i_sim]]$ltest
     vtest <- GenData[[i_sim]]$vtest
-    
+    vtrain <- GenData[[i_sim]]$vtrain
     
     MmetricsSaturatedM[[i_sim]] <- data.frame(Group = 1:G, Precision = rep(0,G), 
                                               Recall = rep(0,G), Specificity = rep(0,G),
@@ -1318,10 +1321,10 @@ SemiSupervised_HLS_Mod <- function(file_name,pathScenarios,CE,variables_True_Mod
     
     
     saturated_mod <-  SemiSupervisedFitting(Xtrain,Xtest,ltrain,ltest,
-                                            vtest, CE,pnolabeled) 
+                                            vtrain, vtest, CE,pnolabeled) 
     
     selectedVar_mod <- HeadLongSearch_mod(Xtrain,Xtest,RW,ltrain,ltest,vtest,
-                                      CE = CE, pnolabeled = 0.5, iterations = niterations,
+                                      CE = CE, pnolabeled = pnolabeled,NULL, iterations = niterations,
                                       alpharef = 0.75, tol = 0.01, epsilon = 0,i_sim,file_name)
     
     
@@ -1336,7 +1339,7 @@ SemiSupervised_HLS_Mod <- function(file_name,pathScenarios,CE,variables_True_Mod
       
       TrueModel  <- SemiSupervisedFitting(Xtrain_TM,
                                           Xtest_TM,ltrain,ltest,
-                                          vtest,CE,pnolabeled,
+                                          vtrain, vtest,CE,pnolabeled,NULL,
                                           iterations = niterations,
                                           alpharef = 0.75, 
                                           tol = 0.01)
@@ -1605,7 +1608,7 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
                                         CCR_Pseudo_Label_Train_SM = numeric(),
                                         Recall_Class_Train_SM = numeric(),
                                         Recall_Class_Test_SM = numeric(),
-                                        Recall_Pseudo_Label_Train_SM = numeroc(),
+                                        Recall_Pseudo_Label_Train_SM = numeric(),
                                         Precision_Class_Train_SM = numeric(),
                                         Precision_Class_Test_SM = numeric(),
                                         Precision_Pseudo_Label_Train_SM = numeric(),
@@ -1710,8 +1713,13 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
     ltrain <- GenData[[i_sim]]$ltrain
     ltest <- GenData[[i_sim]]$ltest
     vtest <- GenData[[i_sim]]$vtest
+    vtrain <- GenData[[i_sim]]$vtrain
     
-    
+    ntrain <- length(ltrain)
+    # nolebeled: contains the number of unlabeled
+    nolabeled <- floor(pnolabeled*ntrain)
+    ind_nolabeled <- sample(1:ntrain,nolabeled,replace = FALSE)
+
     MmetricsSaturatedM[[i_sim]] <- data.frame(Group = 1:G, Precision = rep(0,G), 
                                               Recall = rep(0,G), Specificity = rep(0,G),
                                               F1 = rep(0,G)) 
@@ -1729,10 +1737,10 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
     
     
     saturated_mod <-  SemiSupervisedFitting(Xtrain,Xtest,ltrain,ltest,
-                                            vtest, CE,pnolabeled) 
+                                            vtrain,vtest, CE,pnolabeled, ind_nolabeled) 
     
-    selectedVar_mod <- GreedySearch(Xtrain,Xtest,RW,ltrain,ltest,vtest, 
-                                      CE = CE, pnolabeled = 0.5, iterations = niterations,
+    selectedVar_mod <- GreedySearch(Xtrain,Xtest,RW,ltrain,ltest, vtrain, vtest, 
+                                      CE = CE, pnolabeled = pnolabeled, ind_nolabeled, iterations = niterations,
                                       alpharef = 0.75, tol = 0.01, epsilon = 0)
     
     
@@ -1746,8 +1754,8 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
       Xtest_TM <- data.frame(Xtest) %>% dplyr::select(all_of(variables_True_Model))
       
       TrueModel  <- SemiSupervisedFitting(Xtrain_TM,
-                                          Xtest_TM,ltrain,ltest,
-                                          vtest,CE,pnolabeled,
+                                          Xtest_TM,ltrain,ltest,vtrain,
+                                          vtest,CE,pnolabeled, ind_nolabeled,
                                           iterations = niterations,
                                           alpharef = 0.75, 
                                           tol = 0.01)
@@ -2063,7 +2071,7 @@ SemiSupervised_HLS_SSH <- function(file_name,pathScenarios,CE,variables_True_Mod
       
       TrueModel  <- SemiSupervisedFitting(Xtrain_TM,
                                           Xtest_TM,ltrain,ltest,
-                                          vtest,CE,pnolabeled,
+                                          vtrain,vtest,CE,pnolabeled,
                                           iterations = niterations,
                                           alpharef = 0.75, 
                                           tol = 0.01)

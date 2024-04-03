@@ -60,7 +60,7 @@ unlabelled
 
 # semi-supervised with 10%, 20%, 30%, 40% of labelled data
 
-for(i in 0.6:0.9)
+for(i in 0.5:0.9)
 {
   sapply(str_replace(unique(Files_for_SS_Scenario$File),"SSV_","S_"),function(x) {
     
