@@ -1766,9 +1766,9 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
     
     saturated_mod$pseudo_label_info$vtrain <- GenData[[i_sim]]$vtrain
     saturated_mod$pseudo_label_info$True_Labels_V_train <- GenData[[i_sim]]$vtrain[saturated_mod$pseudo_label_info$Unlabelled_index]
-    selectedVar_mod$pseudo_label_info$vtrain <- Gendata[[i_sim]]$vtrain
+    selectedVar_mod$pseudo_label_info$vtrain <- GenData[[i_sim]]$vtrain
     selectedVar_mod$pseudo_label_info$True_Labels_V_Train <- GenData[[i_sim]]$vtrain[selectedVar_mod$pseudo_label_info$Unlabelled_index]
-    TrueModel$pseudo_label_info$vtrain <- Gendata[i_sim]$vtrain
+    TrueModel$pseudo_label_info$vtrain <- GenData[i_sim]$vtrain
     TrueModel$pseudo_label_info$True_Labels_V_Train <- GenData[[i_sim]]$vtrain[TrueModel$pseudo_label_info$Unlabelled_index]
     
     # pos: position model obtained by variable selection
