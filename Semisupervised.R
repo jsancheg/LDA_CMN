@@ -2651,7 +2651,7 @@ create_metrics_wider_format <- function(path_input, path_output, name_output_fil
   
   
   
-  list_files_to_process <- dir(pathSFiles_Old)
+  list_files_to_process <- dir(path_input)
   
   n <- length(list_files_to_process)
   n
@@ -2680,8 +2680,10 @@ create_metrics_wider_format <- function(path_input, path_output, name_output_fil
                          F1_SaturatedM = numeric(),  CCRCont_SaturatedM = numeric(),
                          CCRNoCont_SaturatedM = numeric(),  PrecisionV_SaturatedM = numeric(),
                          SpecificityV_SaturatedM = numeric(),
-                         RecallV_SaturatedM = numeric(),  F1V_SaturatedM = numeric()
-                         
+                         RecallV_SaturatedM = numeric(),  F1V_SaturatedM = numeric(),
+                         TP_TM = numeric(), TN_TM = numeric(), FP_TM = numeric(), FN_TM = numeric(),
+                         TP_SM = numeric(), TN_SM = numeric(), FP_SM = numeric(), FN_SM = numeric(),  
+                         TP_ALL = numeric(), TN_ALL = numeric(), FP_ALL = numeric(), FN_ALL = numeric()                         
   )
   
   x <- list_files_to_process[1]
@@ -2710,9 +2712,26 @@ create_metrics_wider_format <- function(path_input, path_output, name_output_fil
       
       cont_true_pred_tm <- paste0(true_test_v_cont, pred_test_v_tm)
       cont_true_pred_sm <- paste0(true_test_v_cont, pred_test_v_sm)
-      cond_true_pred_all <- paste0(true_test_v_cont,pred_test_v_all)
+      cont_true_pred_all <- paste0(true_test_v_cont,pred_test_v_all)
+      
+      tp_tm <- sum(cont_true_pred_tm == "00")
+      tn_tm <- sum(cont_true_pred_tm == "11")
+      fp_tm <- sum(cont_true_pred_tm == "10")
+      fn_tm <- sum(cont_true_pred_tm == "01")
+      
+
+      tp_sm <- sum(cont_true_pred_sm == "00")
+      tn_sm <- sum(cont_true_pred_sm == "11")
+      fp_sm <- sum(cont_true_pred_sm == "10")
+      fn_sm <- sum(cont_true_pred_sm == "01")
       
       
+      tp_all <- sum(cont_true_pred_all == "00")
+      tn_all <- sum(cont_true_pred_all == "11")
+      fp_all <- sum(cont_true_pred_all == "10")
+      fn_all <- sum(cont_true_pred_all == "01")
+      
+            
       class_true_pred_tm <- paste0(true_test_l_class,pred_test_class_tm)   
       class_true_pred_sm <- paste0(true_test_l_class,pred_test_class_sm)
       class_true_pred_all <- paste0(true_test_l_class,pred_test_class_all)
@@ -2725,7 +2744,12 @@ create_metrics_wider_format <- function(path_input, path_output, name_output_fil
       specificity_class_sm <-  mean(sapply(1:G,function(g) MLmetrics::Specificity(ltest,pred_test_class_sm,g)))
       specificity_class_all <-  mean(sapply(1:G,function(g) MLmetrics::Specificity(ltest,pred_test_class_all,g)))
       
+
+      specificity_v_tm <-  mean(sapply(1:G,function(g) MLmetrics::Specificity(ltest,pred_test_class_tm,g)))
+      specificity_v_sm <-  mean(sapply(1:G,function(g) MLmetrics::Specificity(ltest,pred_test_class_sm,g)))
+      specificity_v_all <-  mean(sapply(1:G,function(g) MLmetrics::Specificity(ltest,pred_test_class_all,g)))
       
+            
       metrics_df[cont,"File"] <- x
       metrics_df[cont,"Nsim"] <- i
       
@@ -2776,16 +2800,45 @@ create_metrics_wider_format <- function(path_input, path_output, name_output_fil
       metrics_df[cont,"CCRCont_SaturatedM"] <- fileRDS$Metrics$CCRCont_SaturatedM[i]
       metrics_df[cont,"CCRNoCont_SaturatedM"] <- fileRDS$Metrics$CCRNoCont_SaturatedM[i]
       metrics_df[cont,"PrecisionV_SaturatedM"] <- fileRDS$Metrics$PrecisionV_SaturatedM[i]
+      metrics_df[cont,"RecallV_SaturatedM"] <- fileRDS$Metrics$RecallV_SaturatedM[i]
+      metrics_df[cont,"SpecificityV_SaturatedM"] <- MLmetrics::Specificity(true_test_v_cont,pred_test_v_all,0)
       metrics_df[cont,"F1V_SaturatedM"] <- fileRDS$Metrics$F1V_SaturatedM[i]
       
+      metrics_df[cont,"TP_TM"] <- tp_tm
+      metrics_df[cont,"TN_TM"] <- tn_tm
+      metrics_df[cont,"FP_TM"] <- fp_tm
+      metrics_df[cont,"FN_TM"] <- fn_tm
+      
+      metrics_df[cont,"TP_SM"] <- tp_sm
+      metrics_df[cont,"TN_SM"] <- tn_sm
+      metrics_df[cont,"FP_SM"] <- fp_sm
+      metrics_df[cont,"FN_SM"] <- fn_sm
+
+      
+      metrics_df[cont,"TP_ALL"] <- tp_all
+      metrics_df[cont,"TN_ALL"] <- tn_all
+      metrics_df[cont,"FP_ALL"] <- fp_all
+      metrics_df[cont,"FN_ALL"] <- fn_all
+      
+          
       cont <- cont + 1      
       
     }
     
-  }      
-  metrics_df    
+  }   
+#  dfAll <- dfAll %>% mutate (DifCCR = CR_SV - CR_SatMC)
+#  dfAll <- dfAll %>% mutate (DifAccuracy = Accuracy_SVCont- Accuracy_SatCont  )
+#  colnames(metrics_df)
   
-  if(!is.null(name_output_file)) 
+#  metrics_df    
+  
+  na_counts <- colSums(is.na(metrics_df))
+  
+  na_counts
+  
+  metrics_df %>% filter(is.na(RecallV_SaturatedM)) %>% select(File,TP_ALL, TN_ALL, FP_ALL, FN_ALL)
+  
+   if(!is.null(name_output_file)) 
     saveRDS(metrics_df,paste0(path_output,name_output_file,".RDS"))
   
   return(metrics_df)               
