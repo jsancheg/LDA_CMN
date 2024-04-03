@@ -2644,3 +2644,149 @@ cont_df <- function(X,y,lab,vpi.alpha,eta,ptrain)
       return(output)
   
 }
+
+
+create_metrics_wider_format <- function(path_input, path_output, name_output_file = NULL)
+{
+  
+  
+  
+  list_files_to_process <- dir(pathSFiles_Old)
+  
+  n <- length(list_files_to_process)
+  n
+  
+  
+  # Create the dataset from scratch
+  metrics_df <- tibble(  File = character(),
+                         Nsim = numeric(),  Model_SM = character(),
+                         Nvars_SM = numeric(),  CCR_SM = numeric(),
+                         Precision_SM = numeric(),  Recall_SM = numeric(),
+                         Specificity_SM = numeric(),
+                         F1_SM = numeric(),  CCRCont_SM = numeric(),
+                         CCRNoCont_SM = numeric(),  PrecisionV_SM = numeric(),
+                         RecallV_SM = numeric(),  SpecificityV_SM = numeric(),
+                         F1V_SM = numeric(),
+                         Model_TM = character(),  Nvars_TM = numeric(),
+                         CCR_TM = numeric(),  Precision_TM = numeric(),
+                         Recall_TM = numeric(), Specificity_TM = numeric(),
+                         F1_TM = numeric(),
+                         CCRCont_TM = numeric(),  CCRNoCont_TM = numeric(),
+                         PrecisionV_TM = numeric(),  RecallV_TM = numeric(),
+                         SpecificityV_TM = numeric(), F1V_TM = numeric(),  Model_SaturatedM = character(),
+                         Nvars_SaturatedM = numeric(),  CCR_SaturatedM = numeric(),
+                         Precision_SaturatedM = numeric(),  Recall_SaturatedM = numeric(),
+                         Specificity_SaturatedM = numeric(),
+                         F1_SaturatedM = numeric(),  CCRCont_SaturatedM = numeric(),
+                         CCRNoCont_SaturatedM = numeric(),  PrecisionV_SaturatedM = numeric(),
+                         SpecificityV_SaturatedM = numeric(),
+                         RecallV_SaturatedM = numeric(),  F1V_SaturatedM = numeric()
+                         
+  )
+  
+  x <- list_files_to_process[1]
+  
+  colnames(metrics_df)
+  cont<-1
+  
+  
+  for(x in list_files_to_process)
+  {
+    fileRDS <- readRDS(paste0(pathSFiles_Old,x))
+    nreplicates <- nrow(fileRDS$Metrics)
+    i <- 1
+    
+    
+    for(i in 1:nreplicates)
+    {
+      true_test_l_class <- fileRDS$GenData[[i]]$ltest
+      true_test_v_cont <- fileRDS$GenData[[i]]$vtest
+      pred_test_class_tm <- fileRDS$Estimates[[i]]$lTestHat_TM
+      pred_test_v_tm <- fileRDS$Estimates[[i]]$vTestHat_TM
+      pred_test_class_sm <-fileRDS$Estimates[[i]]$lTestHat_SM
+      pred_test_v_sm <- fileRDS$Estimates[[i]]$vTestHat_SM
+      pred_test_class_all <-fileRDS$Estimates[[i]]$lTestHat_SaturatedM
+      pred_test_v_all <- fileRDS$Estimates[[i]]$vTestHat_SaturatedM
+      
+      cont_true_pred_tm <- paste0(true_test_v_cont, pred_test_v_tm)
+      cont_true_pred_sm <- paste0(true_test_v_cont, pred_test_v_sm)
+      cond_true_pred_all <- paste0(true_test_v_cont,pred_test_v_all)
+      
+      
+      class_true_pred_tm <- paste0(true_test_l_class,pred_test_class_tm)   
+      class_true_pred_sm <- paste0(true_test_l_class,pred_test_class_sm)
+      class_true_pred_all <- paste0(true_test_l_class,pred_test_class_all)
+      
+      ltrain <- fileRDS$GenData[[i]]$ltrain
+      ltest <- fileRDS$GenData[[i]]$ltest
+      G <- length(unique(ltrain))
+      
+      specificity_class_tm <-  mean(sapply(1:G,function(g) MLmetrics::Specificity(ltest,pred_test_class_tm,g)))
+      specificity_class_sm <-  mean(sapply(1:G,function(g) MLmetrics::Specificity(ltest,pred_test_class_sm,g)))
+      specificity_class_all <-  mean(sapply(1:G,function(g) MLmetrics::Specificity(ltest,pred_test_class_all,g)))
+      
+      
+      metrics_df[cont,"File"] <- x
+      metrics_df[cont,"Nsim"] <- i
+      
+      PMs <- lapply(fileRDS$Estimates[[i]]$models, function(m) m$PM)
+      CCRs <- lapply(fileRDS$Estimates[[i]]$models, function(m) m$CCRTestC)
+      best_index <- which.max(unlist(CCRs))
+      best_index
+      
+      metrics_df[cont,"Model_SM"] <- paste(unlist(PMs[[best_index]]),collapse = "-")
+      metrics_df[cont,"Nvars_SM"] <- length(PMs[[best_index]]) 
+      metrics_df[cont,"CCR_SM"] <- fileRDS$Metrics$CCR_SM[i]
+      
+      metrics_df[cont,"Precision_SM"] <- fileRDS$Metrics$Precision_SM[i]
+      metrics_df[cont,"Recall_SM"] <- fileRDS$Metrics$Recall_SM[i]
+      metrics_df[cont,"Specificity_SM"] <- specificity_class_sm
+      metrics_df[cont,"F1_SM"] <- fileRDS$Metrics$F1_SM[i]
+      metrics_df[cont,"CCRCont_SM"] <- fileRDS$Metrics$CCRCont_SM[i]
+      metrics_df[cont,"CCRNoCont_SM"] <- fileRDS$Metrics$CCRNoCont_SM[i]
+      metrics_df[cont,"PrecisionV_SM"] <- fileRDS$Metrics$PrecisionV_SM[i]
+      metrics_df[cont,"RecallV_SM"] <- fileRDS$Metrics$RecallV_SM[i]
+      metrics_df[cont,"SpecificityV_SM"] <- MLmetrics::Specificity(true_test_v_cont,pred_test_v_sm,0)
+      metrics_df[cont,"F1V_SM"] <- fileRDS$Metrics$F1V_SM[i]
+      
+      metrics_df[cont,"Model_TM"] <- fileRDS$Metrics$Model_TM[i]
+      metrics_df[cont,"Nvars_TM"] <- fileRDS$Metrics$Nvars_TM[i]
+      metrics_df[cont,"CCR_TM"] <- fileRDS$Metrics$CCR_TM[i]
+      
+      metrics_df[cont,"Precision_TM"] <- fileRDS$Metrics$Precision_TM[i]
+      metrics_df[cont,"Recall_TM"] <- fileRDS$Metrics$Recall_TM[i]
+      metrics_df[cont,"Specificity_TM"] <- specificity_class_tm
+      metrics_df[cont,"F1_TM"] <- fileRDS$Metrics$F1_TM[i]
+      metrics_df[cont,"CCRCont_TM"] <- fileRDS$Metrics$CCRCont_TM[i]
+      metrics_df[cont,"CCRNoCont_TM"] <- fileRDS$Metrics$CCRNoCont_TM[i]
+      metrics_df[cont,"PrecisionV_TM"] <- fileRDS$Metrics$PrecisionV_TM[i]
+      metrics_df[cont,"RecallV_TM"] <- fileRDS$Metrics$RecallV_TM[i]
+      metrics_df[cont,"SpecificityV_TM"] <- MLmetrics::Specificity(true_test_v_cont,pred_test_v_tm,0)
+      metrics_df[cont,"F1V_TM"] <- fileRDS$Metrics$F1V_TM[i]
+      
+      
+      metrics_df[cont,"Model_SaturatedM"] <- fileRDS$Metrics$Model_SaturatedM[i]
+      metrics_df[cont,"Nvars_SaturatedM"] <- fileRDS$Metrics$Nvars_SaturatedM[i]
+      metrics_df[cont,"CCR_SaturatedM"] <- fileRDS$Metrics$CCR_SaturatedM[i]
+      
+      metrics_df[cont,"Precision_SaturatedM"] <- fileRDS$Metrics$Precision_SaturatedM[i]
+      metrics_df[cont,"Recall_SaturatedM"] <- fileRDS$Metrics$Recall_SaturatedM[i]
+      metrics_df[cont,"Specificity_SaturatedM"] <- specificity_class_all
+      metrics_df[cont,"F1_SaturatedM"] <- fileRDS$Metrics$F1_SaturatedM[i]
+      metrics_df[cont,"CCRCont_SaturatedM"] <- fileRDS$Metrics$CCRCont_SaturatedM[i]
+      metrics_df[cont,"CCRNoCont_SaturatedM"] <- fileRDS$Metrics$CCRNoCont_SaturatedM[i]
+      metrics_df[cont,"PrecisionV_SaturatedM"] <- fileRDS$Metrics$PrecisionV_SaturatedM[i]
+      metrics_df[cont,"F1V_SaturatedM"] <- fileRDS$Metrics$F1V_SaturatedM[i]
+      
+      cont <- cont + 1      
+      
+    }
+    
+  }      
+  metrics_df    
+  
+  if(!is.null(name_output_file)) 
+    saveRDS(metrics_df,paste0(path_output,name_output_file,".RDS"))
+  
+  return(metrics_df)               
+}     
