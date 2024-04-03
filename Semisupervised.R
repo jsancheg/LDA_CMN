@@ -1555,6 +1555,8 @@ SemiSupervised_GS <- function(file_name,pathScenarios,CE,variables_True_Model,
   GenData <- vector("list",nsimulations)
   dfRW <- vector("list",nsimulations)
   estimates <- vector("list",nsimulations)
+  
+  
   #    Metrics <- data.frame(Nsim = rep(1:nsimulations,each = 3),
   #                          )
   MetricsPseudoValidation <- data.frame(File = numeric(), Nsim = numeric(),
