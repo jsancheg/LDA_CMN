@@ -2875,7 +2875,7 @@ add_diff_to_wider <- function(df)
     diffccr_class_sm_tm                = CCR_SM - CCR_TM, 
     diffccr_class_all_tm               = CCR_SaturatedM - CCR_TM,
     diffccr_class_sm_all               = CCR_SM - CCR_SaturatedM, 
-    diffSensitiviy_class_sm_tm         = Recall_SM - Recall_TM, 
+    diffSensitivity_class_sm_tm         = Recall_SM - Recall_TM, 
     diffSensitivity_class_all_tm       = Recall_SaturatedM - Recall_TM,
     diffSensitivity_class_sm_all       = Recall_SM - Recall_SaturatedM,
     diffSpecificity_class_sm_tm        = Specificity_SM - Specificity_TM,

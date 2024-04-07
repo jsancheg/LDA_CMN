@@ -1,3 +1,10 @@
+sort_labels <- function(model_string)
+{
+  sorted_model <- sort(unlist(str_split(model_string,"-")))
+  return(paste(sorted_model,collapse="-"))
+}
+
+
 
 process_collection3<- function(filepath)
 {

@@ -1,8 +1,8 @@
 getwd()
 
-source("create_paths.R")
+source(paste0(getwd(),"/Thesis/create_paths.R"))
 setwd(path_wd)
-source("SimClassEM20steps.R")
+source("SimClassEM20Steps.R")
 source("SimClassEMConvergence.R")
 #source("DifIFunctions.R")
 
@@ -159,7 +159,7 @@ CalculateMetrics <- function(Xtrain,Xtest,ltrain,ltest,
                 alpha = par1s[[i]]$alpha,
                 eta = par1s[[i]]$eta)
    cat("\n step ",i) 
-    output <- eCmn(Xtest,ltrain, par_fittedModel)
+    output <- eCmn_x_l_par(Xtest,ltrain, par_fittedModel)
     pred_class_test <- output$lhat
     
     
@@ -192,10 +192,20 @@ CalculateMetrics <- function(Xtrain,Xtest,ltrain,ltest,
 
 # actual values for mu sigma and pi in the training set
 #---------------------------------------------
-actual_mean = apply(GenDataD.1$Xtrain,2,mean)
-actual_var = var(GenDataD.1$Xtrain)
-mg <- sum(GenDataD.1$vtrain)
 ntrain <- length(GenDataD.1$vtrain)
+
+actual_mean = apply(Xtrain[vtrain == 1,],2,mean)
+actual_var = var(Xtrain[vtrain == 1,])
+mg <- apply(unmap(ltrain),2,sum)
+actual_var_cont = diag(var(Xtrain[vtrain == 0,]))
+
+ntrain <- length(vtrain)
+
+actual_pi = mg/ntrain
+actual_alpha <- sum(vtrain == 1)/ntrain
+actual_eta <- mean(actual_var_cont)
+
+
 
 actual_pi = mg/ntrain
 actual_alpha <- 0
@@ -231,6 +241,7 @@ alphag <- 0.95
 etag <- 30
 set.seed(123)
 GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
+GenDataD.1 <- readRDS("DatasetD1.RDS")
 GenDataD.1$vtrain
 length(GenDataD.1$vtrain)
 
@@ -255,11 +266,34 @@ alpha <- metrics_d1$alpha_da
 eta <- metrics_d1$eta_da
 loglikelihood <- metrics_d1$loglikelihood_da
 
+round(unlist(loglikelihood)[10:20],2)
+lapply(mu,function(x) round(matrix(x, nrow = 2, ncol = 1),2) ) 
+lapply(sigma,function(x) round(matrix(x, nrow = 2, ncol = 2, byrow = TRUE),2) ) 
+round(unlist(alpha)[10:20],2)
+round(unlist(eta)[10:20],2)
+
 
 # Plot Log-likelihood
 
 plot(1:20,loglikelihood, type = "l", lwd = 1,
      col = "blue",  ylab = "Log-likelihood",xlab = "Iterations")
+
+
+# Plot CCR
+round(metrics_d1$Metrics[,c("CCR_class_Train","CCR_class_Test")],2)
+
+round(metrics_d1$Metrics[,c("Sensitivity_vTest","Specificity_vTest","Precision_vTest","F1_Test")],2)
+
+
+ymin = min(na.omit(metrics_d1$Metrics$Sensitivity_vTrain,metrics_d1$Metrics$Sensitivity_vTest))
+ymax = max(na.omit(metrics_d1$Metrics$Sensitivity_vTrain,metrics_d1$Metrics$Sensitivity_vTest))
+
+plot(5:20,metrics_d1$Metrics$Sensitivity_vTrain[5:20], type = "l", lwd = 1,
+     col = "blue", ylim=c(0.65,1), ylab = "Sensitivity",xlab = "Iterations")
+lines(5:20,metrics_d1$Metrics$Sensitivity_vTest[5:20], lwd = 2,col = "green")
+legend("bottomright",legend= c("Train","Test"),col = c("blue","green"),lwd = c(1,2))
+
+
 
 
 # Plot Sensitivity

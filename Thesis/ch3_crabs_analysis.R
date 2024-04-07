@@ -1,4 +1,4 @@
-
+source("VSCMN.R")
 library(ggplot2)
 library(RColorBrewer)
 library(tictoc)
@@ -327,6 +327,8 @@ g_freqSV %>% ggplotly
 
 
 # Plot crab female and male groups for blue species -----------------------
+library("MASS")
+view_data()
 colnames(crabs)
 unique(crabs$sp)
 XBlueCrabs <- crabs %>% filter(sp == "B")
@@ -348,6 +350,19 @@ pairs(XBlueCrabs %>% dplyr::select(FL,RW,CL,CW,BD), oma = c(3,3,6,3),
       gap = 0, lower.panel = NULL)
 legend("top", col = mycols, legend = levels(XBlueCrabs$sex),pch = 20,
        xpd = NA, ncol = 3, bty = "n", inset = 0.01, pt.cex = 1.5)
+
+colnames(XBlueCrabs)
+head(XBlueCrabs,30)
+tail(XBlueCrabs)
+
+
+plot(XBlueCrabs[,c("CL","RW")], col = ifelse(XBlueCrabs$sex == "M", "blue", "green"), 
+     pch = 15+GenDataD.1$ltrain,
+     xlab = "X1", ylab = "X2")
+legend("bottomleft", legend = c("Non Contaminated","Contaminated"), 
+       col = c("blue","red"),
+       pch = c(16,16))
+#text(3.614436,-1.094842,"56",-0.5)
 
 
 
