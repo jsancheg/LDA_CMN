@@ -718,27 +718,69 @@ df_long$Number_Separating_Variables <- factor(df_long$Number_Separating_Variable
   
   sdf %>% filter(Number_Variables == 5, Number_Separating_Variables == 3) %>% dplyr::group_by(Number_Separating_Variables,Number_Variables) %>%
     summarise_at(c("Nvars_SM","IncludeX2", "IncludeX4", "IncludeX5",  "Inclusion_Correctness", "Exclusion_Correctness"), mean) 
+
+  in_cases_5_3 <- sdf  %>% filter(Number_Variables == 5, Number_Separating_Variables == 3,Variables == "Selected", 
+                                    Number_Separating_Variables_Included == 0) %>% dplyr::select(File) %>%
+    dplyr::group_by(File) %>% dplyr::summarise(count = n()) %>% arrange(desc(count))
+  
+  in_cases_5_3
+  View(in_cases_5_3)
+  
+   sdf  %>% filter(Number_Variables == 5, Number_Separating_Variables == 3,Variables == "Selected", 
+                                  Number_Separating_Variables_Included == 0) %>% dplyr::select(File)
   
   # for 100 variables and 3 groups
   
   sdf %>% filter(Number_Variables == 100, Number_Separating_Variables == 3) %>% dplyr::group_by(Number_Separating_Variables,Number_Variables) %>%
     summarise_at(c("Nvars_SM","IncludeX2","IncludeX4","IncludeX5","Inclusion_Correctness","Exclusion_Correctness"), mean) 
+
+  in_cases_100_3 <- sdf  %>% filter(Number_Variables == 100, Number_Separating_Variables == 3,Variables == "Selected", 
+                                  Number_Separating_Variables_Included == 0) %>% dplyr::select(File) %>%
+    dplyr::group_by(File) %>% dplyr::summarise(count = n()) %>% arrange(desc(count))
   
+  in_cases_100_3
+  View(in_cases_100_3)
   
+    in_heq_15nsv_100_3 <- sdf  %>% filter(Number_Variables == 100, Number_Separating_Variables == 3,Variables == "Selected", 
+                                       Model_Size >= 15) %>% dplyr::select(File, Model)  %>%
+      dplyr::group_by(File,Model) %>% dplyr::summarise(count = n()) %>% arrange(desc(count))
+    
+    in_heq_15nsv_100_3
   # for 5 variables and 2 groups
   
   sdf %>% filter(Number_Variables == 5, Number_Separating_Variables == 2) %>% dplyr::group_by(Number_Separating_Variables,Number_Variables) %>%
     summarise_at(vars("Nvars_SM","IncludeX2", "IncludeX4",  "Inclusion_Correctness", "Exclusion_Correctness"), mean) 
   
+  in_cases_5_2 <- sdf  %>% filter(Number_Variables == 5, Number_Separating_Variables == 2,Variables == "Selected", 
+                                    Number_Separating_Variables_Included == 0) %>% dplyr::select(File) %>%
+    dplyr::group_by(File) %>% dplyr::summarise(count = n()) %>% arrange(desc(count))
   
+  in_cases_5_2
+  View(in_cases_5_2)
+  
+  ex_cases_5_2 <- sdf %>% filter(Number_Variables == 5, Number_Separating_Variables ==2, Variables == "Selected",
+                                 Exclusion_Correctness == 0) %>% dplyr::select(File) %>% 
+    dplyr::group_by(File) %>% dplyr::summarise(count = n()) %>% arrange(desc(count))
+
+  ex_cases_5_2
+  View(ex_cases_5_2)
   # for 100 variables and 2 groups
   
   sdf  %>% filter(Number_Variables == 100, Number_Separating_Variables == 2) %>% dplyr::group_by(Number_Separating_Variables,Number_Variables) %>%
     summarise_at(c("Nvars_SM","IncludeX2","IncludeX4","Inclusion_Correctness","Exclusion_Correctness"), mean) 
   
+  in_cases_100_2 <- sdf  %>% filter(Number_Variables == 100, Number_Separating_Variables == 2,Variables == "Selected", 
+                                 Number_Separating_Variables_Included == 0) %>% dplyr::select(File) %>%
+    dplyr::group_by(File) %>% dplyr::summarise(count = n()) %>% arrange(desc(count))
+      
+  in_cases_100_2
+  View(in_cases_100_2)
   
-  
+  ex_cases_100_2 <- sdf %>% filter(Number_Variables == 100, Number_Separating_Variables ==2, Variables == "Selected",
+                                 Exclusion_Correctness == 0) %>% dplyr::select(File,Model_Size)
 
+  ex_cases_100_2
+  
 # Inclusion boxplots ------------------------------------------------------
   sd2 <- sdf %>% filter(Number_Separating_Variables == 2 )
   sd2_5 <- sdf %>% filter(Number_Separating_Variables == 2 & Number_Variables == 5)
