@@ -11,7 +11,6 @@ source("http://www.sthda.com/upload/rquery_cormat.r")
 setwd(pathWd)
 dir(pathOutput)
 
-pathOutput <- paste0(getwd() ,"/")
 
 dfAll <- Summarise_Files(pathOutput,nameDf,pattern,alphaM,etaM)
 
@@ -155,6 +154,8 @@ data(crabs)
 colnames(crabs)
 XCrabs <- crabs %>% subset(select = -c(index,sp,sex))
 rquery.cormat(XCrabs)
+crabs %>% subset(select = -c(index,sp,sex)) %>%var
+crabs %>% subset(select = -c(index,sp,sex)) %>%cor %>%round(2)
 
 
 # Plot of the frequency of the models
