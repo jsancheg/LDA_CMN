@@ -34,7 +34,6 @@ library(tidyr)
 library(stringr)
 library(dplyr)
 library(ggplot2)
-library(ggplot2)
 library(ggpattern)
 library(gridExtra)
 library(cowplot)
@@ -78,15 +77,19 @@ pred_vtest <- fit_sfile$Estimates[[sim]]$vTestHat_SM
 pred_ltest <- fit_sfile$Estimates[[sim]]$lTestHat_SM
 #pred_vtest <- fit_sfile$Estimates[[sim]]$models[[posSM]]$vtest_hat
 
-# test set by class
+# test set by classes
+
+# 19  fillet black dot denotes a TN ( correct prediction of uncontaminated observation for either 1st or 2nd class)
+# 17  filled black triangle  denotes a TP (correct prediction of contaminated observation for either 1st or 2nd class)
+#  3  + denotes a FP (wrongly predicted as contaminated observation when it was uncontaminated observation belonging to the 1st class)  
+#  4  x  denotes a FN (wrongly predicted as uncontaminated observation when it was contaminated observation belonging to the 1st class)
+#  1  circle  denotes a FP (wrongly predicted as contaminated observation when it was uncontaminated observation belonging to the 2nd class)
+#  8  * star  denotes a FN (wrongly predicted as uncontaminated observation when it was contaminated observation belonging to the 2nd class) 
+
 pairs(Xtest, panel = function(x,y, ...) {
   points(x,y, 
-         col = ifelse(cond1_test == "11" ,"blue",
-                      ifelse(cond1_test == "22" ,"green",
-                             ifelse(cond1_test=="12"  ,"blue","green"  )    )) ,
-         pch = ifelse(cond1_test == "11" ,19,
-                      ifelse(cond1_test == "22" ,17,
-                             ifelse(cond1_test=="12" ,0, 5)) ),
+         col = ifelse(ltest == 1 ,"blue", "green") ,
+         pch = ifelse(ltest == 1 ,9,10),
          cex = 1,
   )
   #           text(x[indBreal_T0_P1_Testv],y[indBreal_T0_P1_Testv],
@@ -186,673 +189,621 @@ pairs(Xtest, panel = function(x,y, ...) {
   
   Smetrics <- readRDS("SMetrics_OLD_2024_03_18.RDS")
   
+  sm_dif <-readRDS("sMetrics_wider_with_dif_2024_03_18.RDS")
   
+
   missing_values
   options(scipen = 999)
   
-  ssdf <- Smetrics 
-  ssdf_no_na <- Smetrics_no_na
 
-  vo_df <- ssdf %>% dplyr::filter(Group_Mean_Distance == "VO")
-  vo_df_no_na <- ssdf_no_na %>% dplyr::filter(Group_Mean_Distance == "VO")
-  svo_df <- vo_df
+# plots Chapter 3 differences ---------------------------------------------
+
+sdf <- sm_dif  
+
+
+# Group mean distance fixed vs other factor varied ----------------------
+
   
-  new_order <- c("True","Selected","All")
-  Variables1 <- vo_df$Variables
-  
-  svo_df <- svo_df %>% mutate(Variables1 = Variables) %>% select (-Variables)
-  
-  svo_df$Variables <- factor(Variables1, levels = new_order)
+  colnames(sdf)
   
   
-  missing_values <- colSums(is.na(vo_df_no_na))
+  sdf <- sdf %>% mutate(diffSensitivity_class_sm_tm = diffSensitiviy_class_sm_tm) %>% select(c(-diffSensitiviy_class_sm_tm) )
   
-  ssdf$File <- factor(ssdf$File)
   
-  format_columns <- function(df)
-  {
-    df$Number_Classes <- as.numeric(df$Number_Classes)
-    df$Number_Separating_Variables <- as.numeric(df$Number_Separating_Variables)
-    df$Number_Variables <- as.numeric(df$Number_Variables)
-    df$Number_Observations <- as.numeric(df$Number_Observations)
-    df$Training_Proportion <- as.numeric(df$Training_Proportion)
-    df$Class_Proportion <- factor(df$Class_Proportion)
-    df$Covariance_Structure <- factor(df$Covariance_Structure)
-    df$Covariance_Structure2 <- factor(df$Covariance_Structure2)
-    df$Group_Mean_Distance <- factor(df$Group_Mean_Distance)
-    df$Alpha1 <- as.numeric(df$Alpha1)
-    df$Alpha2 <- as.numeric(df$Alpha2)
-    df$Alpha3 <- as.numeric(df$Alpha3)
+  df_long <- sdf %>% pivot_longer(c(diffccr_class_sm_tm, diffccr_class_all_tm, diffccr_class_sm_all, diffSensitivity_class_sm_tm,
+                                    diffSensitivity_class_all_tm, diffSensitivity_class_sm_all, diffSpecificity_class_sm_tm,  
+                                    diffSpecificity_class_all_tm, diffSpecificity_class_sm_all, diffPrecision_class_sm_tm,
+                                    diffPrecision_class_all_tm,   diffPrecision_class_sm_all,   diffF1_class_sm_tm,          
+                                    diffF1_class_all_tm,          diffF1_class_sm_all,          diffCCRV_sm_tm, 
+                                    diffCCRV_all_tm,              diffCCRV_sm_all,  diffSensitivityV_sm_tm,   diffSensitivityV_all_tm,
+                                    diffSensitivityV_sm_all,      diffSpecificityV_sm_tm,       diffSpecificityV_all_tm,     
+                                    diffSpecificityV_sm_all,      diffPrecisionV_sm_tm,         diffPrecisionV_all_tm,  
+                                    diffPrecisionV_sm_all,        diffF1V_sm_tm, diffF1V_all_tm, diffF1V_sm_all  ),
+                                  names_to = "Comparison",
+                                  values_to = "Dif")
     
-    df$Eta1 <- as.numeric(df$Eta1)
-    df$Eta2 <- as.numeric(df$Eta2)
-    df$Eta3 <- as.numeric(df$Eta3)
-    
-    df$Variables <- factor(df$Variables)
-    df$Model_Size <- as.numeric(df$Model_Size)
-    df$Model1 <- factor(df$Model1)
-    
-    
-    df$Variables <- relevel(df$Variables, ref = "True")
-    
-    df$Number_Separating_Variables_Included <- ifelse(df$Number_Separating_Variables == 2, df$IncludeX2 + df$IncludeX4, df$IncludeX2 + df$IncludeX4 + df$IncludeX5 )
-    df$Number_Non_Informative_Variables_Included <- df$Model_Size - df$Number_Separating_Variables_Included
-    
-    df$Inclusion_Correctness <- df$Number_Separating_Variables_Included/df$Number_Separating_Variables
-    df$Exclusion_Correctness <- 1-df$Number_Non_Informative_Variables_Included/(df$Number_Variables - df$Number_Separating_Variables)
-    
-    return(df)    
-  }
-  
-  ssdf$Number_Classes <- as.numeric(ssdf$Number_Classes)
-  ssdf$Number_Separating_Variables <- as.numeric(ssdf$Number_Separating_Variables)
-  ssdf$Number_Variables <- as.numeric(ssdf$Number_Variables)
-  ssdf$Number_Observations <- as.numeric(ssdf$Number_Observations)
-  ssdf$Training_Proportion <- as.numeric(ssdf$Training_Proportion)
-  ssdf$Class_Proportion <- factor(ssdf$Class_Proportion)
-  ssdf$Covariance_Structure <- factor(ssdf$Covariance_Structure)
-  ssdf$Covariance_Structure2 <- factor(ssdf$Covariance_Structure2)
-  ssdf$Group_Mean_Distance <- factor(ssdf$Group_Mean_Distance)
-  ssdf$Alpha1 <- as.numeric(ssdf$Alpha1)
-  ssdf$Alpha2 <- as.numeric(ssdf$Alpha2)
-  ssdf$Alpha3 <- as.numeric(ssdf$Alpha3)
-  
-  ssdf$Eta1 <- as.numeric(ssdf$Eta1)
-  ssdf$Eta2 <- as.numeric(ssdf$Eta2)
-  ssdf$Eta3 <- as.numeric(ssdf$Eta3)
-  
-  ssdf$Variables <- factor(ssdf$Variables)
-  ssdf$Model_Size <- as.numeric(ssdf$Model_Size)
-  ssdf$Model1 <- factor(ssdf$Model1)
-  
-  
-  ssdf$Variables <- relevel(ssdf$Variables, ref = "True")
-  
-  ssdf$Number_Separating_Variables_Included <- ifelse(ssdf$Number_Separating_Variables == 2, ssdf$IncludeX2 + ssdf$IncludeX4, ssdf$IncludeX2 + ssdf$IncludeX4 + ssdf$IncludeX5 )
-  ssdf$Number_Non_Informative_Variables_Included <- ssdf$Model_Size - ssdf$Number_Separating_Variables_Included
-  
-  ssdf$Inclusion_Correctness <- ssdf$Number_Separating_Variables_Included/ssdf$Number_Separating_Variables
-  ssdf$Exclusion_Correctness <- 1-ssdf$Number_Non_Informative_Variables_Included/(ssdf$Number_Variables - ssdf$Number_Separating_Variables)
-  
-  ssdf_without_na <- format_columns(ssdf_no_na)
-  
-    
-  ssdf100 <- ssdf %>% dplyr::filter(Number_Variables == 100)
-  ssdf5 <- ssdf %>% dplyr::filter(Number_Variables == 5)
-  
-  # all set of variables
-  ccr_df <- ssdf %>% dplyr::select(Nsim,CCR)
-  
-  ccr_df <- dplyr::mutate(group_by(ccr_df,Nsim), meanCCR = mean(CCR))
-  
-  ccr_ordered <- dplyr::arrange(ccr_df, meanCCR)
-  
-  head(ccr_df)
-  tail(ccr_df)
-  
-  groups <- max(ccr_df$Nsim)
-  reps <- 3
-
-
-# Box plot of difference amon set of Variables ----------------------------
-
-
-new_order <- c("True","Selected","All")
-Variables1 <- ssdf$Variables
-
-sdf <- ssdf
-
-sdf$Variables <- factor(Variables1, levels = new_order)
-
-
-
-  mean.acc1 <- ssdf %>% group_by(Variables) %>%
-  summarise(mean.CCR  = mean(CCR))
-
-  mean.acc1
-  
-  mean.acc1 <- sdf %>% group_by(Variables) %>%
-    summarise(mean.CCR  = mean(CCR))
-  
-  mean.acc1
-
-  level1 <- "True"
-  level2 <- "Selected"
-  level3 <- "All"
-  
-  
-    
-  # Box plots for different factors ------------------------
-colnames(ssdf)
-  var.acc1 <- ssdf %>% group_by(Group_Mean_Distance) %>%
-    summarise_at(c("CCR","Recall_Class"),  var, na.rm  = TRUE)
-
-
-  var.acc2 <- ssdf %>% group_by(Number_Classes) %>%
-    summarise(var.CCR  = var(CCR))
-  
-  var.acc3 <- ssdf %>% group_by(Covariance_Structure) %>%
-    summarise(var.CCR = var(CCR))
-  
-  
-  mean.acc1 <- ssdf %>% dplyr::group_by(Group_Mean_Distance) %>%
-    summarise(mean.CCR  = mean(CCR))
-
-  ggplot(mean.acc1, aes(x = reorder(Nsim,mean.CCR ), y = mean.CCR, 
-                            color = Group_Mean_Distance)) + geom_point()
-  
-  
-    
-  median.recall <- ssdf %>%  dplyr::group_by(Group_Mean_Distance,Nsim) %>%
-    summarise(median.Recall = median(Recall_Cont))
-
-  
-  ggplot(median.recall, aes(x = reorder(Nsim,median.Recall ), y = median.Recall, 
-                        color = Group_Mean_Distance)) + geom_point()
-  
-  
-
-  # with NA 
-  g1 <- ggplot(sdf, aes(x = Class_Proportion, y = CCR,color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Proportion") + ylim(0.65,1) 
-  
-  
-  
-  g2 <- ggplot(sdf, aes(x = as.factor(Number_Classes), y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Number of classes") + ylim(0.65,1)
-  
-  g3 <- ggplot(sdf, aes(x = Covariance_Structure, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Covariance strucutre") + ylim(0.65,1)
-  
-  
-  g4 <- ggplot(sdf, aes(x = Group_Mean_Distance, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("MD","VD","VO"))+
-    ylab("Test CCR") + xlab("Group mean distance") + ylim(0.65,1)
-  
-  g5 <- ggplot(sdf, aes(x = Number_Variables, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("5","100"))+
-    ylab("Test CCR") + xlab("Number of variables") + ylim(0.65,1)
-  
-  g6 <- ggplot(sdf, aes(x = as.factor(Number_Separating_Variables) , y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("75","85"))+
-    ylab("Test CCR") + xlab("Number of separating variables") + ylim(0.65,1)
-  
-  
-  # to combine plots we required "patchwork" library
-  combine <- g1 + g2 + g3 + g4 & theme(legend.position = "bottom")
-  combine + plot_layout(guides = "collect")
-  
-
-# with very overlapping scenarios -----------------------------------------
-
-  
-  # with NA very overlapping scenarios
-  g1 <- ggplot(sdf, aes(x = Class_Proportion, y = CCR,color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Proportion") + ylim(0.65,1) 
-  
-  
-  
-  g2 <- ggplot(sdf, aes(x = as.factor(Number_Classes), y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Number of classes") + ylim(0.65,1)
-  
-  g3 <- ggplot(sdf, aes(x = Covariance_Structure, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Covariance strucutre") + ylim(0.65,1)
-  
-  
-  g4 <- ggplot(sdf, aes(x = Group_Mean_Distance, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("Medium distance","Very distance","Very Overlapping"))+
-    ylab("Test CCR") + xlab("Group mean distance") + ylim(0.65,1)
-  
-  g5 <- ggplot(sdf, aes(x = Number_Variables, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("5","100"))+
-    ylab("Test CCR") + xlab("Number of variables") + ylim(0.65,1)
-  
-  g6 <- ggplot(sdf, aes(x = Number_Separating_Variables , y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("75","85"))+
-    ylab("Test CCR") + xlab("Training proportion") + ylim(0.65,1)
-  
-  
-  # to combine plots we required "patchwork" library
-  combine <- g1 + g2 + g3 + g4 + g5 + g6& theme(legend.position = "bottom")
-  combine + plot_layout(guides = "collect")
-  
-
-  # without NA
-  g100 <- ggplot(ssdf_no_na, aes(x = Class_Proportion, y = CCR,color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Proportion") + ylim(0.65,1) 
-  
-  g200 <- ggplot(ssdf_no_na, aes(x = as.factor(Number_Classes), y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Number of classes") + ylim(0.65,1)
-  
-  g300 <- ggplot(ssdf_no_na, aes(x = Covariance_Structure, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Covariance strucutre") + ylim(0.65,1)
-  
-  
-  g400 <- ggplot(ssdf_no_na, aes(x = Group_Mean_Distance, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("Medium distance","Very distance","Very Overlapping"))+
-    ylab("Test CCR") + xlab("Group mean distance") + ylim(0.65,1)
-
-  g500 <- ggplot(ssdf_no_na, aes(x = Number_Variables, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("5","100"))+
-    ylab("Test CCR") + xlab("Number of variables") + ylim(0.65,1)
-  
-  g600 <- ggplot(ssdf_no_na, aes(x = Number_Separating_Variables , y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("75","85"))+
-    ylab("Test CCR") + xlab("Training proportion") + ylim(0.65,1)
-  
-  
-  # to combine plots we required "patchwork" library
-  combine <- g100 + g200 + g300 + g400  + g500 + g600 & theme(legend.position = "bottom")
-  combine + plot_layout(guides = "collect")
-  
-  
-  #in 100 dimensions
-  g100 <- ggplot(ssdf100, aes(x = Class_Proportion, y = CCR,color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Proportion") + ylim(0.65,1) 
-  
-  
-  
-  g200 <- ggplot(ssdf100, aes(x = as.factor(Number_Classes), y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Number of classes") + ylim(0.65,1)
-  
-  g300 <- ggplot(ssdf100, aes(x = Covariance_Structure, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Covariance strucutre") + ylim(0.65,1)
-  
-  
-  g400 <- ggplot(ssdf100, aes(x = Group_Mean_Distance, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("Medium distance","Very distance","Very Overlapping"))+
-    ylab("Test CCR") + xlab("Group mean distance") + ylim(0.65,1)
-  
-  # to combine plots we required "patchwork" library
-  combine <- g100 + g200 + g300 + g400 & theme(legend.position = "bottom")
-  combine + plot_layout(guides = "collect")
-
-  # For very overlapping cases  cross
-        
-  g110 <- ggplot(svo_df, aes(x = Class_Proportion, y = CCR,color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Proportion") + ylim(0.65,1) 
-  
-  
-  
-  g210 <- ggplot(svo_df, aes(x = as.factor(Number_Classes), y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Number of classes") + ylim(0.65,1)
-  
-  g310 <- ggplot(svo_df, aes(x = Covariance_Structure, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Covariance strucutre") + ylim(0.65,1)
-  
-  
-  g410 <- ggplot(svo_df, aes(x = as.factor(Number_Variables), y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("5","100"))+
-    ylab("Test CCR") + xlab("Number of variables") + ylim(0.65,1)
-  
-  # to combine plots we required "patchwork" library
-  combine <- g110 + g210 + g310 + g410 & theme(legend.position = "bottom")
-  combine + plot_layout(guides = "collect")
-  
-  
-  # Very overlapping excluding NA
-  
-  g120 <- ggplot(vo_df_no_na, aes(x = Class_Proportion, y = CCR,color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Proportion") + ylim(0.65,1) 
-  
-  
-  g220 <- ggplot(vo_df_no_na, aes(x = as.factor(Number_Classes), y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Number of classes") + ylim(0.65,1)
-  
-  g320 <- ggplot(vo_df_no_na, aes(x = Covariance_Structure, y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test CCR") + xlab("Covariance strucutre") + ylim(0.65,1)
-  
-  
-  g420 <- ggplot(vo_df_no_na, aes(x = as.factor(Number_Variables), y = CCR, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("5","100"))+
-    ylab("Test CCR") + xlab("Number of variables") + ylim(0.65,1)
-  
-  # to combine plots we required "patchwork" library
-  combine <- g120 + g220 + g320 + g420 & theme(legend.position = "bottom")
-  combine + plot_layout(guides = "collect")
-  
-  # Sensitivity for very overlapping with NA
-  
-  g130 <- ggplot(svo_df, aes(x = Class_Proportion, y = Recall_Cont,color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test Sensitivity") + xlab("Proportion") + ylim(0.15,1) 
-  
-  
-  g230 <- ggplot(svo_df, aes(x = as.factor(Number_Classes), y = Recall_Cont, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test Sensitivity") + xlab("Number of classes") + ylim(0.15,1)
-  
-  g330 <- ggplot(svo_df, aes(x = Covariance_Structure, y = Recall_Cont, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    ylab("Test Sensitivity") + xlab("Covariance strucutre") + ylim(0.15,1)
-  
-  
-  g430 <- ggplot(svo_df, aes(x = as.factor(Number_Variables), y = Recall_Cont, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("5","100"))+
-    ylab("Test Sensitivity") + xlab("Number of variables") + ylim(0.15,1)
-  
-  g530 <- ggplot(svo_df, aes(x = Number_Variables, y = Recall_Cont, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("5","100"))+
-    ylab("Test Sensitivity") + xlab("Number of variables") + ylim(0.65,1)
-  
-  g630 <- ggplot(svo_df, aes(x = Number_Separating_Variables , y = Recall_Cont, color = Variables)) +
-    geom_boxplot_pattern(pattern_color = "white",
-                         pattern_fill = "black",
-                         aes(pattern= Variables))+
-    scale_x_discrete(labels = c("75","85"))+
-    ylab("Test Sensitivity") + xlab("Training proportion") + ylim(0.65,1)
+    unique(df_long$Comparison)
+  
+  g3.10 <- ggplot(df_long %>% filter(Comparison %in% c("diffccr_class_sm_tm","diffccr_class_all_tm","diffccr_class_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Group_Mean_Distance))  +
+    ylab("Dif. in test class CCR") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.10  
+  
+          
+  g3.20 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivity_class_sm_tm","diffSensitivity_class_all_tm","diffSensitivity_class_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Group_Mean_Distance))  +
+    ylab("Dif. in test class Sensitivity") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.20
+  
+  
+  df_long %>% select(Group_Mean_Distance,Comparison,Dif) %>% filter(Comparison == "diffSensitivity_class_all_tm") %>% 
+    group_by(Group_Mean_Distance,Comparison) %>% 
+    summarise_at(vars("Dif"), mean) 
+  
+      
+  df_long %>% select(Group_Mean_Distance,Comparison,Dif) %>% filter(Comparison == "diffSensitivity_class_sm_all") %>% 
+    group_by(Group_Mean_Distance,Comparison) %>% 
+  summarise_at(vars("Dif"), mean) 
+  
+  g3.30 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Group_Mean_Distance))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.30  
+  
+  
+  g3.40 <- ggplot(df_long %>% filter(Comparison %in% c("diffCCRV_sm_tm","diffCCRV_all_tm","diffCCRV_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Group_Mean_Distance))  +
+    ylab("Dif. in test contamination CCR") + xlab("Model comparisons") + ylim (-0.5,0.5) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.40  
+  
+  
+  g3.50 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivityV_sm_tm","diffSensitivityV_all_tm","diffSensitivityV_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Group_Mean_Distance))  +
+    ylab("Dif. in test contamination Sensitivity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.50  
+  
+  df_long %>% select(Group_Mean_Distance,Comparison,Dif) %>% filter(Comparison == "diffSensitivityV_all_tm") %>% 
+    group_by(Group_Mean_Distance,Comparison) %>% 
+    summarise_at(vars("Dif"), mean) 
+  
+  df_long %>% select(Group_Mean_Distance,Comparison,Dif) %>% filter(Comparison == "diffSensitivityV_sm_all") %>% 
+    group_by(Group_Mean_Distance,Comparison) %>% 
+    summarise_at(vars("Dif"), mean) 
+  
+  
+  df_long %>% select(Group_Mean_Distance,Comparison,Dif) %>% filter(Comparison == "diffSensitivityV_sm_tm") %>% 
+    group_by(Group_Mean_Distance,Comparison) %>% 
+    summarise_at(vars("Dif"), mean) 
+  
+  g3.60 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Group_Mean_Distance))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.60  
   
   
   
   # to combine plots we required "patchwork" library
-  combine <- g130 + g230 + g330 + g430  & theme(legend.position = "bottom")
+  combine <- g3.10 + g3.20 + g3.30 + g3.40  + g3.50 + g3.60 & theme(legend.position = "bottom")
   combine + plot_layout(guides = "collect")
-  
-  summary_table <- ssdf_no_na %>% dplyr::select(Variables,Class_Proportion,CCR,Recall_Cont) 
-  summary_table %>% dplyr::group_by(Variables,Class_Proportion) %>% summarise
-    
-# Plot of ordered simulations by CCR --------------------------------------
 
-
-    
-  ccr_ordered$Simulaciones <- rep( 1:groups,rep(reps,groups) )
   
-  g100_all_set_variables <- ggplot(ccr_ordered, aes(Simulaciones,CCR)) + xlab("(a) - Ordered simulations by CCR for all set of variables (true, selected, and all)") +
-    stat_summary(fun.data = mean_se, geom = "linerange",
-                 colour = "black")
-  
-  
-  ccr_all_set_variables <- ccr_ordered
-  # for CCR for only true variables
-  ccr_df <- ssdf %>% filter(Variables == "True") %>% dplyr::select(File,CCR)
-  
-  ccr_df <- dplyr::mutate(group_by(ccr_df,File),meanCCR = mean(CCR))
-  
-  ccr_ordered <- dplyr::arrange(ccr_df,meanCCR)
-  
-  tail  (ccr_df)
-  
-  groups <- length(unique(ccr_df$File))
-  reps <- 10
-  
-  ccr_ordered$Scenarios <- rep( 1:groups,rep(reps,groups) )
-  
-  g100_true_variables <- ggplot(ccr_ordered, aes(Scenarios,CCR)) + xlab( "(b) - Ordered simulations by CCR for true variables" ) +
-    stat_summary(fun.data = mean_se, geom = "linerange",
-                 colour = "black")
-  
-  ccr_true_variables <- ccr_ordered
-  # for CCR for only selected variables
-  ccr_df <- ssdf %>% filter(Variables == "Selected") %>% dplyr::select(File,CCR)
-  
-  ccr_df <- mutate(group_by(ccr_df,File),meanCCR = mean(CCR))
-  
-  ccr_df
-  
-  ccr_ordered <- arrange(ccr_df,meanCCR)
-  
-  tail(ccr_df)
-  
-  groups <- length(unique(ccr_df$File))
-  reps <- 10
-  
-  ccr_ordered$Scenarios <- rep( 1:groups,rep(reps,groups) )
-  
-  g100_selected_variables <- ggplot(ccr_ordered, aes(Scenarios,CCR)) + xlab( "(c) - Ordered simulations by CCR for selected variables") +
-    stat_summary(fun.data = mean_se, geom = "linerange",
-                 colour = "black")
-  
-  ccr_selected_variables <- ccr_ordered
-  
-  # for CCR for all variables
-  
-  ccr_df <- ssdf %>% filter(Variables == "All") %>% dplyr::select(File,CCR)
-  
-  ccr_df <- mutate(group_by(ccr_df,File),meanCCR = mean(CCR))
-  
-  ccr_df
-  
-  ccr_ordered <- arrange(ccr_df,meanCCR)
-  
-  tail(ccr_df)
-  
-  groups <- length(unique(ccr_df$File))
-  reps <- 10
-  
-  ccr_ordered$Scenarios <- rep( 1:groups,rep(reps,groups) )
-  
-  g100_all_variables <- ggplot(ccr_ordered, aes(Scenarios,CCR)) + xlab (" (d) - Ordered simulations by CCR for all variables") +
-    stat_summary(fun.data = mean_se, geom = "linerange",
-                 colour = "black")
-  
-  ccr_all_variables <- ccr_ordered
-  
-  combine <- g100_all_set_variables + g100_true_variables + 
-    g100_selected_variables + g100_all_variables & theme(legend.position = "bottom")
-  combine + plot_layout(guides = "collect")
-  
-  ggplot(ssdf, aes(x = Variables, y = CCR))  + 
-    geom_point(size = 1,shape = 1) +
-    stat_summary(fun.data = mean_se, geom = "errorbar",
-                 colour = "black", width = 0.1,
-                 position = position_nudge(x = 0.15)) +
-    stat_summary(fun = mean, geom = "point",
-                 size = 3,
-                 position = position_nudge(x = 0.15)) +
-    labs(x = "Set of variables", y = "CCR")
-  
-  par (cex = 0.6)
-  colnames(ssdf)
   
   
 
+# Number of classes fixed vs other factor varied --------------------------
 
+
+  df_long$Number_Classes <- factor(df_long$Number_Classes)
   
-  # Create plot CCR variability among and within set of variables ---------------
-  
-  
-  # all set of variables
-  ccr_df <- ssdf %>% dplyr::select(Nsim,CCR)
-  
-  ccr_df <- dplyr::mutate(group_by(ccr_df,Nsim), meanCCR = mean(CCR))
-  
-  ccr_ordered <- dplyr::arrange(ccr_df, meanCCR)
-  
-  head(ccr_df)
-  tail(ccr_df)
-  
-  groups <- max(ccr_df$Nsim)
-  reps <- 3
-  
-  ccr_ordered$Simulaciones <- rep( 1:groups,rep(reps,groups) )
-  
-  g100_all_set_variables <- ggplot(ccr_ordered, aes(Simulaciones,CCR)) + xlab("(a) - Ordered simulations by CCR for all set of variables (true, selected, and all)") +
-    stat_summary(fun.data = mean_se, geom = "linerange",
-                 colour = "black")
-  
-  g100_all_set_variables <- ggplot(ccr_ordered, aes(Simulaciones,CCR)) + 
-    stat_summary(fun.data = mean_se, geom = "linerange",
-                 colour = "black")
+  g3.70 <- ggplot(df_long %>% filter(Comparison %in% c("diffccr_class_sm_tm","diffccr_class_all_tm","diffccr_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Classes ))  +
+    ylab("Dif. in test class CCR") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
   
   
-  g100_all_set_variables
-  
-  ccr_all_set_variables <- ccr_ordered
+  g3.70  
   
   
-  # for CCR for only true variables
-  ccr_df <- ssdf %>% filter(Variables == "True") %>% dplyr::select(File,CCR)
+  g3.80 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivity_class_sm_tm","diffSensitivity_class_all_tm","diffSensitivity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Classes))  +
+    ylab("Dif. in test class Sensitivity") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
   
-  ccr_df <- dplyr::mutate(group_by(ccr_df,File),meanCCR = mean(CCR))
-  
-  ccr_ordered <- dplyr::arrange(ccr_df,meanCCR)
-  
-  tail  (ccr_df)
-  
-  groups <- length(unique(ccr_df$File))
-  reps <- 10
-  
-  ccr_ordered$Scenarios <- rep( 1:groups,rep(reps,groups) )
-  
-  g100_true_variables <- ggplot(ccr_ordered, aes(Scenarios,CCR)) + xlab( "(b) - Ordered simulations by CCR for true variables" ) +
-    stat_summary(fun.data = mean_se, geom = "linerange",
-                 colour = "black")
-  
-  ccr_true_variables <- ccr_ordered
+  g3.80  
   
   
   
-  # for CCR for only selected variables
-  ccr_df <- ssdf %>% filter(Variables == "Selected") %>% dplyr::select(File,CCR)
+  g3.90 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Classes))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
   
-  ccr_df <- dplyr::mutate(group_by(ccr_df,File),meanCCR = mean(CCR))
+  g3.90  
   
-  ccr_df
   
-  ccr_ordered <- dplyr::arrange(ccr_df,meanCCR)
+  g3.100 <- ggplot(df_long %>% filter(Comparison %in% c("diffCCRV_sm_tm","diffCCRV_all_tm","diffCCRV_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Classes))  +
+    ylab("Dif. in test contamination CCR") + xlab("Model comparisons") + ylim (-0.5,0.5) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  g3.100  
   
-  tail(ccr_df)
   
-  groups <- length(unique(ccr_df$File))
-  reps <- 10
+  g3.110 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivityV_sm_tm","diffSensitivityV_all_tm","diffSensitivityV_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Classes))  +
+    ylab("Dif. in test contamination Sensitivity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
   
-  ccr_ordered$Scenarios <- rep( 1:groups,rep(reps,groups) )
+  g3.110  
   
-  g100_selected_variables <- ggplot(ccr_ordered, aes(Scenarios,CCR)) + xlab( "(c) - Ordered simulations by CCR for selected variables") +
-    stat_summary(fun.data = mean_se, geom = "linerange",
-                 colour = "black")
   
-  ccr_selected_variables <- ccr_ordered
   
-  # for CCR for all variables
+  g3.120 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Classes))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
   
-  ccr_df <- ssdf %>% dplyr::filter(Variables == "All") %>% dplyr::select(File,CCR)
+  g3.120  
   
-  ccr_df <- dplyr::mutate(group_by(ccr_df,File),meanCCR = mean(CCR))
-  
-  ccr_df
-  
-  ccr_ordered <- dplyr::arrange(ccr_df,meanCCR)
-  
-  tail(ccr_df)
-  
-  groups <- length(unique(ccr_df$File))
-  reps <- 10
-  
-  ccr_ordered$Scenarios <- rep( 1:groups,rep(reps,groups) )
-  
-  g100_all_variables <- ggplot(ccr_ordered, aes(Scenarios,CCR)) + xlab (" (d) - Ordered simulations by CCR for all variables") +
-    stat_summary(fun.data = mean_se, geom = "linerange",
-                 colour = "black")
-  
-  ccr_all_variables <- ccr_ordered
-  
-  combine <- g100_all_set_variables + g100_true_variables + 
-    g100_selected_variables + g100_all_variables & theme(legend.position = "bottom")
+  # to combine plots we required "patchwork" library
+  combine <- g3.70 + g3.80 + g3.90 + g3.100  + g3.110 + g3.120 & theme(legend.position = "bottom")
   combine + plot_layout(guides = "collect")
   
   
-  # Create plot Sensitivity variability among and within groups -------------
+
+# Class Proportion fixed while other factor varied ------------------------
+
+
+  df_long$Class_Proportion <- factor(df_long$Class_Proportion)
+  
+  g3.130 <- ggplot(df_long %>% filter(Comparison %in% c("diffccr_class_sm_tm","diffccr_class_all_tm","diffccr_class_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Class_Proportion ))  +
+    ylab("Dif. in test class CCR") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  
+  g3.130  
+  
+  
+  g3.140 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivity_class_sm_tm","diffSensitivity_class_all_tm","diffSensitivity_class_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Class_Proportion))  +
+    ylab("Dif. in test class Sensitivity") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.140  
+  
+  
+  
+  g3.150 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Class_Proportion))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.150  
+  
+  
+  g3.160 <- ggplot(df_long %>% filter(Comparison %in% c("diffCCRV_sm_tm","diffCCRV_all_tm","diffCCRV_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Class_Proportion))  +
+    ylab("Dif. in test contamination CCR") + xlab("Model comparisons") + ylim (-0.5,0.5) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  g3.160  
+  
+  
+  g3.170 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivityV_sm_tm","diffSensitivityV_all_tm","diffSensitivityV_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Class_Proportion))  +
+    ylab("Dif. in test contamination Sensitivity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.170  
+  
+  
+  
+  g3.180 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Class_Proportion))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.180  
+  
+  # to combine plots we required "patchwork" library
+  combine <- g3.130 + g3.140 + g3.150 + g3.160  + g3.170 + g3.180 & theme(legend.position = "bottom")
+  combine + plot_layout(guides = "collect")
+  
+
+# Number of variables fixed vs other factors varied -----------------------
+
+  
+  df_long$Number_Variables <- factor(df_long$Number_Variables)
+  
+  g3.190 <- ggplot(df_long %>% filter(Comparison %in% c("diffccr_class_sm_tm","diffccr_class_all_tm","diffccr_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Variables ))  +
+    ylab("Dif. in test class CCR") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  
+  g3.190  
+  
+  
+  g3.200 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivity_class_sm_tm","diffSensitivity_class_all_tm","diffSensitivity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Variables))  +
+    ylab("Dif. in test class Sensitivity") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.200  
+  
+  
+  
+  g3.210 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Variables))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.210  
+  
+  
+  g3.220 <- ggplot(df_long %>% filter(Comparison %in% c("diffCCRV_sm_tm","diffCCRV_all_tm","diffCCRV_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Variables))  +
+    ylab("Dif. in test contamination CCR") + xlab("Model comparisons") + ylim (-0.5,0.5) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  g3.220  
+  
+  
+  g3.230 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivityV_sm_tm","diffSensitivityV_all_tm","diffSensitivityV_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Variables))  +
+    ylab("Dif. in test contamination Sensitivity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.230  
+  
+  
+  
+  g3.240 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Variables))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.240  
+  
+  # to combine plots we required "patchwork" library
+  combine <- g3.190 + g3.200 + g3.210 + g3.220  + g3.230 + g3.240 & theme(legend.position = "bottom")
+  combine + plot_layout(guides = "collect")
+  
+  
+
+# Percentage of samples in training fixed and ohter factor varied ---------
+
+  
+  df_long$Training_Proportion <- factor(df_long$Training_Proportion)
+  
+  g3.250 <- ggplot(df_long %>% filter(Comparison %in% c("diffccr_class_sm_tm","diffccr_class_all_tm","diffccr_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Training_Proportion ))  +
+    ylab("Dif. in test class CCR") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  
+  g3.250  
+  
+  
+  g3.260 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivity_class_sm_tm","diffSensitivity_class_all_tm","diffSensitivity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Training_Proportion))  +
+    ylab("Dif. in test class Sensitivity") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.260  
+  
+  
+  
+  g3.270 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Training_Proportion))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-0.3,0.3) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.270  
+  
+  
+  g3.280 <- ggplot(df_long %>% filter(Comparison %in% c("diffCCRV_sm_tm","diffCCRV_all_tm","diffCCRV_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Training_Proportion))  +
+    ylab("Dif. in test contamination CCR") + xlab("Model comparisons") + ylim (-0.5,0.5) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  g3.280  
+  
+  g3.290 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivityV_sm_tm","diffSensitivityV_all_tm","diffSensitivityV_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Training_Proportion))  +
+    ylab("Dif. in test contamination Sensitivity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.290  
+  
+  
+  
+  g3.300 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Training_Proportion))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.300  
+  
+  # to combine plots we required "patchwork" library
+  combine <- g3.250 + g3.260 + g3.270 + g3.280  + g3.290 + g3.300 & theme(legend.position = "bottom")
+  combine + plot_layout(guides = "collect")
+  
+  
+
+# Covariance Structure fixed vs other factor varied -----------------------
+
+  
+  g3.310 <- ggplot(df_long %>% filter(Comparison %in% c("diffccr_class_sm_tm","diffccr_class_all_tm","diffccr_class_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Covariance_Structure))  +
+    ylab("Dif. in test class CCR") + xlab("Model comparisons") + ylim (-0.2,0.2) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.310  
+  
+  
+  g3.320 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivity_class_sm_tm","diffSensitivity_class_all_tm","diffSensitivity_class_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Covariance_Structure))  +
+    ylab("Dif. in test class Sensitivity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.320  
+  
+  
+  
+  g3.330 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Covariance_Structure))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.330  
+  
+  
+  g3.340 <- ggplot(df_long %>% filter(Comparison %in% c("diffCCRV_sm_tm","diffCCRV_all_tm","diffCCRV_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Covariance_Structure))  +
+    ylab("Dif. in test contamination CCR") + xlab("Model comparisons") + ylim (-0.2,0.2) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.340  
+  
+  
+  g3.350 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivityV_sm_tm","diffSensitivityV_all_tm","diffSensitivityV_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Covariance_Structure))  +
+    ylab("Dif. in test contamination Sensitivity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.350  
+  
+  
+  
+  g3.360 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                  aes(x = Comparison, y = Dif, color = Covariance_Structure))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.360  
+
+  
+  # to combine plots we required "patchwork" library
+  combine <- g3.310 + g3.320 + g3.330 + g3.340  + g3.350 + g3.360 & theme(legend.position = "bottom")
+  combine + plot_layout(guides = "collect")
+  
+  
+
+# Number of separating variables fixed other factors varied ---------------
+df_long$Number_Separating_Variables <- factor(df_long$Number_Separating_Variables)
+  
+  g3.370 <- ggplot(df_long %>% filter(Comparison %in% c("diffccr_class_sm_tm","diffccr_class_all_tm","diffccr_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Separating_Variables))  +
+    ylab("Dif. in test class CCR") + xlab("Model comparisons") + ylim (-0.2,0.2) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.370  
+  
+  
+  g3.380 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivity_class_sm_tm","diffSensitivity_class_all_tm","diffSensitivity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Separating_Variables))  +
+    ylab("Dif. in test class Sensitivity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.380  
+  
+  
+  
+  g3.390 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Separating_Variables))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.390  
+  
+  
+  g3.400 <- ggplot(df_long %>% filter(Comparison %in% c("diffCCRV_sm_tm","diffCCRV_all_tm","diffCCRV_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Separating_Variables))  +
+    ylab("Dif. in test contamination CCR") + xlab("Model comparisons") + ylim (-0.5,0.5) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.400  
+  
+  
+  g3.410 <- ggplot(df_long %>% filter(Comparison %in% c("diffSensitivityV_sm_tm","diffSensitivityV_all_tm","diffSensitivityV_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Separating_Variables))  +
+    ylab("Dif. in test contamination Sensitivity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.410  
+  
+  
+  
+  g3.420 <- ggplot(df_long %>% filter(Comparison %in% c("diffSpecificity_class_sm_tm","diffSpecificity_class_all_tm","diffSpecificity_class_sm_all")),
+                   aes(x = Comparison, y = Dif, color = Number_Separating_Variables))  +
+    ylab("Dif. in test class Specificity") + xlab("Model comparisons") + ylim (-1,1) + geom_boxplot() +
+    geom_hline(yintercept = 0) +
+    scale_x_discrete(labels = c("ALL - TM","SM - ALL","SM - TM"))
+  
+  g3.420  
+  
+  
+  # to combine plots we required "patchwork" library
+  combine <- g3.370 + g3.380 + g3.390 + g3.400  + g3.410 + g3.420 & theme(legend.position = "bottom")
+  combine + plot_layout(guides = "collect")
+  
+  
+
+# Variables selected  by the greedy search --------------------------------
+
+  # case for two classes inclusion and exclusion
+  colnames(sdf)
+  sdf$Number_Separating_Variables_Included <- ifelse(sdf$Number_Separating_Variables == 2, sdf$IncludeX2 + sdf$IncludeX4, sdf$IncludeX2 + sdf$IncludeX4 + sdf$IncludeX5 )
+  sdf$Number_Non_Informative_Variables_Included <- sdf$Nvars_SM - sdf$Number_Separating_Variables_Included
+  
+  sdf$Inclusion_Correctness <- sdf$Number_Separating_Variables_Included/sdf$Number_Separating_Variables
+  sdf$Exclusion_Correctness <- 1-sdf$Number_Non_Informative_Variables_Included/(sdf$Number_Variables - sdf$Number_Separating_Variables)
+  
+  
+  
+  # for 5 variables and 3 groups
+  
+  library(gridExtra)
+  
+  sdf %>% filter(Number_Variables == 5, Number_Separating_Variables == 3) %>% dplyr::group_by(Number_Separating_Variables,Number_Variables) %>%
+    summarise_at(c("Nvars_SM","IncludeX2", "IncludeX4", "IncludeX5",  "Inclusion_Correctness", "Exclusion_Correctness"), mean) 
+  
+  # for 100 variables and 3 groups
+  
+  sdf %>% filter(Number_Variables == 100, Number_Separating_Variables == 3) %>% dplyr::group_by(Number_Separating_Variables,Number_Variables) %>%
+    summarise_at(c("Nvars_SM","IncludeX2","IncludeX4","IncludeX5","Inclusion_Correctness","Exclusion_Correctness"), mean) 
+  
+  
+  # for 5 variables and 2 groups
+  
+  sdf %>% filter(Number_Variables == 5, Number_Separating_Variables == 2) %>% dplyr::group_by(Number_Separating_Variables,Number_Variables) %>%
+    summarise_at(vars("Nvars_SM","IncludeX2", "IncludeX4",  "Inclusion_Correctness", "Exclusion_Correctness"), mean) 
+  
+  
+  # for 100 variables and 2 groups
+  
+  sdf  %>% filter(Number_Variables == 100, Number_Separating_Variables == 2) %>% dplyr::group_by(Number_Separating_Variables,Number_Variables) %>%
+    summarise_at(c("Nvars_SM","IncludeX2","IncludeX4","Inclusion_Correctness","Exclusion_Correctness"), mean) 
+  
+  
+  
+
+# Inclusion boxplots ------------------------------------------------------
+  sd2 <- sdf %>% filter(Number_Separating_Variables == 2 )
+  sd2_5 <- sdf %>% filter(Number_Separating_Variables == 2 & Number_Variables == 5)
+  sd2_100 <- sdf %>% filter(Number_Separating_Variables == 2 & Number_Variables == 100)
+  
+  quantile(sd2_5$Nvars_SM,c(0.25,0.5,0.75))
+  quantile(sd2_100$Nvars_SM,c(0.25,0.5,0.75))
+  
+  sd3 <- sdf %>% filter(Number_Separating_Variables == 3 )
+  sd3_5 <- sdf %>% filter(Number_Separating_Variables == 3 & Number_Variables == 5 )
+  sd3_100 <- sdf %>% filter(Number_Separating_Variables == 3 & Number_Variables == 100 )
+  
+  quantile(sd3_5$Nvars_SM,c(0.25,0.5,0.75))
+  quantile(sd3_100$Nvars_SM,c(0.25,0.5,0.75))
+  
+  
+  # for 2 separating variables
+  boxplot(Nvars_SM ~ Number_Variables, data = sd2, col = "lightblue",
+          xlab = "Number of variables", 
+          ylab = "Number of variables included in the model")
+  
+colnames(sd2)
+
+  boxplot(Inclusion_Correctness ~ Number_Variables, data = sd2, col = "lightblue",
+           xlab = "Number of variables", 
+           ylab = "Inclusion Correctness")
+
+  quantile(sd2_5$Inclusion_Correctness,c(0.25,0.5,0.75))
+  
+  quantile(sd2_100$Inclusion_Correctness,c(0.25,0.5,0.75))
+  
+
+ boxplot(Exclusion_Correctness ~ Number_Variables, data = sd2, col = "lightblue",
+           xlab = "Number of variables", 
+           ylab = "Exclusion Correctness")
+   
+ quantile(sd2_5$Exclusion_Correctness,c(0.25,0.5,0.75))
+ 
+ quantile(sd2_100$Exclusion_Correctness,c(0.25,0.5,0.75))
+ 
+   
+  # for 3 separating variables
+  colnames(sd3)
+
+  boxplot(Nvars_SM ~ Number_Variables, data = sd3, col = "lightblue",
+          xlab = "Number of variables", 
+          ylab = "Number of variables included in the model")
+  
+  plot3 <- boxplot(Inclusion_Correctness ~ Number_Variables, data = sd2, col = "lightblue",
+          xlab = "Number of variables", 
+          ylab = "Inclusion Correctness")
+  
+  plot3
+  
+  plot4 <- boxplot(Exclusion_Correctness ~ Number_Variables, data = sd2, col = "lightblue",
+          xlab = "Number of variables", 
+          ylab = "Exclusion Correctness")
+  
+  
+  
+  grid.arrange(plot3,plot4 , ncol = 2)
+  
+  boxplot(sd3$Inclusion_Correctness, sd2$Exclusion_Correctness, col = c("lightblue","lightblue"),
+          names = c("Inclusion Correctness", "Exclusion Correctness"))
+  
+
+    boxplot()
   

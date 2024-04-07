@@ -6,9 +6,15 @@ library(tidyverse)
 source("FunctionsConsolidate.R")
 source("VSCMN.R")
 # Create dataset
-ruta <-  "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN"
-pathFile <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Raw Data"
-setwd(ruta)
+sys_info <- Sys.info()
+
+if(sys_info["nodename"] == "LAPTOP-ADR3M911")
+{
+    ruta <-  "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN"
+    pathFile <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Raw Data"
+    setwd(ruta)
+}
+
 
 sort_labels <- function(model_string)
 {

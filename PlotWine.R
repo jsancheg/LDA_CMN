@@ -4,6 +4,9 @@ library(tictoc)
 library(corrplot)
 library(plotly)
 library(psych)
+library(stringr)
+library(dplyr)
+library(tidyr)
 
 pathWd <- "E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
 pathOutput <-"E://University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/Proc_WineNew/"
@@ -45,8 +48,9 @@ source("FunctionsConsolidate.R")
 
 find_unique_labels(df_resumen$Model1)
 
-df_resumen$Model <- find_unique_labels(df_resumen$Model1)$newlabels
 head(df_resumen)
+
+df_resumen <- df_resumen %>% mutate(Model = sapply(Model, sort_labels))
 
 
 

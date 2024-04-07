@@ -1,3 +1,7 @@
+
+
+
+
 contamina_dataset <- function(X,y,lab,vpi,alphaM,etaM,ptrain,run_begin,run_end,nameDf,pathOutput)
 {
   gen_data <- vector("list",1)

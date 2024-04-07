@@ -1,62 +1,14 @@
 library(MASS)
 library(DIRECT)
-# Function to generate random points from a Gaussian distribution
-generate_points <- function(mean, cov, n_points) {
-  # Generate points from the multivariate normal distribution
-  points <- DIRECT::rMVNorm(n_points, mean, cov)
-  return(points)
-}
-
-
-# Parameters for the Gaussian distributions
-mean_1 <- c(0, 0, 0, 0, 0)
-mean_md <- c(0, 3, 0, 3, 0)
-
-mean_vo <- c(0, 1.5, 0, 1.5, 0)
-mean_vd <- c(0, 6, 0, 6, 0)
-
-cov_matrix <- diag(5)
-
-# Number of random points to generate
-n_points <- 10^6
-
-# Generate random points from both distributions
-points_1 <- generate_points(mean_1, cov_matrix, n_points)
-points_md <- generate_points(mean_md, cov_matrix, n_points)
-points_vo <- generate_points(mean_vo,cov_matrix,n_points)
-points_vd <- generate_points(mean_vd,cov_matrix,n_points)
-
-# Calculate the Euclidean distance between each pair of points
-distances_md <- sqrt(rowSums((points_1 - points_md)^2))
-distances_vo <- sqrt(rowSums((points_1 - points_vo)^2))
-distances_vd <- sqrt(rowSums((points_1 - points_vd)^2))
-
-
-# Set a distance threshold for overlap (e.g., within 1 standard deviation)
-distance_threshold <- sqrt(18)  # Distance between the means
-distance_threshold_vo <- sqrt(18)  # Distance between the means
-distance_threshold_vd <- sqrt(18)  # Distance between the means
-
-# Count the proportion of points that fall within the distance threshold
-overlap_proportion2 <- sum(distances2 < distance_threshold) / length(distances2)
-overlap_proportion3 <- sum(distances3 < distance_threshold) / length(distances3)
-overlap_proportion4 <- sum(distances4 < distance_threshold) / length(distances4)
-
-# Estimate the overlap as a percentage
-overlap_percentage2 <- overlap_proportion2 * 100
-overlap_percentage3 <- overlap_proportion3 * 100
-overlap_percentage4 <- overlap_proportion4 * 100
-
-# Display the estimated overlap
-print(paste("Estimated overlap percentage medium overlapping 1.5G:", overlap_percentage3))
-print(paste("Estimated overlap percentage very overlapping 3G:", overlap_percentage2))
-print(paste("Estimated overlap percentage very distance 6G:", overlap_percentage4))
-
 
 
 getwd()
-ruta <- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
-setwd(ruta)
+sys_info <- Sys.info()
+
+if (sys_info["nodename"] != "WildFree") {
+  ruta<- "E:/University of Glasgow/Literature review/R Code/Food Analysis/LDA_CMN/LDA_CMN/"
+  setwd(ruta)
+}
 #source("SimClassfewdim.R")
 source("SimClassEM20Steps.R")
 library(utils)
@@ -77,25 +29,31 @@ set.seed(123)
 GenDataD.1 <- SimGClasses(mu,sg,pig,nobservations,ptraining,alphag,etag)
 GenDataD.1$vtrain
 
+GenDataD.1 <- readRDS("DatasetD1.RDS")
+
+GenDataD.1$Xtrain %>% apply(2,mean)
+GenDataD.1$Xtrain[vtrain == 1, ] %>% apply(2,mean)
+GenDataD.1$Xtrain[vtrain == 0, ] %>% apply(2,mean)
+
 GenDataD.1$vtrain
 
 # plot training set
-plot(GenDataD.1$Xtrain, col = GenDataD.1$vtrain+2, 
+plot(GenDataD.1$Xtrain, col = ifelse(GenDataD.1$vtrain == 1, "blue", "red"), 
      pch = 15+GenDataD.1$ltrain,
      xlab = "X1", ylab = "X2")
 legend("bottomleft", legend = c("Non Contaminated","Contaminated"), 
-       col = c("green","red"),
+       col = c("blue","red"),
        pch = c(16,16))
-text(3.614436,-1.094842,"56",-0.5)
+#text(3.614436,-1.094842,"56",-0.5)
 
 # plot testing set
-plot(GenDataD.1$Xtest, col = GenDataD.1$vtest+2, 
+plot(GenDataD.1$Xtest, col = ifelse(GenDataD.1$vtest == 1, "blue", "red"), 
      pch = 15+GenDataD.1$ltest,
      xlab = "X1", ylab = "X2")
 legend("bottomleft", legend = c("Non Contaminated","Contaminated"), 
-       col = c("green","red"),
+       col = c("blue","red"),
        pch = c(16,16))
-text(3.614436,-1.094842,"56",-0.5)
+#text(3.614436,-1.094842,"56",-0.5)
 
 
 # actual values for mu sigma and pi in the training set
@@ -132,14 +90,16 @@ for (i in 1:ntrain)
   aux3 <- aux2* mahalanobis(GenDataD.1$Xtrain[i,],actual_mean,actual_var)
   b <- b + aux3
 }
-actual_alpha <- actual_alpha/ntrain
-actual_eta <- b/(2*a)
+#actual_alpha <- actual_alpha/ntrain
+#actual_eta <- b/(2*a)
 #---------------------------------------------
-resD1<-ModelAccuracy3(GenDataD.1$Xtrain, GenDataD.1$Xtest,
+resD1 <- ModelAccuracy3(GenDataD.1$Xtrain, GenDataD.1$Xtest,
                       GenDataD.1$ltrain, GenDataD.1$ltest,
                       CE = "EII", alpharef = 0.90, tol = 0.0001)
 
 resD1$diflog
+
+unlist(resD1$loglikelihod)[10:20]
 
 par <- list()
 par$mu <- resD1$mu
