@@ -87,18 +87,18 @@ smetrics_23_02_2024 <- readRDS("Metrics_SFiles.RDS")
 
 colnames(smetrics_old)
 
-median(smetrics_old$AccuracyTM, na.rm = TRUE)
-median(smetrics_old$AccuracySM, na.rm = TRUE)
-median(smetrics_old$AccuracySaturatedM, na.rm = TRUE)
+mean(smetrics_old$AccuracyTM, na.rm = TRUE)
+mean(smetrics_old$AccuracySM, na.rm = TRUE)
+mean(smetrics_old$AccuracySaturatedM, na.rm = TRUE)
 
-median(smetrics_old$recall_TM_V,na.rm = TRUE)
-median(smetrics_old$recall_SM_V,na.rm = TRUE)
-median(smetrics_old$recall_saturated_V,na.rm = TRUE)
+mean(smetrics_old$recall_TM_V,na.rm = TRUE)
+mean(smetrics_old$recall_SM_V,na.rm = TRUE)
+mean(smetrics_old$recall_saturated_V,na.rm = TRUE)
 
 
-median(smetrics_old$AccuracyTM, na.rm = TRUE)
-median(smetrics_old$AccuracySM, na.rm = TRUE)
-median(smetrics_old$AccuracySaturatedM, na.rm = TRUE)
+mean(smetrics_old$AccuracyTM, na.rm = TRUE)
+mean(smetrics_old$AccuracySM, na.rm = TRUE)
+mean(smetrics_old$AccuracySaturatedM, na.rm = TRUE)
 
 
 
@@ -208,11 +208,22 @@ sdf$Variables <- factor(Variables1, levels = new_order)
 
 library(dplyr)
 
+colnames(sdf_without_na)
+# Inclusion - Exclusion for 2 separating variables with classes mapped in 5 dimensions
+
+IE_2sv_5 <- sdf_without_na %>% filter(Variables == "selected", Number_Variables == 5, Number_Separating_Variables == 2) %>%
+  dplyr::select(Number_Variables, Number_Separating_Variables, Number_Separating_Variables_Included ,IncludeX2, IncludeX4, IncludeX5, Model_Size, CCR, Recall_Class) %>%
+  group_by(Number_Variables, Number_Separating_Variables) %>%
+  summarise_at(vars("Number_Separating_Variables_Included","CCR","Recall_Class"), mean, na.rm = TRUE) 
+
+IE_2sv_5
+
+
 Inclusion_Exclusion1 <- sdf_without_na %>% filter(Variables == "Selected")%>% dplyr::select(Number_Variables, Number_Separating_Variables, 
                                                                                             IncludeX2, IncludeX4, IncludeX5, Model_Size,
                                                                                             Inclusion_Correctness, Exclusion_Correctness)
 Inclusion_Exclusion1
-
+colnames(Inclusion_Exclusion1)
 
 
 
