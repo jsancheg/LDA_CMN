@@ -29,8 +29,8 @@ library(readr)
 
 
 dir(pathScenarios)
-ini <- n100.4 + 1 
-fin <- n100.5
+ini <- n100.9 + 1 
+fin <- n100
 fin-ini + 1
 
 Model <- c("EII","VII","VEI","EEI","EVI","VVI","EEE","VVV")
@@ -44,11 +44,11 @@ status<-mclapply(Scenarios100[ini:fin], function(x){
   FilesProcessed <- dir(pathSFiles)
     tryCatch(
       {
-        #  if(is_empty(intersect(FilesProcessed,SFilename)))
-        #  {
+          if(is_empty(intersect(FilesProcessed,SFilename)))
+          {
         
         GenerateSFile(x,pathScenarios,pathSFiles, Model) 
-        #  }else cat("\n The file ",SFilename, " already exists in the directory. \n")
+          }else cat("\n The file ",SFilename, " already exists in the directory. \n")
         
         return(1)
       }, error = function(e){

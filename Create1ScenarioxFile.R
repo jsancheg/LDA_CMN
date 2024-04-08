@@ -25,7 +25,7 @@ files_no_generated_SV <- setdiff(str_replace(dir(pathScenarios),"S_","SV_"),dir(
 files_no_generated_SV
 
 ScenariosSSV_To_Be_Generated <-paste0("S",str_sub(files_no_generated_SSV,4,str_length(files_no_generated_SSV)))
-
+  
 ScenariosSV_To_Be_Generated <-paste0("S",str_sub(files_no_generated_SV,3,str_length(files_no_generated_SV)))
 
 intersect(ScenariosSSV_To_Be_Generated,ScenariosSV_To_Be_Generated)

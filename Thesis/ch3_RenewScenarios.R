@@ -12,7 +12,8 @@ head(files,5)
 
 pathOutput <- paste0(getwd(),"/Thesis/Plasmode/crabs/")
 
-i <- 1
+Recreate_original_scenarios <- function(pathOrigen,files_to_process, pathOutput)
+{
 for (namefile in files)
 {
     
@@ -26,7 +27,7 @@ for (namefile in files)
                 
                   file_data <- load(paste0(name_scenario,".Rdata"))
                   nsim <- length(auxSim$Train)
-                  #datos <- vector(nsim,"list")
+                  GenData <- vector("list",nsim)
                   
                   for (i in 1: nsim)
                   {
@@ -103,17 +104,40 @@ for (namefile in files)
                                          ltrain = ltrain, ltest = ltest,
                                          v = v,
                                         vtrain = vtrain, vtest = vtest)
-                           
+                           GenData[[i]] <- datos
                                par <- list(G = G, mu = aux_mu, sigma = aux_sigma,
                                          ClassProportion , alpha = aux_alpha,
                                          eta  = aux_eta, NumberObservations = NumberObservations,
                                          ProportionTraining = ProportionTraining)
                                
-                              Output <- list(GenData = datos,
+                              Output <- list(GenData = GenData,
                                              par = par)
                               
                               saveRDS(Output, paste0(pathOutput,name_archivo,"_",i,".RDS") )
                   }      
           }    
 }                              
+
+}
+
+
+pathOrigen <- paste0(getwd(),"/Proc_CrabsNew/") 
+files <- dir(pathOrigen)
+head(files,5)
+
+
+pathOutput <- paste0(getwd(),"/Thesis/Plasmode/crabs/")
+Recreate_original_scenarios(pathOrigen, files, pathOutput)
+
+
+
+
+
+pathOrigen <- paste0(getwd(),"/Proc_wdbc/") 
+files <- dir(pathOrigen)
+head(files,5)
+
+pathOutput <- paste0(getwd(),"/Thesis/Plasmode/wdbc/")
+Recreate_original_scenarios(pathOrigen, files, pathOutput)
+
 

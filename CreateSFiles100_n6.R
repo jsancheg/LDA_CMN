@@ -29,15 +29,15 @@ library(readr)
 
 
 dir(pathScenarios)
-ini <- 1
-fin <- n100.1
+ini <- n100.7+1
+fin <- n100.8
 fin-ini + 1
 
 Model <- c("EII","VII","VEI","EEI","EVI","VVI","EEE","VVV")
 Model <- c("EII","VII","EEI","VEI","EEE","VVV")
 
 
-tic("SFiles 1 to n100.1")
+tic("SFiles n100.5+1 to n100.6")
 status<-mclapply(Scenarios100[ini:fin], function(x){
   
   SFilename <- str_replace(x,"S_","SV_")
